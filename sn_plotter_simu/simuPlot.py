@@ -5,13 +5,6 @@ import pprint
 from optparse import OptionParser
 from . import plt, filtercolors, fontsize
 
-"""
-fontsize = 10
-plt.yticks(size=fontsize)
-plt.xticks(size=fontsize)
-colors = dict(zip('ugrizy', 'bcgyrm'))
-"""
-
 
 class SimuPlot:
     """
@@ -204,36 +197,3 @@ class SimuPlot:
         print('ptime', np.median(ptime))
 
         plt.show()
-
-
-"""
-parser = OptionParser()
-
-parser.add_option("--dbName", type="str", default='alt_sched',
-                  help="db name [%default]")
-parser.add_option("--dbDir", type="str", default='Output_Simu',
-                  help="dir location of the results [%default]")
-
-opts, args = parser.parse_args()
-
-print('Start processing...', opts)
-
-splot = SimuPlot(opts.dbDir, opts.dbName)
-
-# get the simulation parameters
-simupars = splot.simuPars
-
-print('Number of simulated supernovae', len(simupars))
-# get columns
-
-cols = simupars.columns
-
-print(cols)
-
-print(splot.simuPars)
-# splot.plotParameters()
-splot.plotLoopLC()
-
-
-# splot.checkLC()
-"""
