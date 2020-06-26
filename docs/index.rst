@@ -12,7 +12,10 @@ Welcome to sn_plotters's documentation!
 
    simuPlot <api/sn_plotter_simu.simuPlot>
    fitlcPlot <api/sn_plotter_fitlc.fitlcPlot>
-
+   cadencePlot <api/sn_plotter_metrics.cadencePlot>
+   nsnPlot <api/sn_plotter_metrics.nsnPlot>
+   snrPlot <api/sn_plotter_metrics.snrPlot>
+   
 
 
 
