@@ -54,6 +54,23 @@ class FitPlots:
         return sn
 
     def plot2D(self, tabs, varx, vary, legx, legy):
+        """
+        2D plot method
+
+        Parameters
+        ---------------
+        tabs: array
+           data to plot
+        varx: str
+           variable name - x axis
+        vary: str
+          variable name - y axis
+         legx: str
+           x-axis legend
+        legy: str
+          y-axis legend
+
+        """
 
         fig, ax = plt.subplots()
 
@@ -67,6 +84,25 @@ class FitPlots:
         ax.legend(loc='upper left')
 
     def plot2D_indiv(self, ax, tabs, varx, vary, label='', color_cut=0.04):
+        """
+        2D plot method
+
+        Parameters
+        ---------------
+        ax: matplotlib axis
+           ax for the plot
+        tabs: array
+           data to plot
+        varx: str
+           variable name - x axis
+        vary: str
+          variable name - y axis
+        label: str,opt
+           label for the display (default: '')
+        color_cut: float,opt
+           color cut to apply (default: 0.04)
+
+        """
 
         dict_interp = {}
         for key, tab in tabs.items():
