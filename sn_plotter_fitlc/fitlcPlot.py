@@ -5,19 +5,6 @@ import numpy as np
 from scipy.interpolate import interp1d
 import pandas as pd
 from . import plt
-"""
-filtercolors = dict(zip('ugrizy', ['b', 'c', 'g', 'y', 'r', 'm']))
-plt.rcParams['xtick.labelsize'] = 20
-plt.rcParams['ytick.labelsize'] = 12
-plt.rcParams['axes.labelsize'] = 12
-plt.rcParams['legend.fontsize'] = 12
-plt.rcParams['font.size'] = 12
-"""
-"""
-import sys
-sys.path.append("..")
-"""
-#from . import plt
 
 
 class FitPlots:
