@@ -79,8 +79,8 @@ class FitPlots:
         ax.grid()
         ax.set_xlabel(legx)
         ax.set_ylabel(legy)
-        ax.set_ylim([0., 0.1])
-        ax.set_xlim([0.01, 1.2])
+        ax.set_ylim([0., 0.08])
+        ax.set_xlim([0.01, 1.])
         ax.legend(loc='upper left')
 
     def plot2D_indiv(self, ax, tabs, varx, vary, label='', color_cut=0.04):
@@ -105,14 +105,15 @@ class FitPlots:
         """
 
         dict_interp = {}
+        ia = 0
         for key, tab in tabs.items():
-
+            ia +=1
             idx = tab[vary] > 0
             sel = tab[idx]
 
             ax.plot(sel[varx], np.sqrt(sel[vary]), label=key)
 
-            """
+            
             interp = interp1d(
                 np.sqrt(sel[vary]), sel[varx], bounds_error=False, fill_value=0.)
 
@@ -122,12 +123,14 @@ class FitPlots:
             zlim = interp(color_cut)
             ax.plot(ax.get_xlim(), [color_cut]*2,
                     linestyle='--', color='k')
-            ax.plot([zlim]*2, [0., 0.08], linestyle='--', color='k')
+            #ax.plot([zlim]*2, [0., 0.08], linestyle='--', color='k')
             mystr = 'z$_{lim}$'
-            ax.text(zlim-0.03, 0.085, '{}={}'.format(mystr, np.round(zlim, 2)))
-            """
+            if (ia%2)==0:
+                ax.text(zlim-0.07, 0.041, '{}={}'.format(mystr, np.round(zlim, 2)))
+            else:
+                ax.text(zlim+0.01, 0.041, '{}={}'.format(mystr, np.round(zlim, 2)))
         # Compare variation
-        if len(tabs) < 1:
+        if len(tabs) < 0:
 
             zplot = np.arange(0.05, 0.8, 0.01)
             df = pd.DataFrame(zplot.tolist(), columns=['z'])
