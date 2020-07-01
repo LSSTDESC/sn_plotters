@@ -105,15 +105,10 @@ class FitPlots:
         """
 
         dict_interp = {}
-        ia = 0
         for key, tab in tabs.items():
-            ia +=1
             idx = tab[vary] > 0
             sel = tab[idx]
 
-            ax.plot(sel[varx], np.sqrt(sel[vary]), label=key)
-
-            
             interp = interp1d(
                 np.sqrt(sel[vary]), sel[varx], bounds_error=False, fill_value=0.)
 
@@ -121,15 +116,16 @@ class FitPlots:
                 sel[vary]), bounds_error=False, fill_value=0.)
 
             zlim = interp(color_cut)
+            ax.plot(sel[varx], np.sqrt(sel[vary]),
+                    label='{} - zlim={}'.format(key, np.round(zlim, 2)))
+
             ax.plot(ax.get_xlim(), [color_cut]*2,
                     linestyle='--', color='k')
             #ax.plot([zlim]*2, [0., 0.08], linestyle='--', color='k')
             mystr = 'z$_{lim}$'
-            if (ia%2)==0:
-                ax.text(zlim-0.07, 0.041, '{}={}'.format(mystr, np.round(zlim, 2)))
-            else:
-                ax.text(zlim+0.01, 0.041, '{}={}'.format(mystr, np.round(zlim, 2)))
+
         # Compare variation
+        """
         if len(tabs) < 0:
 
             zplot = np.arange(0.05, 0.8, 0.01)
@@ -154,3 +150,4 @@ class FitPlots:
             axb.set_ylabel('$\sigma_{Color}$ ratio')
             axb.set_ylim([0.95, 1.1])
             axb.set_xlim([0.01, 0.78])
+        """
