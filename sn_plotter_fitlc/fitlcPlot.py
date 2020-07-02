@@ -53,7 +53,7 @@ class FitPlots:
 
         return sn
 
-    def plot2D(self, tabs, varx, vary, legx, legy):
+    def plot2D(self, tabs, varx, vary, legx, legy, compare=False):
         """
         2D plot method
 
@@ -74,7 +74,7 @@ class FitPlots:
 
         fig, ax = plt.subplots()
 
-        self.plot2D_indiv(ax, tabs, varx, vary)
+        self.plot2D_indiv(ax, tabs, varx, vary, compare=compare)
 
         ax.grid()
         ax.set_xlabel(legx)
@@ -83,7 +83,7 @@ class FitPlots:
         ax.set_xlim([0.01, 1.])
         ax.legend(loc='upper left')
 
-    def plot2D_indiv(self, ax, tabs, varx, vary, label='', color_cut=0.04):
+    def plot2D_indiv(self, ax, tabs, varx, vary, label='', color_cut=0.04, compare=False):
         """
         2D plot method
 
@@ -125,14 +125,15 @@ class FitPlots:
             mystr = 'z$_{lim}$'
 
         # Compare variation
-        """
-        if len(tabs) < 0:
+
+        if compare:
 
             zplot = np.arange(0.05, 0.8, 0.01)
             df = pd.DataFrame(zplot.tolist(), columns=['z'])
             for key, val in dict_interp.items():
-                kk = '_'.join(key.split('_')[:-1])
+                kk = '_'.join(key.split('_')[:-2])
                 print('kkkk', kk)
+                kk = key
                 df['sigC_{}'.format(kk)] = val(zplot)
 
             print(df)
@@ -150,4 +151,3 @@ class FitPlots:
             axb.set_ylabel('$\sigma_{Color}$ ratio')
             axb.set_ylim([0.95, 1.1])
             axb.set_xlim([0.01, 0.78])
-        """
