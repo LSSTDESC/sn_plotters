@@ -52,7 +52,7 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint'):
     # select data with zlim_faint>0. and NSN > 10.
 
     idx = metricValues['zlim_faint'] > 0.
-    #idx &= metricValues['nsn_zfaint'] > 10.
+    # idx &= metricValues['nsn_zfaint'] > 10.
     sel = metricValues[idx]
 
     print('selec', sel[['zlim_faint', 'nsn_zfaint', 'nsn_med_zfaint']])
@@ -134,7 +134,7 @@ def Plot_NSN(summary, forPlot, sntype='faint'):
     for group in np.unique(forPlot['group']):
         idx = forPlot['group'] == group
         sel = forPlot[idx]
-        #print(group, sel['dbName'])
+        # print(group, sel['dbName'])
         marker = sel['marker'].unique()[0]
         color = sel['color'].unique()[0]
 
@@ -224,13 +224,13 @@ class NSNAnalysis:
         idx &= np.abs(metricValues['color']-self.color) < 1.e-6
         print(np.unique(metricValues['status']))
         idx &= metricValues['status'] == 1
-        #idx &= metricValues['healpixID'] >= 48000
-        #idx &= metricValues['healpixID'] <= 49000
+        # idx &= metricValues['healpixID'] >= 48000
+        # idx &= metricValues['healpixID'] <= 49000
 
         idx &= metricValues['zlim'] > 0.
         idx &= metricValues['nsn_med'] > 0.
 
-        #self.plot_season(metricValues[idx], varName='nsn_med')
+        # self.plot_season(metricValues[idx], varName='nsn_med')
         self.data = pd.DataFrame(metricValues[idx])
 
         print('data', self.data[['healpixID', 'pixRA', 'pixDec', 'x1', 'color', 'zlim',
@@ -323,6 +323,43 @@ class NSNAnalysis:
         """
         return sums['nsn_med'].sum(), int(np.sqrt(sums['err_nsn_med'].sum()))
 
+    def Mollview_median(self, var='zlim', legvar='zlimit'):
+        """
+        Method to plot a Mollweid view for the median of a variable
+
+        Parameters
+        --------------
+        var: str,opt
+          variable to show (default: nsn_med)
+        legvar: str, opt
+           name for title of the plot (default: NSN)
+
+        """
+
+        # this is to estimate the median zlim over the sky
+        meds = self.data.groupby(['healpixID']).median().reset_index()
+        meds = meds.round({var: 2})
+        self.plotMollview(meds, var, legvar, np.median,
+                          xmin=0.000001, xmax=np.max(meds[var]))
+
+    def Mollview_sum(self, var='nsn_med', legvar='NSN'):
+        """
+        Method to plot a Mollweid view for the sum of a variable
+
+        Parameters
+        --------------
+        var: str,opt
+          variable to show (default: nsn_med)
+        legvar: str, opt
+           name for title of the plot (default: NSN)
+
+        """
+
+        sums = self.data.groupby(['healpixID']).sum().reset_index()
+
+        self.plotMollview(sums, var, legvar, np.sum,
+                          xmin=np.min(sums[var]), xmax=np.max(sums[var]))
+
     def plot(self):
         """
         Method to plot two Mollview of the metric results:
@@ -381,6 +418,8 @@ class NSNAnalysis:
         resleg = op(data[varName])
         if 'nsn' in varName:
             resleg = int(resleg)
+        else:
+            resleg = np.round(resleg, 2)
         title = '{}: {}'.format(leg, resleg)
 
         hp.mollview(hpxmap, min=xmin, max=xmax, cmap=cmap,
