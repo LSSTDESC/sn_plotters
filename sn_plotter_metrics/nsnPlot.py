@@ -286,8 +286,8 @@ class NSNAnalysis:
         for io, row in go.iterrows():
             print(row[['healpixID', varName]].values)
         """
-        self.plotMollview(metricValues, varName, leg, np.max,
-                          np.max(metricValues[varName]), np.max(metricValues[varName]))
+        self.plotMollview(metricValues, varName, leg, np.median,
+                          np.median(metricValues[varName]), np.median(metricValues[varName]))
 
         plt.show()
 
@@ -321,7 +321,7 @@ class NSNAnalysis:
 
         sums['nsn_med'] = sums['nsn_med'].astype(int)
         """
-        return sums['nsn_med'].sum(), int(np.sqrt(sums['var_nsn_med'].sum()))
+        return sums['nsn_med'].sum(), int(np.sqrt(sums['err_nsn_med'].sum()))
 
     def plot(self):
         """
