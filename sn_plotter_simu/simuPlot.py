@@ -2,7 +2,6 @@ import h5py
 import numpy as np
 from astropy.table import Table, vstack
 import pprint
-from optparse import OptionParser
 from . import plt, filtercolors, fontsize
 
 
@@ -95,6 +94,7 @@ class SimuPlot:
             axis.set_ylabel('Number of entries', fontsize=thesize)
             axis.tick_params(axis='x', labelsize=thesize)
             axis.tick_params(axis='y', labelsize=thesize)
+        plt.show()
 
     def plotLoopLC(self, pause_time=5):
         """
