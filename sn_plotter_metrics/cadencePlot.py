@@ -4,6 +4,7 @@ from scipy import interpolate
 import numpy.lib.recfunctions as rf
 import healpy as hp
 import pandas as pd
+from sn_tools.sn_io import check_get_file
 
 
 class Lims:
@@ -28,13 +29,15 @@ class Lims:
     dt_range : pair(float)
         difference time range considered (cadence)
         Default : (0.5, 25.)
+    web_path: str,opt
+      url where files requested for the processing can be loaded from.
     """
 
     def __init__(self, Li_files,
                  mag_to_flux_files,
                  band, SNR,
                  mag_range=(23., 27.5),
-                 dt_range=(0.5, 25.)):
+                 dt_range=(0.5, 25.), web_path=''):
 
         self.band = band
         self.SNR = SNR
@@ -44,8 +47,12 @@ class Lims:
         self.dt_range = dt_range
 
         for val in Li_files:
+            valsplit = val.split('/')
+            check_get_file(web_path, valsplit[0], valsplit[1])
             self.lims.append(self.getLims(self.band, np.load(val), SNR))
         for val in mag_to_flux_files:
+            valsplit = val.split('/')
+            check_get_file(web_path, valsplit[0], valsplit[1])
             self.mag_to_flux.append(np.load(val))
         self.interp()
 
@@ -248,7 +255,7 @@ class Lims:
                      markersize=15)
         plt.xlabel('$m_{5\sigma}$', fontsize=18)
         plt.ylabel(r'Observer frame cadence $^{-1}$ [days]', fontsize=18)
-        #plt.title('$%s$' % self.band.split(':')[-1], fontsize=18)
+        # plt.title('$%s$' % self.band.split(':')[-1], fontsize=18)
         plt.title('{} band'.format(self.band.split(':')[-1]), fontsize=18)
         plt.xlim(self.mag_range)
         plt.ylim(self.dt_range)
@@ -308,7 +315,7 @@ class Lims:
             plt.savefig('{}_{}_histzlim.png'.format(dbName, self.band))
 
 
-def plotCadence(band, Li_files, mag_to_flux_files, SNR, metricValues, names_ref, mag_range, dt_range, dbName, saveFig=False, display=True, m5_str='m5_mean', cadence_str='cadence_mean'):
+def plotCadence(band, Li_files, mag_to_flux_files, SNR, metricValues, names_ref, mag_range, dt_range, dbName, saveFig=False, display=True, m5_str='m5_mean', cadence_str='cadence_mean', web_path=''):
     """
     Main cadence plot
     Will display two plots: cadence plot and histogram of redshift limits
@@ -353,6 +360,8 @@ def plotCadence(band, Li_files, mag_to_flux_files, SNR, metricValues, names_ref,
     m5_str : m5 value (float)
     cadence_str : cadence value(float)
     zlim_name_ref : redshift limit for name_ref (float)
+    web_path: str,opt
+      url where files requested to run can be loaded from (default: '')
 
     """
 
@@ -368,7 +377,7 @@ def plotCadence(band, Li_files, mag_to_flux_files, SNR, metricValues, names_ref,
     res = metricValues
     lim_sn = Lims(Li_files, mag_to_flux_files,
                   band, SNR, mag_range=mag_range,
-                  dt_range=dt_range)
+                  dt_range=dt_range, web_path=web_path)
 
     if display:
         lim_sn.plotCadenceMetric(res, dbName=dbName, saveFig=saveFig)
@@ -546,7 +555,7 @@ def plotViewIndiv(nside, tab, xval, legx, unitx, minx, maxx, band, dbName, saveF
                     title=leg, nest=True, hold=True)
         hp.graticule()
     if type == 'cartview':
-        #fig,ax = plt.subplots()
+        # fig,ax = plt.subplots()
         lonra = [-180., 180.]
         latra = [-90., 90.]
         if fieldzoom is not None:
@@ -557,10 +566,10 @@ def plotViewIndiv(nside, tab, xval, legx, unitx, minx, maxx, band, dbName, saveF
         hp.cartview(hpxmap, min=minx, max=maxx, cmap=cmap,
                     title=leg, nest=True, lonra=lonra, latra=latra)
 
-        #test = hp.cartview(hpxmap, return_projected_map=True,cmap=cmap, title=leg, nest=True,hold=True,lonra=lonra,latra=latra)
+        # test = hp.cartview(hpxmap, return_projected_map=True,cmap=cmap, title=leg, nest=True,hold=True,lonra=lonra,latra=latra)
 
-        #test = hp.cartview(hpxmap, return_projected_map=True,nest=True,lonra=lonra,latra=latra)
-        #ax.imshow(test, origin='lower',extent=(lonra[0],lonra[1],latra[0],latra[1]), interpolation = 'none',cmap=cmap,vmin=10.)
+        # test = hp.cartview(hpxmap, return_projected_map=True,nest=True,lonra=lonra,latra=latra)
+        # ax.imshow(test, origin='lower',extent=(lonra[0],lonra[1],latra[0],latra[1]), interpolation = 'none',cmap=cmap,vmin=10.)
         # hp.graticule()
         # plt.xlim([lonra[0],lonra[1]])
 
@@ -653,16 +662,16 @@ def plotDDLoop(nside, dbNames, tabtot,
         print('hello', cadenceName.ljust(adjl))
         idx = (df['cadence'] == cadenceName.ljust(
             adjl)) & (df['nside'] == nside)
-        #idx = (tabtot['cadence'] == cadenceName)
-        #idx &= (tabtot['nside'] == nside)
+        # idx = (tabtot['cadence'] == cadenceName)
+        # idx &= (tabtot['nside'] == nside)
 
-        #plotDD(df[idx],'_'.join(cadenceName.split('_')[:2]), what, ax, markers[io],colors[io],mfc[io])
+        # plotDD(df[idx],'_'.join(cadenceName.split('_')[:2]), what, ax, markers[io],colors[io],mfc[io])
         tab = df[idx]
         ax.plot(tab['fieldnum'], tab[what],
                 marker=markers[io], color=colors[io], linestyle='None', mfc=mfc[io], label=cadenceName, ms=10)
     ax.set_ylabel(legx, fontsize=fontsize)
     ax.tick_params(labelsize=fontsize)
-    #fields = getFields(0.)
+    # fields = getFields(0.)
     plt.xticks(fields['fieldnum'], fields['name'], fontsize=fontsize)
     # plt.legend(fontsize=fontsize)
     ax.legend(loc='upper center', bbox_to_anchor=(1.15, 0.8),
@@ -670,7 +679,7 @@ def plotDDLoop(nside, dbNames, tabtot,
 
 
 def plotDDCadence_barh(tabtot,
-                     what, legx,bands=['all'],fields=['COSMOS'],scale=1):
+                       what, legx, bands=['all'], fields=['COSMOS'], scale=1):
     """
     Loop of plots for DDF
 
@@ -700,7 +709,7 @@ def plotDDCadence_barh(tabtot,
 
     dfa = pd.DataFrame(np.copy(tabtot))
 
-    df = dfa.groupby(['cadence', 'fieldname','filter']).median().reset_index()
+    df = dfa.groupby(['cadence', 'fieldname', 'filter']).median().reset_index()
 
     df['cadence'] = df['cadence'].map(lambda x: '_'.join(x.split('_')[:4]))
 
@@ -709,14 +718,14 @@ def plotDDCadence_barh(tabtot,
         sela = df[idf]
         for b in bands:
             fig, ax = plt.subplots(figsize=(9, 5))
-            fig.suptitle('{} - {} band'.format(fieldname,b))
+            fig.suptitle('{} - {} band'.format(fieldname, b))
             idfb = sela['filter'] == b
             sel = sela[idfb]
             sel = sel.sort_values(by=what)
             ax.barh(sel['cadence'], sel[what]/scale)
             ax.set_xlabel(r'{}'.format(legx), fontsize=fontsize)
             ax.tick_params(axis='y', labelsize=fontsize-5.)
-        
+
 
 def plotDDCorrel(tab, cadenceName, whatx, whaty, ax, marker, color, mfc):
     """
@@ -840,8 +849,8 @@ def plotDDLoopCorrel(nside, dbNames, tabtot,
     ax.set_xlabel(legx, fontsize=fontsize)
     ax.set_ylabel(legy, fontsize=fontsize)
     ax.tick_params(labelsize=fontsize)
-    #fields = getFields(0.)
-    #plt.xticks(fields['fieldnum'], fields['fieldname'], fontsize=fontsize)
+    # fields = getFields(0.)
+    # plt.xticks(fields['fieldnum'], fields['fieldname'], fontsize=fontsize)
     # plt.legend(fontsize=fontsize)
     # ax.legend(loc='upper center', bbox_to_anchor=(0.8, 1.15),
     #          ncol=1, fancybox=True, shadow=True, fontsize=15)
