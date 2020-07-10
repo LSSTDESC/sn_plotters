@@ -530,6 +530,7 @@ def plotViewIndiv(nside, tab, xval, legx, unitx, minx, maxx, band, dbName, saveF
                 'all seasons', legx, np.round(med, 1), unitx)
 
     npix = hp.nside2npix(nside=nside)
+    norm = plt.cm.colors.Normalize(minx, maxx)
     cmap = plt.cm.jet
 
     cmap.set_under('w')
@@ -552,7 +553,7 @@ def plotViewIndiv(nside, tab, xval, legx, unitx, minx, maxx, band, dbName, saveF
     plt.axes(ax)
     if type == 'mollview':
         hp.mollview(hpxmap, min=minx, max=maxx, cmap=cmap,
-                    title=leg, nest=True, hold=True)
+                    title=leg, nest=True, norm=norm)
         hp.graticule()
     if type == 'cartview':
         # fig,ax = plt.subplots()
