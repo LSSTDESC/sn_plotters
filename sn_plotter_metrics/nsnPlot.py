@@ -86,14 +86,14 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint'):
     # plot the results
 
     # per field and per season
-    Plot_NSN(summary_fields_seasons, forPlot, sntype=sntype)
+    plotNSN(summary_fields_seasons, forPlot, sntype=sntype)
     # per field, for all seasons
-    Plot_NSN(summary_fields, forPlot, sntype=sntype)
+    plotNSN(summary_fields, forPlot, sntype=sntype)
     # Summary plot: one (NSN,zlim) per cadence (sum for NSN, median zlim over the fields/seasons)
-    Plot_NSN(summary, forPlot, sntype=sntype)
+    plotNSN(summary, forPlot, sntype=sntype)
 
 
-def Plot_NSN(summary, forPlot, sntype='faint'):
+def plotNSN(summary, forPlot, sntype='faint'):
     """
     Plot NSN vs redshift limit
 

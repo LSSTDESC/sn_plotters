@@ -757,6 +757,15 @@ def plotDDCorrel(tab, cadenceName, whatx, whaty, ax, marker, color, mfc):
 
 
 def plotDDFit(tabtot, whatx, whaty, whatz='', whatzb=''):
+    """
+    Function to perform some linear fit for two variables
+
+    Parameters
+    --------------
+    whatx, whaty, whatz, whatzb: str
+     variables to fit
+
+    """
     # linear fit
     figb, axb = plt.subplots()
 
