@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='sn_plotters',
-    version='0.1',
+    version='v1.0.0',
     description='Set of tools used to display SN pipeline results',
     url='http://github.com/lsstdesc/sn_plotters',
     author='Philippe Gris',
