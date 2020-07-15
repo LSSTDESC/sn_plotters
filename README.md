@@ -26,6 +26,7 @@ All rights reserved.
 
  * **docs**
  * **\_\_init\_\_.py**
+ * **version.py**: package version
  * **LICENCE**
  * **setup.py**
  * [**sn_plotter_fitlc**](doc_package/plot_fitlc.md) : set of scripts to plot results from fit
@@ -51,19 +52,23 @@ All rights reserved.
 |   |-- make.bat
 |   |-- Makefile
 |-- __init__.py
+|-- version.py
 |-- LICENCE
 |-- README.md
 |-- setup.py
 |-- sn_plotter_fitlc
 |   |-- fitlcPlot.py
 |   |-- __init__.py
+|   |-- version.py
 |-- sn_plotter_metrics
 |   |-- cadencePlot.py
 |   |-- globalPlot.py
 |   |-- __init__.py
 |   |-- nsnPlot.py
 |   |-- snrPlot.py
+|   |-- version.py
 |-- sn_plotter_simu
     |-- __init__.py
     |-- simuPlot.py
+    |-- version.py
 ```
