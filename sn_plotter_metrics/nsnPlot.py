@@ -425,3 +425,38 @@ class NSNAnalysis:
         hp.mollview(hpxmap, min=xmin, max=xmax, cmap=cmap,
                     title=title, nest=True, norm=norm)
         hp.graticule()
+
+    def plotCorrel(self, datax, datay, x=('', ''), y=('', '')):
+        """
+        Method for 2D plots
+
+        Parameters
+        ---------------
+        datax: pandas df
+          data used to display - x-axis
+        datay: pandas df
+          data used to display - y-axis
+        x : tuple(str)
+          tuple for the x-axis variable
+          the first value is the colname in self.data
+          the second value is the x-axis corresponding legend
+         y : tuple(str)
+          tuple for the y-axis variable
+          the first value is the colname in self.data
+          the second value is the y-axis corresponding legend
+
+        """
+        from scipy.stats import pearsonr
+        fig, ax = plt.subplots()
+        fig.suptitle(self.dbInfo['dbName'])
+
+        varx = datax[x[0]]
+        vary = datay[y[0]]
+        ax.plot(varx, vary, 'k.')
+        corr, _ = pearsonr(varx, vary)
+        print('Pearsons correlation: %.3f' % corr)
+        cov = np.cov(varx, vary)
+        print('Covariance matrix', cov)
+
+        ax.set_xlabel(x[1])
+        ax.set_ylabel(y[1])
