@@ -265,6 +265,7 @@ class NSNAnalysis:
         resdf['cadence'] = [med_meds['cadence']]
         for b in 'ugrizy':
             resdf['cadence_{}'.format(b)] = [med_meds['cadence_{}'.format(b)]]
+            resdf['Nvisits_{}'.format(b)] = [med_meds['cadence_{}'.format(b)]]
 
         return resdf
 
