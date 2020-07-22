@@ -246,7 +246,15 @@ class NSNAnalysis:
         nsn, sig_nsn = self.nSN_tot()
         nsn_extrapol = int(np.round(nsn*self.ratiopixels))
 
-        resdf = pd.DataFrame([zlim], columns=['zlim'])
+        for b in 'ugrizy':
+            self.data['cadence_{}'.format(
+                b)] = self.data['season_length']/self.data['Nvisits_{}'.format(b)]
+
+        meds = self.data.groupby(['healpixID']).median().reset_index()
+        meds = meds.round({'zlim': 2})
+        med_meds = meds.median()
+
+        resdf = pd.DataFrame([med_meds['zlim']], columns=['zlim'])
         resdf['nsn'] = [nsn]
         resdf['sig_nsn'] = [sig_nsn]
         resdf['nsn_extra'] = [nsn_extrapol]
@@ -254,6 +262,9 @@ class NSNAnalysis:
         resdf['plotName'] = self.dbInfo['plotName']
         resdf['color'] = self.dbInfo['color']
         resdf['marker'] = self.dbInfo['marker']
+        resdf['cadence'] = [med_meds['cadence']]
+        for b in 'ugrizy':
+            resdf['cadence_{}'.format(b)] = [med_meds['cadence_{}'.format(b)]]
 
         return resdf
 
