@@ -48,11 +48,38 @@ class PlotHist:
         for dbName in np.unique(self.data['dbName']):
             idx = self.data['dbName'] == dbName
             sel = self.data[idx]
-            ax.hist(sel[plotstr], histtype='step', lw=2, label=dbName)
+            ax.hist(sel[plotstr], histtype='step', lw=2,
+                    label=dbName)
 
         ax.legend(ncol=1, loc='best', prop={'size': 12}, frameon=True)
         ax.set_xlabel(legx)
         ax.set_ylabel(legy)
+
+    def plotBarh(self, plotstr, legx, legy='Number of Entries'):
+        """
+        Method to plot multiple histograms
+
+        Parameters
+        ---------------
+        plotstr: str
+        variable to plot
+        legx: str
+        x-axis legend
+        legy: str, opt
+        y-axis legend (default: Number of Entries)
+
+        """
+
+        fig, ax = plt.subplots()
+        for dbName in np.unique(self.data['dbName']):
+            idx = self.data['dbName'] == dbName
+            sel = self.data[idx]
+            print(sel.columns)
+            ax.barh(sel[plotstr], sel['dbName'], color=sel['color'])
+
+        #ax.legend(ncol=1, loc='best', prop={'size': 12}, frameon=True)
+        # ax.set_xlabel(legx)
+        # ax.set_ylabel(legy)
 
 
 class PlotTime:
@@ -75,8 +102,9 @@ class PlotTime:
         self.dbName = dbName
 
         # loading data
-        self.data = np.load(
-            '{}/{}/Global/{}_SNGlobal.npy'.format(dbDir, dbName, dbName))
+        search_path = '{}/{}/Global/{}_SNGlobal.npy'.format(
+            dbDir, dbName, dbName)
+        self.data = np.load(search_path)
 
         # get marker for display
         idx = forPlot['dbName'] == dbName
