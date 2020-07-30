@@ -252,8 +252,19 @@ class NSNAnalysis:
         nsn_extrapol = int(np.round(nsn*self.ratiopixels))
 
         for b in 'grizy':
+            tt=[]
+            for vv in self.data.columns:
+                if 'N_' in vv and b in vv:
+                    tt.append(vv)
+            self.data['N_{}_tot'.format(b)] = self.data[tt].sum(axis=1)
+            print(self.data[tt])
+            print('sum',self.data['N_{}_tot'.format(b)])
+
+        
+        
+        for b in 'grizy':
             self.data['cadence_{}'.format(
-                b)] = self.data['season_length']/(self.data['N_{}'.format(b)])
+                b)] = self.data['season_length']/(self.data['N_{}_tot'.format(b)])
 
         meds = self.data.groupby(['healpixID']).median().reset_index()
         meds = meds.round({'zlim_{}'.format(self.sntype): 2})
@@ -269,15 +280,20 @@ class NSNAnalysis:
         resdf['marker'] = self.dbInfo['marker']
         resdf['cadence'] = [med_meds['cadence']]
         resdf['N_total'] = [med_meds['N_total'.format(b)]]
+        
         for ba in 'grizy':
+            
             resdf['cadence_{}'.format(ba)] = [med_meds['cadence_{}'.format(ba)]]
+            resdf['N_{}_tot'.format(ba)] = [med_meds['N_{}_tot'.format(ba)]]
             resdf['N_{}'.format(ba)] = [med_meds['N_{}'.format(ba)]/resdf['N_total']]
             for bb in 'grizy':
+                combi=''.join(sorted('{}{}'.format(ba,bb)))
                 #resdf['cadence_{}{}'.format(ba,bb)] = [med_meds['cadence_{}{}'.format(ba,bb)]]
-                resdf['N_{}{}'.format(ba,bb)] = [med_meds['N_{}{}'.format(ba,bb)]/resdf['N_total']] 
+                resdf['N_{}'.format(combi)] = [med_meds['N_{}'.format(combi)]/resdf['N_total']] 
                 for bc in 'grizy':
+                    combi=''.join(sorted('{}{}{}'.format(ba,bb,bc)))
                     #resdf['cadence_{}{}{}'.format(ba,bb,bc)] = [med_meds['cadence_{}{}{}'.format(ba,bb,bc)]]
-                    resdf['N_{}{}{}'.format(ba,bb,bc)] = [med_meds['N_{}{}{}'.format(ba,bb,bb,bc)]/resdf['N_total']]
+                    resdf['N_{}'.format(combi)] = [med_meds['N_{}'.format(combi)]/resdf['N_total']]
        
 
         return resdf
