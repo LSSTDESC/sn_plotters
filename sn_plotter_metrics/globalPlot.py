@@ -20,14 +20,18 @@ class PlotHist:
     def __init__(self, dbDir, forPlot):
 
         self.data = pd.DataFrame()
-        for dbName in forPlot['dbName']:
+        for i,row in forPlot.iterrows():
+            dbName = row['dbName']
+            color = row['color']
             tab = np.load(
                 '{}/{}/Global/{}_SNGlobal.npy'.format(dbDir, dbName, dbName))
             df = pd.DataFrame(tab)
-            df['dbName'] = dbName
+            dbName_new = dbName.split('_10yrs')[0]
+            df['dbName'] = dbName_new
+            df['color'] = color
             self.data = pd.concat((self.data, df))
 
-        print(self.data)
+        print('alors',self.data,self.data.columns)
 
     def plot(self, plotstr, legx, legy='Number of Entries'):
         """
@@ -45,11 +49,14 @@ class PlotHist:
         """
 
         fig, ax = plt.subplots()
+        bins = np.arange(22.,27.,0.1)
         for dbName in np.unique(self.data['dbName']):
             idx = self.data['dbName'] == dbName
             sel = self.data[idx]
+            #ib = sel[plotstr]>=0.
+            print(dbName,sel[plotstr])
             ax.hist(sel[plotstr], histtype='step', lw=2,
-                    label=dbName)
+                    label=dbName,density=True)
 
         ax.legend(ncol=1, loc='best', prop={'size': 12}, frameon=True)
         ax.set_xlabel(legx)
@@ -71,14 +78,17 @@ class PlotHist:
         """
 
         fig, ax = plt.subplots()
+        meds = self.data.groupby(['dbName']).median().reset_index()
+        ax.barh(meds['dbName'],meds[plotstr])
+        """
         for dbName in np.unique(self.data['dbName']):
             idx = self.data['dbName'] == dbName
             sel = self.data[idx]
-            print(sel.columns)
-            ax.barh(sel[plotstr], sel['dbName'], color=sel['color'])
-
-        #ax.legend(ncol=1, loc='best', prop={'size': 12}, frameon=True)
-        # ax.set_xlabel(legx)
+            print('hhhh',sel.columns)
+            ax.barh(sel['dbName'],sel[plotstr])
+        """
+        ax.legend(ncol=1, loc='best', prop={'size': 12}, frameon=True)
+        ax.set_xlabel(legx)
         # ax.set_ylabel(legy)
 
 
@@ -168,22 +178,44 @@ class PlotStat:
         self.config = forPlot
         # first: estimate stats
         r = []
+        res = pd.DataFrame()
         for dbName in forPlot['dbName']:
             tab = np.load(
                 '{}/{}/Global/{}_SNGlobal.npy'.format(dbDir, dbName, dbName))
             #rint = [dbName, np.median(tab['nfc']), np.median(tab['obs_area'])]
-            rint = [dbName, np.median(tab['nfc'])]
+            df = pd.DataFrame(tab)
+            df = df.mask(df < 0)
+            df['dbName'] = dbName.split('_10yrs')[0]
+            print(dbName,np.nanmedian(df['med_fiveSigmaDepth_i']))
+            meds = df.groupby('dbName').median().reset_index()
+
+            #print('alors',meds['med_fiveSigmaDepth_g'])
+            sums = df.groupby('dbName').sum().reset_index()
+            vv = ['dbName']
+            for band in 'ugrizy':
+                vv.append('frac_{}'.format(band))
+                sums['frac_{}'.format(band)] = sums['nvisits_{}'.format(band)] /sums['nvisits']
+
+            
+            meds = meds.merge(sums[vv], left_on=['dbName'], right_on=['dbName'])
+
+            #print('test',meds['med_fiveSigmaDepth_g'])
+            res = pd.concat((res,meds))
+            
+            """    
+            dbName_new = dbName.split('_10yrs')[0]
+            rint = [dbName_new, np.median(tab['nfc_noddf']),np.median(tab['nfc']),]
             #names = ['dbName', 'nfc_med', 'obs_area_med']
-            names = ['dbName', 'nfc_med']
+            names = ['dbName', 'nfc_noddf_med','nfc_med']
             for band in 'ugrizy':
                 rint += [np.sum(tab['nvisits_{}'.format(band)]) /
                          np.sum(tab['nvisits'])]
                 names += ['frac_{}'.format(band)]
             r.append((rint))
-
+            """
         # results stored in a record array
-        self.data = np.rec.fromrecords(r, names=names)
-
+        #self.data = np.rec.fromrecords(r, names=names)
+        self.data = res.to_records(index=False)
     def listvar(self):
         """
         Method to list the columns of self.data
@@ -191,7 +223,7 @@ class PlotStat:
         """
         print(self.data.dtype.names)
 
-    def plotBarh(self, plotstr, title):
+    def plotBarh(self, plotstr, title,xmin=0.05):
         """
         Method to display results as bar histogram
 
@@ -212,7 +244,7 @@ class PlotStat:
         ax.barh(myrange, self.data[plotstr])
 
         plt.yticks(myrange, self.data['dbName'])
-        xmin, xmax = ax.get_xlim()
-        ax.set_xlim([0.05, xmax])
+        xmina, xmax = ax.get_xlim()
+        ax.set_xlim([xmin, xmax])
         plt.grid(axis='x')
         plt.tight_layout()

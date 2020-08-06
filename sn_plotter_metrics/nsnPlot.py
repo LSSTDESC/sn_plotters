@@ -223,11 +223,13 @@ class NSNAnalysis:
 
         """
         metricValues = np.array(loopStack(fileNames, 'astropyTable'))
-        
-        df = pd.DataFrame(np.copy(metricValues))
 
+        """
+        df = pd.DataFrame(np.copy(metricValues))
+        df = df.applymap(lambda x: x.decode() if isinstance(x, bytes) else x)
         #self.data = df.loc[:,~df.columns.str.contains('mask', case=False)]
-       
+       """
+        
         idx = metricValues['status_{}'.format(self.sntype)] == 1
         # idx &= metricValues['healpixID'] >= 48000
         # idx &= metricValues['healpixID'] <= 49000
@@ -238,6 +240,7 @@ class NSNAnalysis:
         # self.plot_season(metricValues[idx], varName='nsn_med')
        
         self.data = pd.DataFrame(metricValues[idx])
+        self.data = self.data.applymap(lambda x: x.decode() if isinstance(x, bytes) else x)
         print('data', self.data[['healpixID', 'pixRA', 'pixDec', 'zlim_{}'.format(self.sntype),
                                  'nsn_med_{}'.format(self.sntype), 'nsn', 'season']], self.data.columns)
         print(len(np.unique(self.data[['healpixID', 'season']])))
@@ -251,6 +254,7 @@ class NSNAnalysis:
         nsn, sig_nsn = self.nSN_tot()
         nsn_extrapol = int(np.round(nsn*self.ratiopixels))
 
+        test = self.data.apply(lambda x: self.ana_filters(x),axis=1,result_type='expand')
         for b in 'grizy':
             tt=[]
             for vv in self.data.columns:
@@ -298,6 +302,26 @@ class NSNAnalysis:
 
         return resdf
 
+    def ana_filters(self,grp):
+        
+        print('io',grp['N_filters_night'])
+        filter_night = grp['N_filters_night'].split('/')
+        print(filter_night)
+        r = []
+        for vv in filter_night:
+            if vv != '':
+                vs = vv.split('*')
+                print('what',vs)
+                r.append((int(vs[0]),vs[1]))
+
+        print(r)
+        res = pd.DataFrame(r, columns=['Nvisits','filter'])
+
+        print(res['Nvisits'].sum(),grp['N_total'])
+        
+        
+        return pd.DataFrame({'test':grp})
+    
     def plot_season(self, metricValues, varName='status', op=np.sum):
         """
         Method to plot seasonal results
