@@ -29,6 +29,7 @@ class PlotHist:
             dbName_new = dbName.split('_10yrs')[0]
             df['dbName'] = dbName_new
             df['color'] = color
+            df['nights'] = len(tab)
             self.data = pd.concat((self.data, df))
 
         print('alors',self.data,self.data.columns)
@@ -184,21 +185,25 @@ class PlotStat:
                 '{}/{}/Global/{}_SNGlobal.npy'.format(dbDir, dbName, dbName))
             #rint = [dbName, np.median(tab['nfc']), np.median(tab['obs_area'])]
             df = pd.DataFrame(tab)
+            
             df = df.mask(df < 0)
             df['dbName'] = dbName.split('_10yrs')[0]
-            print(dbName,np.nanmedian(df['med_fiveSigmaDepth_i']))
+            df['obs_nights'] = len(tab)
+            df['survey_length'] = np.max(tab['night'])-np.min(tab['night'])
+            #print(dbName,np.nanmedian(df['med_fiveSigmaDepth_i']))
             meds = df.groupby('dbName').median().reset_index()
 
-            #print('alors',meds['med_fiveSigmaDepth_g'])
+            #print('alors',meds['nvisits_u'])
             sums = df.groupby('dbName').sum().reset_index()
             vv = ['dbName']
             for band in 'ugrizy':
                 vv.append('frac_{}'.format(band))
+                vv.append('nvisits_{}'.format(band))
                 sums['frac_{}'.format(band)] = sums['nvisits_{}'.format(band)] /sums['nvisits']
-
+                
+            vv.append('nvisits')
+            meds = meds.merge(sums[vv], left_on=['dbName'], right_on=['dbName'],suffixes=['','_sum'])
             
-            meds = meds.merge(sums[vv], left_on=['dbName'], right_on=['dbName'])
-
             #print('test',meds['med_fiveSigmaDepth_g'])
             res = pd.concat((res,meds))
             
@@ -236,15 +241,20 @@ class PlotStat:
 
         """
         self.data.sort(order=plotstr)
-        #fig, ax = plt.subplots(figsize=(12,10))
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=(12,5))
+        fig.subplots_adjust(top=0.9,left=0.3)
+        #fig, ax = plt.subplots()
         fig.suptitle(title)
 
         myrange = np.arange(len(self.data))
         ax.barh(myrange, self.data[plotstr])
 
+        for row in self.data:
+            print(plotstr,row[['dbName',plotstr]])
         plt.yticks(myrange, self.data['dbName'])
         xmina, xmax = ax.get_xlim()
+        xmax = 1.03*np.max(self.data[plotstr])
         ax.set_xlim([xmin, xmax])
         plt.grid(axis='x')
-        plt.tight_layout()
+        #plt.tight_layout()
+        plt.savefig('Plots/{}.png'.format(plotstr))
