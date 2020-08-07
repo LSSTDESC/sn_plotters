@@ -188,8 +188,11 @@ class NSNAnalysis:
 
         self.nside = nside
         self.npixels = npixels
-        self.x1 = x1
-        self.color = color
+
+        self.sntype = 'faint'
+        if x1==0. and color==0.:
+            self.sntype='medium'
+        
         self.dbInfo = dbInfo
 
         # loading data (metric values)
@@ -220,21 +223,26 @@ class NSNAnalysis:
 
         """
         metricValues = np.array(loopStack(fileNames, 'astropyTable'))
-        idx = np.abs(metricValues['x1']-self.x1) < 1.e-6
-        idx &= np.abs(metricValues['color']-self.color) < 1.e-6
-        print(np.unique(metricValues['status']))
-        idx &= metricValues['status'] == 1
+
+        """
+        df = pd.DataFrame(np.copy(metricValues))
+        df = df.applymap(lambda x: x.decode() if isinstance(x, bytes) else x)
+        #self.data = df.loc[:,~df.columns.str.contains('mask', case=False)]
+       """
+        
+        idx = metricValues['status_{}'.format(self.sntype)] == 1
         # idx &= metricValues['healpixID'] >= 48000
         # idx &= metricValues['healpixID'] <= 49000
 
-        idx &= metricValues['zlim'] > 0.
-        idx &= metricValues['nsn_med'] > 0.
+        idx &= metricValues['zlim_{}'.format(self.sntype)] > 0.
+        idx &= metricValues['nsn_med_{}'.format(self.sntype)] > 0.
 
         # self.plot_season(metricValues[idx], varName='nsn_med')
+       
         self.data = pd.DataFrame(metricValues[idx])
-
-        print('data', self.data[['healpixID', 'pixRA', 'pixDec', 'x1', 'color', 'zlim',
-                                 'nsn_med', 'nsn', 'season']], self.data.columns)
+        self.data = self.data.applymap(lambda x: x.decode() if isinstance(x, bytes) else x)
+        print('data', self.data[['healpixID', 'pixRA', 'pixDec', 'zlim_{}'.format(self.sntype),
+                                 'nsn_med_{}'.format(self.sntype), 'nsn', 'season']], self.data.columns)
         print(len(np.unique(self.data[['healpixID', 'season']])))
         self.ratiopixels = 1
         self.npixels_eff = len(self.data['healpixID'].unique())
@@ -242,19 +250,33 @@ class NSNAnalysis:
             self.ratiopixels = float(
                 npixels)/float(self.npixels_eff)
 
-        zlim = self.zlim_med()
+        #zlim = self.zlim_med()
         nsn, sig_nsn = self.nSN_tot()
         nsn_extrapol = int(np.round(nsn*self.ratiopixels))
 
-        for b in 'ugrizy':
-            self.data['cadence_{}'.format(
-                b)] = self.data['season_length']/self.data['Nvisits_{}'.format(b)]
+        """
+        test = self.data.apply(lambda x: self.ana_filters(x),axis=1,result_type='expand')
+        for b in 'grizy':
+            tt=[]
+            for vv in self.data.columns:
+                if 'N_' in vv and b in vv:
+                    tt.append(vv)
+            self.data['N_{}_tot'.format(b)] = self.data[tt].sum(axis=1)
+            print(self.data[tt])
+            print('sum',self.data['N_{}_tot'.format(b)])
 
+        """
+        bandstat = ['u','g','r','i','z','y','gr','gi','gz','iz','uu','gg','rr','ii','zz','yy']
+        
+        for b in bandstat:
+            self.data['cadence_{}'.format(
+                b)] = self.data['season_length']/self.data['N_{}'.format(b)]
+            
         meds = self.data.groupby(['healpixID']).median().reset_index()
-        meds = meds.round({'zlim': 2})
+        meds = meds.round({'zlim_{}'.format(self.sntype): 2})
         med_meds = meds.median()
 
-        resdf = pd.DataFrame([med_meds['zlim']], columns=['zlim'])
+        resdf = pd.DataFrame([med_meds['zlim_{}'.format(self.sntype)]], columns=['zlim'])
         resdf['nsn'] = [nsn]
         resdf['sig_nsn'] = [sig_nsn]
         resdf['nsn_extra'] = [nsn_extrapol]
@@ -263,12 +285,47 @@ class NSNAnalysis:
         resdf['color'] = self.dbInfo['color']
         resdf['marker'] = self.dbInfo['marker']
         resdf['cadence'] = [med_meds['cadence']]
-        for b in 'ugrizy':
+        resdf['season_length'] = [med_meds['season_length']]
+        resdf['N_total'] = [med_meds['N_total']]
+        
+        for b in bandstat:
+            resdf['N_{}'.format(b)] = [med_meds['N_{}'.format(b)]]
             resdf['cadence_{}'.format(b)] = [med_meds['cadence_{}'.format(b)]]
-            resdf['Nvisits_{}'.format(b)] = [med_meds['cadence_{}'.format(b)]]
+            """
+            resdf['N_{}_tot'.format(ba)] = [med_meds['N_{}_tot'.format(ba)]]
+            resdf['N_{}'.format(ba)] = [med_meds['N_{}'.format(ba)]/resdf['N_total']]
+            for bb in 'grizy':
+                combi=''.join(sorted('{}{}'.format(ba,bb)))
+                #resdf['cadence_{}{}'.format(ba,bb)] = [med_meds['cadence_{}{}'.format(ba,bb)]]
+                resdf['N_{}'.format(combi)] = [med_meds['N_{}'.format(combi)]/resdf['N_total']] 
+                for bc in 'grizy':
+                    combi=''.join(sorted('{}{}{}'.format(ba,bb,bc)))
+                    #resdf['cadence_{}{}{}'.format(ba,bb,bc)] = [med_meds['cadence_{}{}{}'.format(ba,bb,bc)]]
+                    resdf['N_{}'.format(combi)] = [med_meds['N_{}'.format(combi)]/resdf['N_total']]
+            """
 
         return resdf
 
+    def ana_filters(self,grp):
+        
+        print('io',grp['N_filters_night'])
+        filter_night = grp['N_filters_night'].split('/')
+        print(filter_night)
+        r = []
+        for vv in filter_night:
+            if vv != '':
+                vs = vv.split('*')
+                print('what',vs)
+                r.append((int(vs[0]),vs[1]))
+
+        print(r)
+        res = pd.DataFrame(r, columns=['Nvisits','filter'])
+
+        print(res['Nvisits'].sum(),grp['N_total'])
+        
+        
+        return pd.DataFrame({'test':grp})
+    
     def plot_season(self, metricValues, varName='status', op=np.sum):
         """
         Method to plot seasonal results
@@ -333,7 +390,7 @@ class NSNAnalysis:
 
         sums['nsn_med'] = sums['nsn_med'].astype(int)
         """
-        return sums['nsn_med'].sum(), int(np.sqrt(sums['err_nsn_med'].sum()))
+        return sums['nsn_med_{}'.format(self.sntype)].sum(), int(np.sqrt(sums['err_nsn_med_{}'.format(self.sntype)].sum()))
 
     def Mollview_median(self, var='zlim', legvar='zlimit'):
         """
@@ -438,6 +495,12 @@ class NSNAnalysis:
                     title=title, nest=True, norm=norm)
         hp.graticule()
 
+        # save plot here
+        name = leg.replace(' - ','_')
+        name = name.replace(' ','_')
+
+        plt.savefig('Plots_pixels/Moll_{}.png'.format(name))
+        
     def plotCorrel(self, datax, datay, x=('', ''), y=('', '')):
         """
         Method for 2D plots

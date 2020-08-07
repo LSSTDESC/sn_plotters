@@ -79,7 +79,7 @@ class FitPlots:
         ax.grid()
         ax.set_xlabel(legx)
         ax.set_ylabel(legy)
-        ax.set_ylim([0., 0.08])
+        ax.set_ylim([0., 0.12])
         ax.set_xlim([0.01, 1.])
         ax.legend(loc='upper left')
 
