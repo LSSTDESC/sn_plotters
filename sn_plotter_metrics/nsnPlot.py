@@ -254,6 +254,7 @@ class NSNAnalysis:
         nsn, sig_nsn = self.nSN_tot()
         nsn_extrapol = int(np.round(nsn*self.ratiopixels))
 
+        """
         test = self.data.apply(lambda x: self.ana_filters(x),axis=1,result_type='expand')
         for b in 'grizy':
             tt=[]
@@ -264,12 +265,13 @@ class NSNAnalysis:
             print(self.data[tt])
             print('sum',self.data['N_{}_tot'.format(b)])
 
+        """
+        bandstat = ['u','g','r','i','z','y','gr','gi','gz','iz','uu','gg','rr','ii','zz','yy']
         
-        
-        for b in 'grizy':
+        for b in bandstat:
             self.data['cadence_{}'.format(
-                b)] = self.data['season_length']/(self.data['N_{}_tot'.format(b)])
-
+                b)] = self.data['season_length']/self.data['N_{}'.format(b)]
+            
         meds = self.data.groupby(['healpixID']).median().reset_index()
         meds = meds.round({'zlim_{}'.format(self.sntype): 2})
         med_meds = meds.median()
@@ -283,11 +285,13 @@ class NSNAnalysis:
         resdf['color'] = self.dbInfo['color']
         resdf['marker'] = self.dbInfo['marker']
         resdf['cadence'] = [med_meds['cadence']]
-        resdf['N_total'] = [med_meds['N_total'.format(b)]]
+        resdf['season_length'] = [med_meds['season_length']]
+        resdf['N_total'] = [med_meds['N_total']]
         
-        for ba in 'grizy':
-            
-            resdf['cadence_{}'.format(ba)] = [med_meds['cadence_{}'.format(ba)]]
+        for b in bandstat:
+            resdf['N_{}'.format(b)] = [med_meds['N_{}'.format(b)]]
+            resdf['cadence_{}'.format(b)] = [med_meds['cadence_{}'.format(b)]]
+            """
             resdf['N_{}_tot'.format(ba)] = [med_meds['N_{}_tot'.format(ba)]]
             resdf['N_{}'.format(ba)] = [med_meds['N_{}'.format(ba)]/resdf['N_total']]
             for bb in 'grizy':
@@ -298,7 +302,7 @@ class NSNAnalysis:
                     combi=''.join(sorted('{}{}{}'.format(ba,bb,bc)))
                     #resdf['cadence_{}{}{}'.format(ba,bb,bc)] = [med_meds['cadence_{}{}{}'.format(ba,bb,bc)]]
                     resdf['N_{}'.format(combi)] = [med_meds['N_{}'.format(combi)]/resdf['N_total']]
-       
+            """
 
         return resdf
 
@@ -491,6 +495,12 @@ class NSNAnalysis:
                     title=title, nest=True, norm=norm)
         hp.graticule()
 
+        # save plot here
+        name = leg.replace(' - ','_')
+        name = name.replace(' ','_')
+
+        plt.savefig('Plots_pixels/Moll_{}.png'.format(name))
+        
     def plotCorrel(self, datax, datay, x=('', ''), y=('', '')):
         """
         Method for 2D plots

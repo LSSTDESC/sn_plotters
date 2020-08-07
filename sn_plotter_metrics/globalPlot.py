@@ -63,6 +63,39 @@ class PlotHist:
         ax.set_xlabel(legx)
         ax.set_ylabel(legy)
 
+
+    def plotCumulative(self,plotstr,leg,legx,years=[1]):
+        """
+        Method to plot the cumulative of plotstr variable for the list of years
+
+        Parameters
+        --------------
+        plotstr: str
+          variable to plot
+        years: list(int),opt
+          years to consider for plotting (default: 1)
+
+        """
+
+        fig, ax = plt.subplots(figsize=(14,8))
+        fig.suptitle(leg)
+        for year in years:
+            idx = self.data['night'] >= 365.*(year-1)
+            idx &= self.data['night'] <365.*year
+            sel = self.data[idx]
+            for dbName in np.unique(sel['dbName']):
+                idxb = sel['dbName'] == dbName
+                selb = sel[idxb]
+                print(selb.columns)
+                t0 = np.min(selb['night'])
+                ax.plot(selb['night']-t0,np.cumsum(selb[plotstr]),label=dbName)
+
+        ax.legend()
+        ax.set_xlabel('night')
+        ax.set_ylabel(legx)
+
+        plt.savefig('Plots/{}_cumul.png'.format(plotstr))
+        
     def plotBarh(self, plotstr, legx, legy='Number of Entries'):
         """
         Method to plot multiple histograms
