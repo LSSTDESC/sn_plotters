@@ -188,6 +188,7 @@ class NSNAnalysis:
 
         self.nside = nside
         self.npixels = npixels
+        self.pixel_area = hp.nside2pixarea(nside,degrees=True)
 
         self.sntype = 'faint'
         if x1==0. and color==0.:
@@ -287,6 +288,8 @@ class NSNAnalysis:
         resdf['cadence'] = [med_meds['cadence']]
         resdf['season_length'] = [med_meds['season_length']]
         resdf['N_total'] = [med_meds['N_total']]
+        resdf['survey_area'] = self.npixels_eff*self.pixel_area
+        resdf['nsn_per_sqdeg'] =  resdf['nsn']/resdf['survey_area']
         
         for b in bandstat:
             resdf['N_{}'.format(b)] = [med_meds['N_{}'.format(b)]]
