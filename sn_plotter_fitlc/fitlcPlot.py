@@ -74,13 +74,13 @@ class FitPlots:
 
         fig, ax = plt.subplots()
 
-        self.plot2D_indiv(ax, tabs, varx, vary, compare=compare)
+        zlim_max = self.plot2D_indiv(ax, tabs, varx, vary, compare=compare)
 
         ax.grid()
         ax.set_xlabel(legx)
         ax.set_ylabel(legy)
         ax.set_ylim([0., 0.12])
-        ax.set_xlim([0.01, 1.])
+        ax.set_xlim([0.01, zlim_max+0.1])
         ax.legend(loc='upper left')
 
     def plot2D_indiv(self, ax, tabs, varx, vary, label='', color_cut=0.04, compare=False):
@@ -102,9 +102,14 @@ class FitPlots:
         color_cut: float,opt
            color cut to apply (default: 0.04)
 
+        Returns
+        ----------
+        zlim_max, float: max zlim value (use for scale display purposes)
+
         """
 
         dict_interp = {}
+        zlims = []
         for key, tab in tabs.items():
             idx = tab[vary] > 0
             sel = tab[idx]
@@ -116,6 +121,7 @@ class FitPlots:
                 sel[vary]), bounds_error=False, fill_value=0.)
 
             zlim = interp(color_cut)
+            zlims.append(zlim)
             ax.plot(sel[varx], np.sqrt(sel[vary]),
                     label='{} - zlim={}'.format(key, np.round(zlim, 2)))
 
@@ -151,3 +157,5 @@ class FitPlots:
             axb.set_ylabel('$\sigma_{Color}$ ratio')
             axb.set_ylim([0.95, 1.1])
             axb.set_xlim([0.01, 0.78])
+
+        return np.max(zlims)
