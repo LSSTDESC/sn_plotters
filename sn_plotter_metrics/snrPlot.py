@@ -126,7 +126,7 @@ def detecFracPlot(data, nside, names_ref):
     #data_heal = GetHealpix(data, nside)
     npix = hp.nside2npix(nside)
     xmin = 0.
-    xmax = 0.5
+    xmax = 1.0
     
     for band, season in np.unique(data[['band', 'season']]):
         idx = (data['band'] == band) & (data['season'] == season)
@@ -134,7 +134,7 @@ def detecFracPlot(data, nside, names_ref):
         for sim in names_ref:
             fig, ax = plt.subplots()
             hpxmap = np.zeros(npix, dtype=np.float)
-            hpxmap = np.full(hpxmap.shape, -1)
+            hpxmap = np.full(hpxmap.shape, -1.0)
             hpxmap[sel['healpixID'].astype(int)] = sel['frac_obs_'+sim]
             cmap = plt.cm.jet
             # cmap.Normalize(clip=True)
@@ -145,7 +145,7 @@ def detecFracPlot(data, nside, names_ref):
             #plt.axes(ax)
             plt.sca(ax)
             hp.mollview(hpxmap, min=xmin, max=xmax, cmap=cmap,nest=True,badcolor='white',norm=norm,
-                        title='{} - season {} \n median: {}'.format(band, int(season), np.round(median_value, 2)), hold=True)
+                        title='{} - season {} \n median: {}'.format(band, int(season), np.round(median_value, 2)),hold=True)
             hp.graticule()
 
 def detecFracHist(data, names_ref,saveFig=False):
