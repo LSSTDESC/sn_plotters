@@ -106,7 +106,7 @@ def SNRPlot(RA, Dec, season, data, data_fakes, config, metric, z, draw_fakes=Tru
         ax.text(0.9, 0.9, band, horizontalalignment='center',
                 verticalalignment='center', transform=ax.transAxes,
                 fontsize=fontsize)
-
+        
 
 def detecFracPlot(data, nside, names_ref):
     """
@@ -131,6 +131,10 @@ def detecFracPlot(data, nside, names_ref):
     for band, season in np.unique(data[['band', 'season']]):
         idx = (data['band'] == band) & (data['season'] == season)
         sel = data[idx]
+        npixels = len(sel)
+        if npixels < 19000:
+            continue
+        
         for sim in names_ref:
             fig, ax = plt.subplots()
             hpxmap = np.zeros(npix, dtype=np.float)
