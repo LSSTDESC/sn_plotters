@@ -158,7 +158,7 @@ def plotNSN(summary, forPlot, sntype='faint'):
 
 
 class NSNAnalysis:
-    def __init__(self, dbDir, dbInfo,
+    def __init__(self, dbInfo,
                  metricName='NSN', fieldType='WFD',
                  nside=64,
                  x1=-2.0, color=0.2, npixels=-1):
@@ -167,10 +167,8 @@ class NSNAnalysis:
 
         Parameters
         ---------------
-        dbDir: str
-          location directory where the files to process are
         dbInfo: pandas df
-          info from observing strategy (dbName, plotName, color, marker)
+          info from observing strategy (simutype, simuname,dbDir,dbName, , color, marker)
         metricName: str
           name of the metric used to generate the files
         fieldType: str, opt
@@ -188,17 +186,17 @@ class NSNAnalysis:
 
         self.nside = nside
         self.npixels = npixels
-        self.pixel_area = hp.nside2pixarea(nside,degrees=True)
+        self.pixel_area = hp.nside2pixarea(nside, degrees=True)
 
         self.sntype = 'faint'
-        if x1==0. and color==0.:
-            self.sntype='medium'
-        
+        if x1 == 0. and color == 0.:
+            self.sntype = 'medium'
+
         self.dbInfo = dbInfo
 
         # loading data (metric values)
         search_path = '{}/{}/{}/*NSNMetric_{}*_nside_{}_*.hdf5'.format(
-            dbDir, dbInfo['dbName'], metricName, fieldType, nside)
+            dbInfo['dirFile'], dbInfo['dbName'], metricName, fieldType, nside)
         print('looking for', search_path)
         fileNames = glob.glob(search_path)
         # fileName='{}/{}_CadenceMetric_{}.npy'.format(dirFile,dbName,band)
@@ -230,7 +228,7 @@ class NSNAnalysis:
         df = df.applymap(lambda x: x.decode() if isinstance(x, bytes) else x)
         #self.data = df.loc[:,~df.columns.str.contains('mask', case=False)]
        """
-        
+
         idx = metricValues['status_{}'.format(self.sntype)] == 1
         # idx &= metricValues['healpixID'] >= 48000
         # idx &= metricValues['healpixID'] <= 49000
@@ -239,9 +237,10 @@ class NSNAnalysis:
         idx &= metricValues['nsn_med_{}'.format(self.sntype)] > 0.
 
         # self.plot_season(metricValues[idx], varName='nsn_med')
-       
+
         self.data = pd.DataFrame(metricValues[idx])
-        self.data = self.data.applymap(lambda x: x.decode() if isinstance(x, bytes) else x)
+        self.data = self.data.applymap(
+            lambda x: x.decode() if isinstance(x, bytes) else x)
         print('data', self.data[['healpixID', 'pixRA', 'pixDec', 'zlim_{}'.format(self.sntype),
                                  'nsn_med_{}'.format(self.sntype), 'nsn', 'season']], self.data.columns)
         print(len(np.unique(self.data[['healpixID', 'season']])))
@@ -267,30 +266,34 @@ class NSNAnalysis:
             print('sum',self.data['N_{}_tot'.format(b)])
 
         """
-        bandstat = ['u','g','r','i','z','y','gr','gi','gz','iz','uu','gg','rr','ii','zz','yy']
-        
+        bandstat = ['u', 'g', 'r', 'i', 'z', 'y', 'gr', 'gi',
+                    'gz', 'iz', 'uu', 'gg', 'rr', 'ii', 'zz', 'yy']
+
         for b in bandstat:
             self.data['cadence_{}'.format(
                 b)] = self.data['season_length']/self.data['N_{}'.format(b)]
-            
+
         meds = self.data.groupby(['healpixID']).median().reset_index()
-        meds = meds.round({'zlim_{}'.format(self.sntype): 2})
+        meds = meds.round({'zlim_{}'.format(self.sntype): 5})
         med_meds = meds.median()
 
-        resdf = pd.DataFrame([med_meds['zlim_{}'.format(self.sntype)]], columns=['zlim'])
+        resdf = pd.DataFrame(
+            [med_meds['zlim_{}'.format(self.sntype)]], columns=['zlim'])
         resdf['nsn'] = [nsn]
         resdf['sig_nsn'] = [sig_nsn]
         resdf['nsn_extra'] = [nsn_extrapol]
         resdf['dbName'] = self.dbInfo['dbName']
-        resdf['plotName'] = self.dbInfo['plotName']
+        resdf['simuType'] = self.dbInfo['simuType']
+        resdf['simuNum'] = self.dbInfo['simuNum']
+        resdf['family'] = self.dbInfo['family']
         resdf['color'] = self.dbInfo['color']
         resdf['marker'] = self.dbInfo['marker']
         resdf['cadence'] = [med_meds['cadence']]
         resdf['season_length'] = [med_meds['season_length']]
         resdf['N_total'] = [med_meds['N_total']]
         resdf['survey_area'] = self.npixels_eff*self.pixel_area
-        resdf['nsn_per_sqdeg'] =  resdf['nsn']/resdf['survey_area']
-        
+        resdf['nsn_per_sqdeg'] = resdf['nsn']/resdf['survey_area']
+
         for b in bandstat:
             resdf['N_{}'.format(b)] = [med_meds['N_{}'.format(b)]]
             resdf['cadence_{}'.format(b)] = [med_meds['cadence_{}'.format(b)]]
@@ -309,26 +312,25 @@ class NSNAnalysis:
 
         return resdf
 
-    def ana_filters(self,grp):
-        
-        print('io',grp['N_filters_night'])
+    def ana_filters(self, grp):
+
+        print('io', grp['N_filters_night'])
         filter_night = grp['N_filters_night'].split('/')
         print(filter_night)
         r = []
         for vv in filter_night:
             if vv != '':
                 vs = vv.split('*')
-                print('what',vs)
-                r.append((int(vs[0]),vs[1]))
+                print('what', vs)
+                r.append((int(vs[0]), vs[1]))
 
         print(r)
-        res = pd.DataFrame(r, columns=['Nvisits','filter'])
+        res = pd.DataFrame(r, columns=['Nvisits', 'filter'])
 
-        print(res['Nvisits'].sum(),grp['N_total'])
-        
-        
-        return pd.DataFrame({'test':grp})
-    
+        print(res['Nvisits'].sum(), grp['N_total'])
+
+        return pd.DataFrame({'test': grp})
+
     def plot_season(self, metricValues, varName='status', op=np.sum):
         """
         Method to plot seasonal results
@@ -499,11 +501,11 @@ class NSNAnalysis:
         hp.graticule()
 
         # save plot here
-        name = leg.replace(' - ','_')
-        name = name.replace(' ','_')
+        name = leg.replace(' - ', '_')
+        name = name.replace(' ', '_')
 
         plt.savefig('Plots_pixels/Moll_{}.png'.format(name))
-        
+
     def plotCorrel(self, datax, datay, x=('', ''), y=('', '')):
         """
         Method for 2D plots
