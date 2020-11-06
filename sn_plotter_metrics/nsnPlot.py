@@ -5,6 +5,13 @@ import glob
 import healpy as hp
 
 from . import plt
+import matplotlib
+import matplotlib.patches as mpatches
+import tkinter as tk
+from tkinter import font as tkFont
+from matplotlib.backends.backend_tkagg import (
+    FigureCanvasTkAgg, NavigationToolbar2Tk)
+matplotlib.use('tkagg')
 
 
 def plot_DDSummary(metricValues, forPlot, sntype='faint'):
@@ -155,6 +162,24 @@ def plotNSN(summary, forPlot, sntype='faint'):
     ax.grid()
     ax.set_xlabel('$z_{'+sntype+'}$')
     ax.set_ylabel('$N_{SN} (z<)$')
+
+
+def mscatter(x, y, ax=None, m=None, **kw):
+    import matplotlib.markers as mmarkers
+    ax = ax or plt.gca()
+    sc = ax.scatter(x, y, **kw)
+    if (m is not None) and (len(m) == len(x)):
+        paths = []
+        for marker in m:
+            if isinstance(marker, mmarkers.MarkerStyle):
+                marker_obj = marker
+            else:
+                marker_obj = mmarkers.MarkerStyle(marker)
+            path = marker_obj.get_path().transformed(
+                marker_obj.get_transform())
+            paths.append(path)
+        sc.set_paths(paths)
+    return sc
 
 
 class NSNAnalysis:
@@ -540,3 +565,573 @@ class NSNAnalysis:
 
         ax.set_xlabel(x[1])
         ax.set_ylabel(y[1])
+
+
+class PlotSummary_Annot:
+    """
+    class to plot the metric (nSN,zlim)
+    this is an interactive plot (ie infos on scattered points using the mouse pointer)
+
+    Parameters
+    ---------------
+    resdf: pandas df 
+      data to plot
+    fig: matplotlib figure
+     figure where to plot
+    ax: matplotlib axes
+     axes where to plot
+    hlist: list
+      list of OS to highlight (will appear in gold)
+
+    """
+
+    def __init__(self, resdf, hlist=[]):
+
+        self.fig, self.ax = plt.subplots(figsize=(12, 8))
+        #self.ax = ax
+        self.datadf = resdf
+        x = self.datadf['zlim'].to_list()
+        y = self.datadf['nsn'].to_list()
+        c = self.datadf['color'].to_list()
+        m = self.datadf['marker'].to_list()
+        # self.fig, self.ax = plt.subplots(figsize=(14, 8))
+
+        self.sc = mscatter(x, y, ax=self.ax, c=c, m=m, s=100)
+
+        # this is for the interactive part
+        self.annot = self.ax.annotate("", xy=(0, 0), xytext=(20, 20), textcoords="offset points",
+                                      bbox=dict(boxstyle="round", fc="w"),
+                                      arrowprops=dict(arrowstyle="->"))
+        self.annot.set_visible(False)
+        self.ax.grid()
+        self.ax.set_xlabel('$z_{faint}$', fontsize=20)
+        self.ax.set_ylabel('$N_{SN}(z\leq z_{faint})$', fontsize=20)
+        self.ax.tick_params(labelsize=15)
+        patches = []
+        for col in np.unique(self.datadf['color']):
+            idx = self.datadf['color'] == col
+            tab = self.datadf[idx]
+            lab = '{}_{}'.format(
+                np.unique(tab['simuType']).item(), np.unique(tab['simuNum']).item())
+            patches.append(mpatches.Patch(color=col, label=lab))
+        self.ax.legend(handles=patches, fontsize=15, loc='upper left')
+
+        # highlight here
+        if hlist:
+            resh = self.select(self.datadf, hlist)
+            resh['color'] = 'gold'
+            x = resh['zlim'].to_list()
+            y = resh['nsn'].to_list()
+            c = resh['color'].to_list()
+            m = resh['marker'].to_list()
+            mscatter(x, y, ax=self.ax, c=c, m=m, s=90)
+
+        self.fig.canvas.mpl_connect("motion_notify_event", self.hover)
+
+        plt.show()
+
+    def update_annot(self, ind):
+        """
+        Method to update annotation on the plot
+
+        Parameters
+        ---------------
+        ind: dict
+           point infos
+
+        """
+
+        pos = self.sc.get_offsets()[ind["ind"][0]]
+        self.annot.xy = pos
+        idx = np.abs(self.datadf['zlim']-pos[0]) < 1.e-8
+        idx &= np.abs(self.datadf['nsn']-pos[1]) < 1.e-8
+        sel = self.datadf[idx]
+        color = sel['color'].values.item()
+
+        text = "{} \n family: {}".format(
+            sel['dbName'].values.item(), sel['family'].values.item())
+
+        self.annot.set_text(text)
+        # self.annot.get_bbox_patch().set_facecolor(cmap(norm(c[ind["ind"][0]])))
+        self.annot.get_bbox_patch().set_facecolor(color)
+        self.annot.get_bbox_patch().set_alpha(0.4)
+
+    def hover(self, event):
+        """
+        Method to plot annotation when pointer is on a point
+
+        Parameters
+        ---------------
+        event: matplotlib.backend_bases.MouseEvent
+          mouse pointer?
+        """
+        vis = self.annot.get_visible()
+        if event.inaxes == self.ax:
+            cont, ind = self.sc.contains(event)
+            if cont:
+                self.update_annot(ind)
+                self.annot.set_visible(True)
+                self.fig.canvas.draw_idle()
+            else:
+                if vis:
+                    self.annot.set_visible(False)
+                    self.fig.canvas.draw_idle()
+
+    def select(self, resdf, strfilt=['noddf']):
+        """
+        Function to remove OS according to their names
+
+        Parameters
+        ---------------
+        resdf: pandas df
+        data to process
+        strfilt: list(str),opt
+         list of strings used to select OS (default: ['noddf']
+
+        """
+
+        for vv in strfilt:
+            idx = resdf['dbName'].str.contains(vv)
+            resdf = pd.DataFrame(resdf[idx])
+
+        return resdf
+
+
+class NSN_zlim_GUI:
+    """
+    class to display the (nsn,zlim) metric as an interactive plot in a GUI
+
+    Parameters
+    ---------------
+    resdf: pandas df
+      data to display
+
+    """
+
+    def __init__(self, resdf):
+
+        self.resdf = resdf
+
+        # build the GUI here
+        root = tk.Tk()
+        # figure where the plots will be drawn
+        self.fig = plt.Figure(figsize=(14, 8), dpi=100)
+        self.ax = self.fig.add_subplot(111)
+        leg = 'days$^{-1}$'
+        self.fig.suptitle('(nSN,zlim) supernovae metric', fontsize=15)
+        self.fig.subplots_adjust(right=0.75)
+        # self.ax.set_xlim(self.zmin, self.zmax)
+        # define the figure canvas here
+        self.canvas = FigureCanvasTkAgg(self.fig, master=root)
+        self.canvas.draw()
+        self.canvas.get_tk_widget().pack(side=tk.LEFT, fill=tk.BOTH)
+        self.canvas._tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=False)
+
+        self.toolbar = NavigationToolbar2Tk(self.canvas, root)
+        self.toolbar.update()
+        # self.ax.cla()
+
+        # plot the metric here
+        #PlotSummary_Annot(self.resdf, fig=self.fig, ax=self.ax)
+        PlotSummary_Annot(self.fig, self.ax, self.resdf)
+        # common font
+        helv36 = tkFont.Font(family='Helvetica', size=15, weight='bold')
+
+        # building the GUI
+        # frame
+        button_frame = tk.Frame(master=root, bg="white")
+        button_frame.pack(fill=tk.X, side=tk.BOTTOM, expand=False)
+        button_frame.place(relx=.88, rely=.5, anchor="c")
+
+        button_frameb = tk.Frame(master=root, bg="white")
+        button_frameb.pack(fill=tk.X, side=tk.BOTTOM, expand=False)
+        button_frameb.place(relx=.92, rely=.9, anchor="c")
+
+        # entries
+        ents = self.make_entries(button_frame, font=helv36)
+
+        # buttons
+        heightb = 3
+        widthb = 6
+
+        update_button = tk.Button(
+            button_frameb, text="Update", command=(lambda e=ents: self.updateGUI(e)),
+            bg='yellow', height=heightb, width=widthb, fg='blue', font=helv36)
+        quit_button = tk.Button(button_frameb, text="Quit",
+                                command=root.quit, bg='yellow',
+                                height=heightb, width=widthb, fg='black', font=helv36)
+
+        button_frame.columnconfigure(0, weight=1)
+        button_frame.columnconfigure(1, weight=1)
+
+        update_button.grid(row=1, column=0, sticky=tk.W+tk.E)
+        quit_button.grid(row=1, column=1, sticky=tk.W+tk.E)
+
+        root.mainloop()
+
+    def updateGUI(self, entries):
+        """
+        Method to update the figure according to request made on entries
+        The metric (nsn, zlim) will be plotted taking entries value into account.
+
+        Parameters
+        ---------------
+        entries: dict of tk.Entry
+        """
+
+        # reset axes
+        self.ax.cla()
+
+        # get the list of OS to drop (from GUI)
+        droplist = entries['drop'].get('1.0', tk.END).split('\n')
+        droplist = ' '.join(droplist).split()
+        resfi = self.filter(self.resdf, droplist)
+
+        # get the list of OS to highligth (from GUI)
+        highlightlist = entries['highlight'].get('1.0', tk.END).split('\n')
+        highlightlist = ' '.join(highlightlist).split()
+
+        # display here
+        #PlotSummary_Annot(resfi, fig=self.fig, ax=self.ax, hlist=highlightlist)
+        PlotSummary_Annot(self.fig, self.ax, resfi, hlist)
+        # update canvas
+        # self.ax.set_xlim(self.zmin, self.zmax)
+        self.canvas.draw()
+
+    def make_entries(self, frame, font):
+        """
+        Method to define entries to the GUI
+        Parameters
+        ---------------
+        frame: tk.Frame
+          frame where entries will be located
+        font: tk.Font
+          font for entries
+        Returns
+        ----------
+        entries: dict
+          dict of tk.Entry
+        """
+
+        tk.Label(frame, text='drop', bg='white',
+                 fg='blue', font=font).grid(row=0)
+        tk.Label(frame, text='highlight', bg='white',
+                 fg='red', font=font).grid(row=1)
+
+        entries = {}
+
+        # this is to drop OS
+        S = tk.Scrollbar(frame)
+        entries['drop'] = tk.Text(frame, height=4, width=20, font=font)
+        S.grid(row=0, column=1)
+        entries['drop'].grid(ipady=80, row=0, column=1)
+
+        S.config(command=entries['drop'].yview)
+        entries['drop'].config(yscrollcommand=S.set)
+        defa = 'noddf\nfootprint_stuck_rolling\nweather\nwfd_depth_scale'
+        entries['drop'].insert(tk.END, defa)
+
+        # this is to highlight OS
+        Sh = tk.Scrollbar(frame)
+        entries['highlight'] = tk.Text(frame, height=4, width=20, font=font)
+        Sh.grid(row=1, column=1)
+        entries['highlight'].grid(ipady=20, row=1, column=1)
+
+        Sh.config(command=entries['highlight'].yview)
+        entries['highlight'].config(yscrollcommand=S.set)
+        entries['highlight'].insert(tk.END, '')
+
+        return entries
+
+    def filter(self, resdf, strfilt=['_noddf']):
+        """
+        Function to remove OS according to their names
+
+        Parameters
+        ---------------
+        resdf: pandas df
+        data to process
+        strfilt: list(str),opt
+         list of strings used to remove OS (default: ['_noddf']
+
+        """
+
+        for vv in strfilt:
+            idx = resdf['dbName'].str.contains(vv)
+            resdf = pd.DataFrame(resdf[~idx])
+
+        return resdf
+
+
+class NSN_zlim_GUI:
+    def __init__(self, resdf):
+        self.resdf = resdf
+
+        # build the GUI here
+        root = tk.Tk()
+        # figure where the plots will be drawn
+        self.fig = plt.Figure(figsize=(14, 8), dpi=100)
+        self.ax = self.fig.add_subplot(111)
+        leg = 'days$^{-1}$'
+        self.fig.suptitle('(nSN,zlim) supernovae metric', fontsize=15)
+        self.fig.subplots_adjust(right=0.75)
+        # self.ax.set_xlim(self.zmin, self.zmax)
+        # define the figure canvas here
+        self.canvas = FigureCanvasTkAgg(self.fig, master=root)
+        self.canvas.draw()
+        self.canvas.get_tk_widget().pack(side=tk.LEFT, fill=tk.BOTH)
+        self.canvas._tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=False)
+
+        self.toolbar = NavigationToolbar2Tk(self.canvas, root)
+        self.toolbar.update()
+        # self.ax.cla()
+
+        # plot the number of visits vs z
+        self.plotMetric(self.resdf)
+
+        # common font
+        helv36 = tkFont.Font(family='Helvetica', size=15, weight='bold')
+
+        # building the GUI
+        # frame
+        button_frame = tk.Frame(master=root, bg="white")
+        button_frame.pack(fill=tk.X, side=tk.BOTTOM, expand=False)
+        button_frame.place(relx=.88, rely=.5, anchor="c")
+
+        button_frameb = tk.Frame(master=root, bg="white")
+        button_frameb.pack(fill=tk.X, side=tk.BOTTOM, expand=False)
+        button_frameb.place(relx=.92, rely=.9, anchor="c")
+
+        # entries
+        ents = self.make_entries(button_frame, font=helv36)
+
+        # buttons
+        heightb = 3
+        widthb = 6
+
+        update_button = tk.Button(
+            button_frameb, text="Update", command=(lambda e=ents: self.updateGUI(e)),
+            bg='yellow', height=heightb, width=widthb, fg='blue', font=helv36)
+        """
+        z_button = tk.Button(button_frame, text="zlim", command=(
+            lambda e=ents: self.updateData_nv(e)), bg='yellow', height=heightb, width=widthb, fg='red', font=helv36)
+        """
+        quit_button = tk.Button(button_frameb, text="Quit",
+                                command=root.quit, bg='yellow',
+                                height=heightb, width=widthb, fg='black', font=helv36)
+
+        button_frame.columnconfigure(0, weight=1)
+        button_frame.columnconfigure(1, weight=1)
+        # button_frame.columnconfigure(2, weight=1)
+
+        """
+        nvisits_button.grid(row=2, column=0, sticky=tk.W+tk.E)
+        z_button.grid(row=2, column=1, sticky=tk.W+tk.E)
+        """
+        update_button.grid(row=1, column=0, sticky=tk.W+tk.E)
+        quit_button.grid(row=1, column=1, sticky=tk.W+tk.E)
+
+        """
+        listbox = tk.Listbox(root)
+        listbox.insert(0, 'element1')
+        listbox.insert(1, 'element2')
+        listbox.insert(2, 'element3')
+        listbox.pack()
+        """
+        root.mainloop()
+
+    def updateGUI(self, entries):
+        """
+        Method to update the figure according to request made on entries
+        The number of visits will be plotted here
+        Parameters
+        ---------------
+        entries: dict of tk.Entry
+        """
+
+        # reset axes
+        self.ax.cla()
+        # plot Nvisits vs z
+        # filter cadences here
+
+        droplist = entries['drop'].get('1.0', tk.END).split('\n')
+        droplist = ' '.join(droplist).split()
+        resfi = self.filter(self.resdf, droplist)
+        highlightlist = entries['highlight'].get('1.0', tk.END).split('\n')
+        highlightlist = ' '.join(highlightlist).split()
+        self.plotMetric(resfi, highlightlist)
+
+        # update canvas
+        # self.ax.set_xlim(self.zmin, self.zmax)
+        self.canvas.draw()
+
+    def make_entries(self, frame, font):
+        """
+        Method to define entries to the GUI
+        Parameters
+        ---------------
+        frame: tk.Frame
+          frame where entries will be located
+        font: tk.Font
+          font for entries
+        Returns
+        ----------
+        entries: dict
+          dict of tk.Entry
+        """
+
+        tk.Label(frame, text='drop', bg='white',
+                 fg='blue', font=font).grid(row=0)
+        tk.Label(frame, text='highlight', bg='white',
+                 fg='red', font=font).grid(row=1)
+
+        entries = {}
+
+        # this is to drop OS
+        S = tk.Scrollbar(frame)
+        entries['drop'] = tk.Text(frame, height=4, width=20, font=font)
+        S.grid(row=0, column=1)
+        entries['drop'].grid(ipady=80, row=0, column=1)
+
+        S.config(command=entries['drop'].yview)
+        entries['drop'].config(yscrollcommand=S.set)
+        defa = 'noddf\nfootprint_stuck_rolling\nweather\nwfd_depth_scale'
+        entries['drop'].insert(tk.END, defa)
+
+        # this is to highlight OS
+        Sh = tk.Scrollbar(frame)
+        entries['highlight'] = tk.Text(frame, height=4, width=20, font=font)
+        Sh.grid(row=1, column=1)
+        entries['highlight'].grid(ipady=20, row=1, column=1)
+
+        Sh.config(command=entries['highlight'].yview)
+        entries['highlight'].config(yscrollcommand=S.set)
+        entries['highlight'].insert(tk.END, '')
+
+        return entries
+
+    def filter(self, resdf, strfilt=['_noddf']):
+        """
+        Function to remove OS according to their names
+
+        Parameters
+        ---------------
+        resdf: pandas df
+        data to process
+        strfilt: list(str),opt
+         list of strings used to remove OS (default: ['_noddf']
+
+        """
+
+        for vv in strfilt:
+            idx = resdf['dbName'].str.contains(vv)
+            resdf = pd.DataFrame(resdf[~idx])
+
+        return resdf
+
+    def select(self, resdf, strfilt=['noddf']):
+        """
+        Function to remove OS according to their names
+
+        Parameters
+        ---------------
+        resdf: pandas df
+        data to process
+        strfilt: list(str),opt
+         list of strings used to select OS (default: ['noddf']
+
+        """
+
+        for vv in strfilt:
+            idx = resdf['dbName'].str.contains(vv)
+            resdf = pd.DataFrame(resdf[idx])
+
+        return resdf
+
+    def plotMetric(self, resdf, hlist=[]):
+
+        self.resdfa = resdf
+        x = resdf['zlim'].to_list()
+        y = resdf['nsn'].to_list()
+        c = resdf['color'].to_list()
+        m = resdf['marker'].to_list()
+        # self.fig, self.ax = plt.subplots(figsize=(14, 8))
+
+        self.sc = mscatter(x, y, ax=self.ax, c=c, m=m, s=100)
+        # self.sc = self.ax.plot(x, y, color=c)
+        self.annot = self.ax.annotate("", xy=(0, 0), xytext=(20, 20), textcoords="offset points",
+                                      bbox=dict(boxstyle="round", fc="w"),
+                                      arrowprops=dict(arrowstyle="->"))
+        self.annot.set_visible(False)
+
+        self.ax.grid()
+        self.ax.set_xlabel('$z_{faint}$', fontsize=20)
+        self.ax.set_ylabel('$N_{SN}(z\leq z_{faint})$', fontsize=20)
+        self.ax.tick_params(labelsize=15)
+        patches = []
+        for col in np.unique(resdf['color']):
+            idx = resdf['color'] == col
+            tab = resdf[idx]
+            lab = '{}_{}'.format(
+                np.unique(tab['simuType']).item(), np.unique(tab['simuNum']).item())
+            patches.append(mpatches.Patch(color=col, label=lab))
+        self.ax.legend(handles=patches, fontsize=15, loc='upper left')
+
+        if hlist:
+            resh = self.select(resdf, hlist)
+            resh['color'] = 'gold'
+            x = resh['zlim'].to_list()
+            y = resh['nsn'].to_list()
+            c = resh['color'].to_list()
+            m = resh['marker'].to_list()
+            mscatter(x, y, ax=self.ax, c=c, m=m, s=90)
+
+        self.fig.canvas.mpl_connect("motion_notify_event", self.hover)
+
+        # plt.show()
+
+    def update_annot(self, ind):
+        """
+        Method to update annotation on the plot
+
+        Parameters
+        ---------------
+        ind: dict
+           point infos
+
+        """
+        pos = self.sc.get_offsets()[ind["ind"][0]]
+        self.annot.xy = pos
+        idx = np.abs(self.resdfa['zlim']-pos[0]) < 1.e-8
+        idx &= np.abs(self.resdfa['nsn']-pos[1]) < 1.e-8
+        sel = self.resdfa[idx]
+        color = sel['color'].values.item()
+
+        text = "{} \n family: {}".format(
+            sel['dbName'].values.item(), sel['family'].values.item())
+
+        self.annot.set_text(text)
+        # self.annot.get_bbox_patch().set_facecolor(cmap(norm(c[ind["ind"][0]])))
+        self.annot.get_bbox_patch().set_facecolor(color)
+        self.annot.get_bbox_patch().set_alpha(0.4)
+
+    def hover(self, event):
+        """
+        Method to plot annotation when pointer is on a point
+
+        Parameters
+        ---------------
+        event: matplotlib.backend_bases.MouseEvent
+          mouse pointer?
+        """
+        vis = self.annot.get_visible()
+        if event.inaxes == self.ax:
+            cont, ind = self.sc.contains(event)
+            if cont:
+                self.update_annot(ind)
+                self.annot.set_visible(True)
+                self.fig.canvas.draw_idle()
+            else:
+                if vis:
+                    self.annot.set_visible(False)
+                    self.fig.canvas.draw_idle()
