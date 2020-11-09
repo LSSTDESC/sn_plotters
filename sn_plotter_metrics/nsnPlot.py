@@ -718,7 +718,7 @@ class NSN_zlim_GUI:
         self.fig = plt.Figure(figsize=(14, 8), dpi=100)
         self.ax = self.fig.add_subplot(111)
         leg = 'days$^{-1}$'
-        self.fig.suptitle('(nSN,zlim) supernovae metric', fontsize=15)
+        #self.fig.suptitle('(nSN,zlim) supernovae metric', fontsize=15)
         self.fig.subplots_adjust(right=0.75)
         # self.ax.set_xlim(self.zmin, self.zmax)
         # define the figure canvas here
@@ -870,10 +870,10 @@ class NSN_zlim_GUI:
         # build the GUI here
         root = tk.Tk()
         # figure where the plots will be drawn
-        self.fig = plt.Figure(figsize=(14, 8), dpi=100)
+        self.fig = plt.Figure(figsize=(16, 8), dpi=100)
         self.ax = self.fig.add_subplot(111)
-        leg = 'days$^{-1}$'
-        self.fig.suptitle('(nSN,zlim) supernovae metric', fontsize=15)
+        #leg = 'days$^{-1}$'
+        #self.fig.suptitle('(nSN,zlim) supernovae metric', fontsize=15)
         self.fig.subplots_adjust(right=0.75)
         # self.ax.set_xlim(self.zmin, self.zmax)
         # define the figure canvas here
@@ -1050,6 +1050,9 @@ class NSN_zlim_GUI:
 
     def plotMetric(self, resdf, hlist=[]):
 
+        nOS = len(resdf)
+        title ='(nSN,zlim) supernovae metric - {} OS'.format(nOS)
+        self.fig.suptitle(title, fontsize=15)
         self.resdfa = resdf
         x = resdf['zlim'].to_list()
         y = resdf['nsn'].to_list()
