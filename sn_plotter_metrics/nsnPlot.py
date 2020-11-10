@@ -912,10 +912,6 @@ class NSN_zlim_GUI:
         update_button = tk.Button(
             button_frameb, text="Update", command=(lambda e=ents: self.updateGUI(e)),
             bg='yellow', height=heightb, width=widthb, fg='blue', font=helv36)
-        """
-        z_button = tk.Button(button_frame, text="zlim", command=(
-            lambda e=ents: self.updateData_nv(e)), bg='yellow', height=heightb, width=widthb, fg='red', font=helv36)
-        """
         quit_button = tk.Button(button_frameb, text="Quit",
                                 command=root.quit, bg='yellow',
                                 height=heightb, width=widthb, fg='black', font=helv36)
@@ -931,13 +927,6 @@ class NSN_zlim_GUI:
         update_button.grid(row=1, column=0, sticky=tk.W+tk.E)
         quit_button.grid(row=1, column=1, sticky=tk.W+tk.E)
 
-        """
-        listbox = tk.Listbox(root)
-        listbox.insert(0, 'element1')
-        listbox.insert(1, 'element2')
-        listbox.insert(2, 'element3')
-        listbox.pack()
-        """
         root.mainloop()
 
     def updateGUI(self, entries):
@@ -959,7 +948,10 @@ class NSN_zlim_GUI:
         resfi = self.filter(self.resdf, droplist)
         highlightlist = entries['highlight'].get('1.0', tk.END).split('\n')
         highlightlist = ' '.join(highlightlist).split()
-        self.plotMetric(resfi, highlightlist)
+
+        norm = entries['norm'].get()
+        print('hhh', norm)
+        self.plotMetric(resfi, highlightlist, norm)
 
         # update canvas
         # self.ax.set_xlim(self.zmin, self.zmax)
@@ -984,6 +976,8 @@ class NSN_zlim_GUI:
                  fg='blue', font=font).grid(row=0)
         tk.Label(frame, text='highlight', bg='white',
                  fg='red', font=font).grid(row=1)
+        tk.Label(frame, text='norm', bg='white',
+                 fg='black', font=font).grid(row=2)
 
         entries = {}
 
@@ -1007,6 +1001,10 @@ class NSN_zlim_GUI:
         Sh.config(command=entries['highlight'].yview)
         entries['highlight'].config(yscrollcommand=S.set)
         entries['highlight'].insert(tk.END, '')
+
+        entries['norm'] = tk.Entry(frame, width=20, font=font)
+        entries['norm'].insert(10, "")
+        entries['norm'].grid(row=2, column=1)
 
         return entries
 
@@ -1048,14 +1046,22 @@ class NSN_zlim_GUI:
 
         return resdf
 
-    def plotMetric(self, resdf, hlist=[]):
+    def plotMetric(self, resdf, hlist=[], norm=''):
 
         nOS = len(resdf)
-        title ='(nSN,zlim) supernovae metric - {} OS'.format(nOS)
+        title = '(nSN,zlim) supernovae metric - {} OS'.format(nOS)
+
+        resdf['nsn_norm'] = resdf['nsn']
+        # normalize nsn
+        ido = resdf['dbName'] == norm
+        if len(resdf[ido]) > 0:
+            knorm = resdf[ido]['nsn'].values.item()
+            resdf['nsn_norm'] = resdf['nsn']/knorm
+
         self.fig.suptitle(title, fontsize=15)
         self.resdfa = resdf
         x = resdf['zlim'].to_list()
-        y = resdf['nsn'].to_list()
+        y = resdf['nsn_norm'].to_list()
         c = resdf['color'].to_list()
         m = resdf['marker'].to_list()
         # self.fig, self.ax = plt.subplots(figsize=(14, 8))
@@ -1084,7 +1090,7 @@ class NSN_zlim_GUI:
             resh = self.select(resdf, hlist)
             resh['color'] = 'gold'
             x = resh['zlim'].to_list()
-            y = resh['nsn'].to_list()
+            y = resh['nsn_norm'].to_list()
             c = resh['color'].to_list()
             m = resh['marker'].to_list()
             mscatter(x, y, ax=self.ax, c=c, m=m, s=90)
