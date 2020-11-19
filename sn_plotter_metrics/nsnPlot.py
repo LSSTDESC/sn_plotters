@@ -62,42 +62,40 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint'):
     # idx &= metricValues['nsn_zfaint'] > 10.
     sel = metricValues[idx]
 
-    print('selec', sel[['zlim_faint', 'nsn_zfaint', 'nsn_med_zfaint']])
+    print('selec', sel[['zlim_faint', 'nsn_med_faint']])
     # estimate some stats to display
 
     data = pd.DataFrame(np.copy(sel))
 
-    summary = data.groupby(['cadence']).agg({'nsn_zfaint': 'sum',
-                                             'nsn_med_zfaint': 'sum',
-                                             'nsn_zmedium': 'sum',
+    summary = data.groupby(['cadence']).agg({'nsn_med_faint': 'sum',
+                                             'nsn_med_medium': 'sum',
                                              'zlim_faint': 'median',
                                              'zlim_medium': 'median', }).reset_index()
 
-    summary_fields = data.groupby(['cadence', 'fieldname']).agg({'nsn_zfaint': 'sum',
-                                                                 'nsn_med_zfaint': 'sum',
-                                                                 'nsn_zmedium': 'sum',
+    summary_fields = data.groupby(['cadence', 'fieldname']).agg({'nsn_med_faint': 'sum',
+                                                                 'nsn_med_medium': 'sum',
                                                                  'zlim_faint': 'median',
                                                                  'zlim_medium': 'median', }).reset_index()
+    print(summary_fields)
 
-    summary_fields_seasons = data.groupby(['cadence', 'fieldname', 'season']).agg({'nsn_zfaint': 'sum',
-                                                                                   'nsn_med_zfaint': 'sum',
-                                                                                   'nsn_zmedium': 'sum',
+    summary_fields_seasons = data.groupby(['cadence', 'fieldname', 'season']).agg({'nsn_med_faint': 'sum',
+                                                                                   'nsn_med_medium': 'sum',
                                                                                    'zlim_faint': 'median',
                                                                                    'zlim_medium': 'median', }).reset_index()
 
     # change some of the type for printing
     summary.round({'zlim_faint': 2, 'zlim_medium': 2})
-    summary['nsn_zfaint'] = summary['nsn_zfaint'].astype(int)
-    summary['nsn_zmedium'] = summary['nsn_zmedium'].astype(int)
+    summary['nsn_med_faint'] = summary['nsn_med_faint'].astype(int)
+    summary['nsn_med_medium'] = summary['nsn_med_medium'].astype(int)
 
     # plot the results
 
     # per field and per season
-    plotNSN(summary_fields_seasons, forPlot, sntype=sntype)
+    #plotNSN(summary_fields_seasons, forPlot, sntype=sntype)
     # per field, for all seasons
     plotNSN(summary_fields, forPlot, sntype=sntype)
     # Summary plot: one (NSN,zlim) per cadence (sum for NSN, median zlim over the fields/seasons)
-    plotNSN(summary, forPlot, sntype=sntype)
+    #plotNSN(summary, forPlot, sntype=sntype)
 
 
 def plotNSN(summary, forPlot, sntype='faint'):
@@ -134,7 +132,7 @@ def plotNSN(summary, forPlot, sntype='faint'):
     fontsize = 15
     fig, ax = plt.subplots()
     varx = 'zlim_{}'.format(sntype)
-    vary = 'nsn_med_z{}'.format(sntype)
+    vary = 'nsn_med_{}'.format(sntype)
     xshift = 1.0
     yshift = 1.01
 
