@@ -72,6 +72,7 @@ class FitPlots:
 
         """
 
+        print(tabs)
         fig, ax = plt.subplots()
 
         zlim_max = self.plot2D_indiv(ax, tabs, varx, vary, compare=compare)
@@ -107,13 +108,15 @@ class FitPlots:
         zlim_max, float: max zlim value (use for scale display purposes)
 
         """
-
+        print(tabs.keys())
         dict_interp = {}
         zlims = []
         for key, tab in tabs.items():
             idx = tab[vary] > 0
+            #idx &= tab['z']>0.2
             sel = tab[idx]
-
+            print(np.unique(sel['z']),sel[varx,vary])
+            
             interp = interp1d(
                 np.sqrt(sel[vary]), sel[varx], bounds_error=False, fill_value=0.)
 
