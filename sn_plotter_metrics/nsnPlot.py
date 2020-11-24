@@ -62,7 +62,7 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint'):
     # idx &= metricValues['nsn_zfaint'] > 10.
     sel = metricValues[idx]
 
-    print('selec', sel[['zlim_faint', 'nsn_med_faint']])
+    #print('selec', sel[['zlim_faint', 'nsn_med_faint']])
     # estimate some stats to display
 
     data = pd.DataFrame(np.copy(sel))
@@ -82,6 +82,7 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint'):
                                                                                    'nsn_med_medium': 'sum',
                                                                                    'zlim_faint': 'median',
                                                                                    'zlim_medium': 'median', }).reset_index()
+    print(summary_fields_seasons)
 
     # change some of the type for printing
     summary.round({'zlim_faint': 2, 'zlim_medium': 2})
