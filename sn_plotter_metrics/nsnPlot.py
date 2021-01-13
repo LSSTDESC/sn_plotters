@@ -92,11 +92,11 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint'):
     # plot the results
 
     # per field and per season
-    #plotNSN(summary_fields_seasons, forPlot, sntype=sntype)
+    plotNSN(summary_fields_seasons, forPlot, sntype=sntype)
     # per field, for all seasons
     plotNSN(summary_fields, forPlot, sntype=sntype)
     # Summary plot: one (NSN,zlim) per cadence (sum for NSN, median zlim over the fields/seasons)
-    #plotNSN(summary, forPlot, sntype=sntype)
+    plotNSN(summary, forPlot, sntype=sntype)
 
 
 def plotNSN(summary, forPlot, sntype='faint'):

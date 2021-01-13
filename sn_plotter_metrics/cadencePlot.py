@@ -866,6 +866,7 @@ def plotDDLoopCorrel(nside, dbNames, tabtot,
     #          ncol=1, fancybox=True, shadow=True, fontsize=15)
 
 
+
 def plotDDCadence(tab, dbName, what, legx, adjl, fields):
     """
     DDF cadence plot
@@ -902,13 +903,55 @@ def plotDDCadence(tab, dbName, what, legx, adjl, fields):
     for io, band in enumerate('grizy'):
         idx = sela['filter'] == band
         selb = sela[idx]
-        ax.plot(selb['fieldnum'], selb[what],
+        ax.plot(selb['fieldname'], selb[what],
                 marker=fmarkers[io], color=fcolors[io], linestyle='None', mfc=fmfc[io], label='{}'.format(band), ms=10)
 
-    plt.xticks(fields['fieldnum'], fields['name'], fontsize=fontsize)
+    #plt.xticks(fields['fieldnum'], fields['name'], fontsize=fontsize)
     # plt.legend(fontsize=fontsize)
     ax.legend(loc='upper center', bbox_to_anchor=(1.1, 0.7),
               ncol=1, fancybox=True, shadow=True, fontsize=15)
 
+    ax.set_ylabel(legx, fontsize=fontsize)
+    ax.tick_params(axis='y', labelsize=fontsize)
+
+def plotDDCadence_new(tab, dbName, what, legx):
+    """
+    DDF cadence plot
+
+    Parameters
+    --------------
+
+    tab: array
+     array of values
+    dbNames: list(str)
+      list of cadences to consider
+    what: str
+     name of the variable to display
+    legx: str
+     legend for the variable to display
+    adjl: int
+     to adjust cadence names on the same length
+    fields: array
+     fields to display
+
+    """
+
+    fcolors = 'krbcgyrm'
+    fmarkers = ['o', '*', 's', 'v', '^']
+    fmfc = ['None']*len(fcolors)
+    fontsize = 15.
+    fig, ax = plt.subplots()
+    fig.suptitle('{}'.format(dbName))
+    fig.subplots_adjust(right=0.85)
+    # select data for this cadence
+    ia = tab['cadence'] == dbName
+    selb = tab[ia]
+   
+    ax.plot(selb['fieldname'], selb[what],'ko')
+
+    """
+    ax.legend(loc='upper center', bbox_to_anchor=(1.1, 0.7),
+              ncol=1, fancybox=True, shadow=True, fontsize=15)
+    """
     ax.set_ylabel(legx, fontsize=fontsize)
     ax.tick_params(axis='y', labelsize=fontsize)
