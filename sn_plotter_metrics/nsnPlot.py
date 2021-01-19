@@ -13,6 +13,80 @@ from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg, NavigationToolbar2Tk)
 matplotlib.use('tkagg')
 
+def plot_DDArea(metricValues, forPlot, sntype='faint'):
+    """
+    Method to plot the 'useful' area wrt dithering
+
+    Parameters
+    ----------
+    metricValues: pandas df
+     data to process
+    forPlot: pandas df
+      which OS to plot
+    sn_type: str
+      type of SN to consider (default: faint)
+
+    """
+
+    data = pd.DataFrame(np.copy(metricValues))
+
+    summary_area = data.groupby(['cadence', 'fieldname','season']).apply(lambda x:useful_area(x)).reset_index()
+
+    #summary_area = summary_area.groupby(['cadence', 'fieldname']).apply(lambda x : pd.DataFrame({'frac_area':[x['frac_area'].median()]})).reset_index()
+
+    summary_area['frac_area'] = summary_area.groupby(['cadence', 'fieldname']).frac_area.transform('median')
+
+    summary_area = summary_area.sort_values(by=['fieldname'])
+    print(summary_area)
+  
+    fig, ax = plt.subplots()
+
+    varx = 'fieldname'
+    vary = 'frac_area'
+    for group in np.unique(forPlot['group']):
+        idx = forPlot['group'] == group
+        sel = forPlot[idx]
+        # print(group, sel['dbName'])
+        marker = sel['marker'].unique()[0]
+        color = sel['color'].unique()[0]
+
+        print('ici', sel['dbName'].str.strip(), summary_area['cadence'])
+        selcad = summary_area[summary_area['cadence'].str.strip().isin(
+            sel['dbName'].str.strip())]
+
+        selcad= selcad.sort_values(by=['fieldname'],ascending=True)
+    
+        # plot
+        ax.plot(selcad[varx], selcad[vary], color=color,
+                marker=marker,label=group)
+        
+    ax.grid()
+    ax.set_ylabel('frac_area')
+    ax.legend()
+    
+def useful_area(grp):
+    """
+    Method to estimate the 'useful' area wrt dithering
+
+    Parameters
+    ----------
+    grp: pandas df
+     data to process
+    
+    Returns
+    -------
+    panda df with the 'useful' fraction
+
+    """
+    npixels = len(np.unique(grp['healpixID']))
+    idx = grp['zlim_faint'] > 0.
+    sel = grp[idx]
+                  
+    npixels_useful = len(np.unique(sel['healpixID']))
+
+    return pd.DataFrame({'frac_area': [npixels_useful/npixels]})
+    
+
 
 def plot_DDSummary(metricValues, forPlot, sntype='faint'):
     """
@@ -162,6 +236,9 @@ def plotNSN(summary, forPlot, sntype='faint'):
     ax.set_xlabel('$z_{'+sntype+'}$')
     ax.set_ylabel('$N_{SN} (z<)$')
 
+    fig.text(0.3, 0.8, 'Preliminary',
+             fontsize=25, color='blue',
+             ha='right', va='bottom', alpha=0.5)
 
 def mscatter(x, y, ax=None, m=None, **kw):
     import matplotlib.markers as mmarkers
