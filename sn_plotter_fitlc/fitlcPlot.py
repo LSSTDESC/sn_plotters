@@ -72,7 +72,6 @@ class FitPlots:
 
         """
 
-        print(tabs)
         fig, ax = plt.subplots()
 
         zlim_max = self.plot2D_indiv(ax, tabs, varx, vary, compare=compare)
@@ -118,7 +117,7 @@ class FitPlots:
             sel.sort(keys=['z'])
             print(np.unique(sel['z']), sel[varx, vary])
 
-            """
+            
             interp = interp1d(
                 np.sqrt(sel[vary]), sel[varx], bounds_error=False, fill_value=0.)
 
@@ -126,17 +125,16 @@ class FitPlots:
                 sel[vary]), bounds_error=False, fill_value=0.)
 
             zlim = interp(color_cut)
-            """
-            zlim = 0.
+            
             zlims.append(zlim)
 
             ax.plot(sel[varx], np.sqrt(sel[vary]),
                     label='{} - zlim={}'.format(key, np.round(zlim, 2)))
 
-            """
+            
             ax.plot(ax.get_xlim(), [color_cut]*2,
                     linestyle='--', color='k')
-            """
+            
             #ax.plot([zlim]*2, [0., 0.08], linestyle='--', color='k')
             mystr = 'z$_{lim}$'
 
