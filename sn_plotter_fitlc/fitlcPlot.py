@@ -115,8 +115,10 @@ class FitPlots:
             idx = tab[vary] > 0
             #idx &= tab['z']>0.2
             sel = tab[idx]
-            print(np.unique(sel['z']),sel[varx,vary])
-            
+            sel.sort(keys=['z'])
+            print(np.unique(sel['z']), sel[varx, vary])
+
+            """
             interp = interp1d(
                 np.sqrt(sel[vary]), sel[varx], bounds_error=False, fill_value=0.)
 
@@ -124,12 +126,17 @@ class FitPlots:
                 sel[vary]), bounds_error=False, fill_value=0.)
 
             zlim = interp(color_cut)
+            """
+            zlim = 0.
             zlims.append(zlim)
+
             ax.plot(sel[varx], np.sqrt(sel[vary]),
                     label='{} - zlim={}'.format(key, np.round(zlim, 2)))
 
+            """
             ax.plot(ax.get_xlim(), [color_cut]*2,
                     linestyle='--', color='k')
+            """
             #ax.plot([zlim]*2, [0., 0.08], linestyle='--', color='k')
             mystr = 'z$_{lim}$'
 
