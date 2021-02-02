@@ -80,7 +80,7 @@ class FitPlots:
         ax.set_xlabel(legx)
         ax.set_ylabel(legy)
         ax.set_ylim([0., 0.12])
-        ax.set_xlim([0.01, zlim_max+0.1])
+        ax.set_xlim([0.1, zlim_max+0.1])
         ax.legend(loc='upper left')
 
     def plot2D_indiv(self, ax, tabs, varx, vary, label='', color_cut=0.04, compare=False):
@@ -112,32 +112,41 @@ class FitPlots:
         zlims = []
         for key, tab in tabs.items():
             idx = tab[vary] > 0
-            #idx &= tab['z']>0.2
+            idx &= tab['z']>0.1
             sel = tab[idx]
-            sel.sort(keys=['z'])
+            sel.sort(keys=[varx])
             print(np.unique(sel['z']), sel[varx, vary])
-
             
             interp = interp1d(
                 np.sqrt(sel[vary]), sel[varx], bounds_error=False, fill_value=0.)
 
+            interpv = interp1d(sel[varx], np.sqrt(sel[vary]), bounds_error=False, fill_value=0.)
+
             dict_interp[key] = interp1d(sel[varx], np.sqrt(
                 sel[vary]), bounds_error=False, fill_value=0.)
 
-            zlim = interp(color_cut)
-            
+            #zlim = interp(color_cut)
+
+            zlim = self.zlim(interpv,color_cut)
             zlims.append(zlim)
 
             ax.plot(sel[varx], np.sqrt(sel[vary]),
                     label='{} - zlim={}'.format(key, np.round(zlim, 2)))
 
+            """
+            ax.plot(np.sqrt(sel[vary]),sel[varx], 
+                    label='{} - zlim={}'.format(key, np.round(zlim, 2)))
             
+            zvals = np.arange(0.2,0.7,0.01)
+            colors = np.arange(0.02,0.080,0.001)
+            ax.plot(colors,interp(colors),color='k')
+            """
             ax.plot(ax.get_xlim(), [color_cut]*2,
                     linestyle='--', color='k')
-            
-            #ax.plot([zlim]*2, [0., 0.08], linestyle='--', color='k')
+            """
+            ax.plot([zlim]*2, [0., 0.08], linestyle='--', color='k')
             mystr = 'z$_{lim}$'
-
+            """
         # Compare variation
 
         if compare:
@@ -167,3 +176,32 @@ class FitPlots:
             axb.set_xlim([0.01, 0.78])
 
         return np.max(zlims)
+
+    def zlim(self, interp, color_cut):
+        """
+        Method to estimate zlim
+
+        Parameters
+        ---------------
+        interp: scipy.interpolate.interp1D
+          interpolator to be used (here error_color vs z)
+        color_cut: float
+          color error used as a reference 
+
+        Returns
+        ----------
+        z : float
+          redshift value corresponding to color_cut
+
+        """
+
+        zvals = np.arange(0.2,1.0,0.005)
+
+        colors = interp(zvals)
+
+       
+
+        ii = np.argmin(np.abs(colors-color_cut))
+
+        print(type(colors),colors[ii],zvals[ii])
+        return zvals[ii]
