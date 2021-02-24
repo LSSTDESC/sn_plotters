@@ -181,13 +181,13 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint'):
     # plot the results
 
     # per field and per season
-    #plotNSN(summary_fields_seasons, forPlot, sntype='faint', ztype='med')
+    # plotNSN(summary_fields_seasons, forPlot, sntype='faint', ztype='med')
     # plotNSN(summary_fields_seasons, forPlot, sntype='faint', ztype='weighted')
 
     plotNSN(data, forPlot, sntype=sntype, varx='zlim_faint')
 
     # per field, for all seasons
-    #plotNSN(summary_fields, forPlot, sntype=sntype, varx='zlim_faint')
+    # plotNSN(summary_fields, forPlot, sntype=sntype, varx='zlim_faint')
     # Summary plot: one (NSN,zlim) per cadence (sum for NSN, median zlim over the fields/seasons)
     """
     plotNSN(summary, forPlot, sntype=sntype, varx='zlim_faint_med')
@@ -212,12 +212,15 @@ def stat_season(grp,
     """
     dictres = {}
 
+    print(grp.name)
     for vv in ['faint', 'medium']:
+
         nsn = 'nsn_med_{}'.format(vv)
         zlim_med = 'zlim_{}_med'.format(vv)
         zlim_weighted = 'zlim_{}_weighted'.format(vv)
         rms_zlim = 'rms_zlim_{}'.format(vv)
         rms_zlim_rel = 'rms_zlim_{}_rel'.format(vv)
+        print(grp[[nsn, corresp[zlim_med]]])
         weights = grp[nsn]
         dictres[nsn] = [grp[nsn].sum()]
         dictres[zlim_med] = [grp[corresp[zlim_med]].median()]
@@ -266,7 +269,7 @@ def plotNSN(summary, forPlot, sntype='faint', varx='zlim_faint_med'):
 
     fontsize = 15
     fig, ax = plt.subplots()
-    #varx = 'zlim_{}_{}'.format(sntype, ztype)
+    # varx = 'zlim_{}_{}'.format(sntype, ztype)
     vary = 'nsn_med_{}'.format(sntype)
     xshift = 1.0
     yshift = 1.01
@@ -417,7 +420,8 @@ class NSNAnalysis:
         nsn_extrapol = int(np.round(nsn*self.ratiopixels))
 
         """
-        test = self.data.apply(lambda x: self.ana_filters(x),axis=1,result_type='expand')
+        test = self.data.apply(lambda x: self.ana_filters(
+            x),axis=1,result_type='expand')
         for b in 'grizy':
             tt=[]
             for vv in self.data.columns:
@@ -461,15 +465,18 @@ class NSNAnalysis:
             resdf['cadence_{}'.format(b)] = [med_meds['cadence_{}'.format(b)]]
             """
             resdf['N_{}_tot'.format(ba)] = [med_meds['N_{}_tot'.format(ba)]]
-            resdf['N_{}'.format(ba)] = [med_meds['N_{}'.format(ba)]/resdf['N_total']]
+            resdf['N_{}'.format(ba)] = [
+                                med_meds['N_{}'.format(ba)]/resdf['N_total']]
             for bb in 'grizy':
                 combi=''.join(sorted('{}{}'.format(ba,bb)))
                 # resdf['cadence_{}{}'.format(ba,bb)] = [med_meds['cadence_{}{}'.format(ba,bb)]]
-                resdf['N_{}'.format(combi)] = [med_meds['N_{}'.format(combi)]/resdf['N_total']] 
+                resdf['N_{}'.format(combi)] = [
+                                    med_meds['N_{}'.format(combi)]/resdf['N_total']]
                 for bc in 'grizy':
                     combi=''.join(sorted('{}{}{}'.format(ba,bb,bc)))
                     # resdf['cadence_{}{}{}'.format(ba,bb,bc)] = [med_meds['cadence_{}{}{}'.format(ba,bb,bc)]]
-                    resdf['N_{}'.format(combi)] = [med_meds['N_{}'.format(combi)]/resdf['N_total']]
+                    resdf['N_{}'.format(combi)] = [
+                                        med_meds['N_{}'.format(combi)]/resdf['N_total']]
             """
 
         return resdf
@@ -711,7 +718,7 @@ class PlotSummary_Annot:
 
     Parameters
     ---------------
-    resdf: pandas df 
+    resdf: pandas df
       data to plot
     fig: matplotlib figure
      figure where to plot
