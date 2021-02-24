@@ -13,6 +13,7 @@ from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg, NavigationToolbar2Tk)
 matplotlib.use('tkagg')
 
+
 def plot_DDArea(metricValues, forPlot, sntype='faint'):
     """
     Method to plot the 'useful' area wrt dithering
@@ -30,15 +31,17 @@ def plot_DDArea(metricValues, forPlot, sntype='faint'):
 
     data = pd.DataFrame(np.copy(metricValues))
 
-    summary_area = data.groupby(['cadence', 'fieldname','season']).apply(lambda x:useful_area(x)).reset_index()
+    summary_area = data.groupby(['cadence', 'fieldname', 'season']).apply(
+        lambda x: useful_area(x)).reset_index()
 
-    #summary_area = summary_area.groupby(['cadence', 'fieldname']).apply(lambda x : pd.DataFrame({'frac_area':[x['frac_area'].median()]})).reset_index()
+    # summary_area = summary_area.groupby(['cadence', 'fieldname']).apply(lambda x : pd.DataFrame({'frac_area':[x['frac_area'].median()]})).reset_index()
 
-    summary_area['frac_area'] = summary_area.groupby(['cadence', 'fieldname']).frac_area.transform('median')
+    summary_area['frac_area'] = summary_area.groupby(
+        ['cadence', 'fieldname']).frac_area.transform('median')
 
     summary_area = summary_area.sort_values(by=['fieldname'])
     print(summary_area)
-  
+
     fig, ax = plt.subplots()
 
     varx = 'fieldname'
@@ -54,16 +57,17 @@ def plot_DDArea(metricValues, forPlot, sntype='faint'):
         selcad = summary_area[summary_area['cadence'].str.strip().isin(
             sel['dbName'].str.strip())]
 
-        selcad= selcad.sort_values(by=['fieldname'],ascending=True)
-    
+        selcad = selcad.sort_values(by=['fieldname'], ascending=True)
+
         # plot
         ax.plot(selcad[varx], selcad[vary], color=color,
-                marker=marker,label=group)
-        
+                marker=marker, label=group)
+
     ax.grid()
     ax.set_ylabel('frac_area')
     ax.legend()
-    
+
+
 def useful_area(grp):
     """
     Method to estimate the 'useful' area wrt dithering
@@ -72,7 +76,7 @@ def useful_area(grp):
     ----------
     grp: pandas df
      data to process
-    
+
     Returns
     -------
     panda df with the 'useful' fraction
@@ -81,11 +85,10 @@ def useful_area(grp):
     npixels = len(np.unique(grp['healpixID']))
     idx = grp['zlim_faint'] > 0.
     sel = grp[idx]
-                  
+
     npixels_useful = len(np.unique(sel['healpixID']))
 
     return pd.DataFrame({'frac_area': [npixels_useful/npixels]})
-    
 
 
 def plot_DDSummary(metricValues, forPlot, sntype='faint'):
@@ -136,28 +139,40 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint'):
     # idx &= metricValues['nsn_zfaint'] > 10.
     sel = metricValues[idx]
 
-    #print('selec', sel[['zlim_faint', 'nsn_med_faint']])
+    # print('selec', sel[['zlim_faint', 'nsn_med_faint']])
     # estimate some stats to display
 
     data = pd.DataFrame(np.copy(sel))
 
+    """
     summary = data.groupby(['cadence']).agg({'nsn_med_faint': 'sum',
                                              'nsn_med_medium': 'sum',
                                              'zlim_faint': 'median',
                                              'zlim_medium': 'median', }).reset_index()
-
+    """
     summary_fields = data.groupby(['cadence', 'fieldname']).agg({'nsn_med_faint': 'sum',
                                                                  'nsn_med_medium': 'sum',
                                                                  'zlim_faint': 'median',
                                                                  'zlim_medium': 'median', }).reset_index()
-    print(summary_fields)
 
+    """
     summary_fields_seasons = data.groupby(['cadence', 'fieldname', 'season']).agg({'nsn_med_faint': 'sum',
                                                                                    'nsn_med_medium': 'sum',
                                                                                    'zlim_faint': 'median',
                                                                                    'zlim_medium': 'median', }).reset_index()
+    """
+    summary_fields_seasons = data.groupby(['cadence', 'fieldname', 'season']).apply(
+        lambda x: stat_season(x)).reset_index()
+
     print(summary_fields_seasons)
 
+    corresp = dict(zip(['zlim_faint_med', 'zlim_medium_med', 'zlim_faint_weighted', 'zlim_medium_weighted'],
+                       ['zlim_medium_med', 'zlim_faint_med', 'zlim_medium_weighted', 'zlim_faint_weighted', 'zlim_medium_weighted']))
+
+    summary = summary_fields_seasons.groupby(['cadence']).apply(
+        lambda x: stat_season(x, corresp)).reset_index()
+    print(summary_fields_seasons)
+    print(summary)
     # change some of the type for printing
     summary.round({'zlim_faint': 2, 'zlim_medium': 2})
     summary['nsn_med_faint'] = summary['nsn_med_faint'].astype(int)
@@ -166,14 +181,59 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint'):
     # plot the results
 
     # per field and per season
-    plotNSN(summary_fields_seasons, forPlot, sntype=sntype)
+    #plotNSN(summary_fields_seasons, forPlot, sntype='faint', ztype='med')
+    # plotNSN(summary_fields_seasons, forPlot, sntype='faint', ztype='weighted')
+
+    plotNSN(data, forPlot, sntype=sntype, varx='zlim_faint')
+
     # per field, for all seasons
-    plotNSN(summary_fields, forPlot, sntype=sntype)
+    #plotNSN(summary_fields, forPlot, sntype=sntype, varx='zlim_faint')
     # Summary plot: one (NSN,zlim) per cadence (sum for NSN, median zlim over the fields/seasons)
-    plotNSN(summary, forPlot, sntype=sntype)
+    """
+    plotNSN(summary, forPlot, sntype=sntype, varx='zlim_faint_med')
+    plotNSN(summary, forPlot, sntype=sntype, varx='zlim_faint_weighted')
+    plotNSN(summary, forPlot, sntype=sntype, varx='rms_zlim_faint')
+    """
 
 
-def plotNSN(summary, forPlot, sntype='faint'):
+def stat_season(grp,
+                corresp=dict(zip(['zlim_faint_med', 'zlim_medium_med', 'zlim_faint_weighted', 'zlim_medium_weighted'],
+                                 ['zlim_medium', 'zlim_faint', 'zlim_medium', 'zlim_faint', 'zlim_medium']))):
+    """
+    Method to estimate weighted mean and rms of zlim
+
+    Parameters
+    ----------------
+    grp: pandas df
+      data to process
+    corresp: dict
+      matching dict for zlim vars
+
+    """
+    dictres = {}
+
+    for vv in ['faint', 'medium']:
+        nsn = 'nsn_med_{}'.format(vv)
+        zlim_med = 'zlim_{}_med'.format(vv)
+        zlim_weighted = 'zlim_{}_weighted'.format(vv)
+        rms_zlim = 'rms_zlim_{}'.format(vv)
+        rms_zlim_rel = 'rms_zlim_{}_rel'.format(vv)
+        weights = grp[nsn]
+        dictres[nsn] = [grp[nsn].sum()]
+        dictres[zlim_med] = [grp[corresp[zlim_med]].median()]
+        zlim_weight = np.sum(weights*grp[corresp[zlim_weighted]])/weights.sum()
+        dictres[zlim_weighted] = [zlim_weight]
+        std = np.sum(weights*(grp[corresp[zlim_weighted]] -
+                              zlim_weight)**2)/np.sum(weights)
+        dictres[rms_zlim] = [np.sqrt(std)]
+        dictres[rms_zlim_rel] = [np.sqrt(std)/zlim_weight]
+
+    # weighted SD
+
+    return pd.DataFrame(dictres)
+
+
+def plotNSN(summary, forPlot, sntype='faint', varx='zlim_faint_med'):
     """
     Plot NSN vs redshift limit
 
@@ -206,7 +266,7 @@ def plotNSN(summary, forPlot, sntype='faint'):
 
     fontsize = 15
     fig, ax = plt.subplots()
-    varx = 'zlim_{}'.format(sntype)
+    #varx = 'zlim_{}_{}'.format(sntype, ztype)
     vary = 'nsn_med_{}'.format(sntype)
     xshift = 1.0
     yshift = 1.01
@@ -239,6 +299,7 @@ def plotNSN(summary, forPlot, sntype='faint'):
     fig.text(0.3, 0.8, 'Preliminary',
              fontsize=25, color='blue',
              ha='right', va='bottom', alpha=0.5)
+
 
 def mscatter(x, y, ax=None, m=None, **kw):
     import matplotlib.markers as mmarkers
@@ -327,7 +388,7 @@ class NSNAnalysis:
         """
         df = pd.DataFrame(np.copy(metricValues))
         df = df.applymap(lambda x: x.decode() if isinstance(x, bytes) else x)
-        #self.data = df.loc[:,~df.columns.str.contains('mask', case=False)]
+        # self.data = df.loc[:,~df.columns.str.contains('mask', case=False)]
        """
 
         idx = metricValues['status_{}'.format(self.sntype)] == 1
@@ -351,7 +412,7 @@ class NSNAnalysis:
             self.ratiopixels = float(
                 npixels)/float(self.npixels_eff)
 
-        #zlim = self.zlim_med()
+        # zlim = self.zlim_med()
         nsn, sig_nsn = self.nSN_tot()
         nsn_extrapol = int(np.round(nsn*self.ratiopixels))
 
@@ -403,11 +464,11 @@ class NSNAnalysis:
             resdf['N_{}'.format(ba)] = [med_meds['N_{}'.format(ba)]/resdf['N_total']]
             for bb in 'grizy':
                 combi=''.join(sorted('{}{}'.format(ba,bb)))
-                #resdf['cadence_{}{}'.format(ba,bb)] = [med_meds['cadence_{}{}'.format(ba,bb)]]
+                # resdf['cadence_{}{}'.format(ba,bb)] = [med_meds['cadence_{}{}'.format(ba,bb)]]
                 resdf['N_{}'.format(combi)] = [med_meds['N_{}'.format(combi)]/resdf['N_total']] 
                 for bc in 'grizy':
                     combi=''.join(sorted('{}{}{}'.format(ba,bb,bc)))
-                    #resdf['cadence_{}{}{}'.format(ba,bb,bc)] = [med_meds['cadence_{}{}{}'.format(ba,bb,bc)]]
+                    # resdf['cadence_{}{}{}'.format(ba,bb,bc)] = [med_meds['cadence_{}{}{}'.format(ba,bb,bc)]]
                     resdf['N_{}'.format(combi)] = [med_meds['N_{}'.format(combi)]/resdf['N_total']]
             """
 
@@ -664,7 +725,7 @@ class PlotSummary_Annot:
     def __init__(self, resdf, hlist=[]):
 
         self.fig, self.ax = plt.subplots(figsize=(12, 8))
-        #self.ax = ax
+        # self.ax = ax
         self.datadf = resdf
         x = self.datadf['zlim'].to_list()
         y = self.datadf['nsn'].to_list()
@@ -794,7 +855,7 @@ class NSN_zlim_GUI:
         self.fig = plt.Figure(figsize=(14, 8), dpi=100)
         self.ax = self.fig.add_subplot(111)
         leg = 'days$^{-1}$'
-        #self.fig.suptitle('(nSN,zlim) supernovae metric', fontsize=15)
+        # self.fig.suptitle('(nSN,zlim) supernovae metric', fontsize=15)
         self.fig.subplots_adjust(right=0.75)
         # self.ax.set_xlim(self.zmin, self.zmax)
         # define the figure canvas here
@@ -808,7 +869,7 @@ class NSN_zlim_GUI:
         # self.ax.cla()
 
         # plot the metric here
-        #PlotSummary_Annot(self.resdf, fig=self.fig, ax=self.ax)
+        # PlotSummary_Annot(self.resdf, fig=self.fig, ax=self.ax)
         PlotSummary_Annot(self.fig, self.ax, self.resdf)
         # common font
         helv36 = tkFont.Font(family='Helvetica', size=15, weight='bold')
@@ -868,7 +929,7 @@ class NSN_zlim_GUI:
         highlightlist = ' '.join(highlightlist).split()
 
         # display here
-        #PlotSummary_Annot(resfi, fig=self.fig, ax=self.ax, hlist=highlightlist)
+        # PlotSummary_Annot(resfi, fig=self.fig, ax=self.ax, hlist=highlightlist)
         PlotSummary_Annot(self.fig, self.ax, resfi, hlist)
         # update canvas
         # self.ax.set_xlim(self.zmin, self.zmax)
@@ -948,8 +1009,8 @@ class NSN_zlim_GUI:
         # figure where the plots will be drawn
         self.fig = plt.Figure(figsize=(16, 8), dpi=100)
         self.ax = self.fig.add_subplot(111)
-        #leg = 'days$^{-1}$'
-        #self.fig.suptitle('(nSN,zlim) supernovae metric', fontsize=15)
+        # leg = 'days$^{-1}$'
+        # self.fig.suptitle('(nSN,zlim) supernovae metric', fontsize=15)
         self.fig.subplots_adjust(right=0.75)
         # self.ax.set_xlim(self.zmin, self.zmax)
         # define the figure canvas here
@@ -1220,3 +1281,76 @@ class NSN_zlim_GUI:
                 if vis:
                     self.annot.set_visible(False)
                     self.fig.canvas.draw_idle()
+
+
+class plot_DD_Moll:
+
+    def __init__(self, data, dbName, season, nside):
+
+        self.nside = nside
+        self.pixel_area = hp.nside2pixarea(nside, degrees=True)
+
+        idx = data['cadence'] == dbName
+        idx &= data['season'] == season
+        sel = data[idx]
+
+        for fieldName in np.unique(sel['fieldname']):
+            ida = sel['fieldname'] == fieldName
+            print(fieldName, sel[ida])
+
+        xmin = 0.01
+        xmax = 2.
+        self.plotMollview(sel, 'nsn_med_faint',
+                          'NSN', np.sum, xmin, xmax)
+
+        xmin = 0.01
+        xmax = 0.7
+        self.plotMollview(sel, 'zlim_faint',
+                          'zlim', np.median, xmin, xmax)
+
+    def plotMollview(self, data, varName, leg, op, xmin, xmax):
+        """
+        Method to display results as a Mollweid map
+
+        Parameters
+        ---------------
+        data: pandas df
+          data to consider
+        varName: str
+          name of the variable to display
+        leg: str
+          legend of the plot
+        op: operator
+          operator to apply to the pixelize data(median, sum, ...)
+        xmin: float
+          min value for the display
+        xmax: float
+         max value for the display
+
+        """
+        npix = hp.nside2npix(self.nside)
+
+        hpxmap = np.zeros(npix, dtype=np.float)
+        hpxmap = np.full(hpxmap.shape, 0.)
+        hpxmap[data['healpixID'].astype(
+            int)] += data[varName]
+
+        norm = plt.cm.colors.Normalize(xmin, xmax)
+        cmap = plt.cm.jet
+        cmap.set_under('w')
+        resleg = op(data[varName])
+        if 'nsn' in varName:
+            resleg = int(resleg)
+        else:
+            resleg = np.round(resleg, 2)
+        title = '{}: {}'.format(leg, resleg)
+
+        hp.mollview(hpxmap, min=xmin, max=xmax, cmap=cmap,
+                    title=title, nest=True, norm=norm)
+        hp.graticule()
+
+        # save plot here
+        name = leg.replace(' - ', '_')
+        name = name.replace(' ', '_')
+
+        plt.savefig('Plots_pixels/Moll_{}.png'.format(name))
