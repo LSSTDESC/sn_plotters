@@ -234,9 +234,12 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'],
     for fieldname in summary_fields['fieldname'].unique():
         idx = summary_fields['fieldname'] == fieldname
         sel = summary_fields[idx]
-        plotNSN(sel, forPlot, sntype=sntype, varx='zlim_faint')
+        plotNSN(sel, forPlot, varx='zlim_faint')
     """
+    plotNSN(summary_fields, forPlot, varx='zlim_faint')
+
     # plotNSN(summary, forPlot, sntype=sntype, varx='zlim_faint_weighted')
+    """
     idx = summary['cadence'] == 'ddf_dither0.00_v1.7_10yrs'
     norm = summary[idx]
     plotNSN(summary, forPlot,
@@ -252,6 +255,7 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'],
             legx='weighted RMS($z_{lim}$)',
             legy='$\Delta z_{lim}=z_{lim}^{no dither}-z_{lim}$',
             norm=norm['zlim_{}_med'.format(sntype)].item(), op=operator.sub)
+    """
 
 
 def stat_season(grp,
