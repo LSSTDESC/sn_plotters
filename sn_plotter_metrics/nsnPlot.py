@@ -3,6 +3,7 @@ import pandas as pd
 from sn_tools.sn_io import loopStack
 import glob
 import healpy as hp
+import operator
 
 from . import plt
 import matplotlib
@@ -91,7 +92,7 @@ def useful_area(grp):
     return pd.DataFrame({'frac_area': [npixels_useful/npixels]})
 
 
-def plot_DDSummary(metricValues, forPlot, sntype='faint',fieldNames=['COSMOS'],nside=128):
+def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'], nside=128):
     """
     Plot to display NSN results for DD fields
 
@@ -136,22 +137,30 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint',fieldNames=['COSMOS'],n
 
     """
 
-   
-
     # print('selec', sel[['zlim_faint', 'nsn_med_faint']])
     # estimate some stats to display
 
     data = pd.DataFrame(np.copy(metricValues))
     idx = data['fieldname'].isin(fieldNames)
-
+    idx &= data['zlim_faint'] > 0.
     data = data[idx]
-    
-    plotArea(data,nside)
 
-    idx = data['zlim_faint'] > 0.
-    # idx &= metricValues['nsn_zfaint'] > 10.
-    data = data[idx]
-  
+    """
+    for season in data['season'].unique():
+        idx = data['season'] == season
+        sel = data[idx]
+        #print(season, sel[['healpixID', 'fieldname', 'zlim_faint']])
+        print(season, np.median(sel['zlim_faint']))
+        for fieldname in sel['fieldname'].unique():
+            idx = sel['fieldname'] == fieldname
+            selb = sel[idx]
+            print(fieldname, np.median(selb['zlim_faint']))
+            #plt.hist(selb['zlim_faint'], histtype='step')
+            # plt.show()
+    # print(test)
+    """
+    # plotArea(data, nside)
+
     """
     summary = data.groupby(['cadence']).agg({'nsn_med_faint': 'sum',
                                              'nsn_med_medium': 'sum',
@@ -172,7 +181,8 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint',fieldNames=['COSMOS'],n
     summary_fields_seasons = data.groupby(['cadence', 'fieldname', 'season']).apply(
         lambda x: stat_season(x)).reset_index()
 
-    #print(summary_fields_seasons)
+    # print(summary_fields_seasons)
+    # print(summary_fields_seasons['zlim_faint_med'].median())
 
     """
     corresp = dict(zip(['zlim_faint_med', 'zlim_medium_med', 'zlim_faint_weighted', 'zlim_medium_weighted'],
@@ -192,8 +202,16 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint',fieldNames=['COSMOS'],n
                                                                'rms_zlim_medium': 'median',
                                                                'rms_zlim_faint_rel': 'median',
                                                                'rms_zlim_medium_rel': 'median'}).reset_index()
-    #print(summary_fields_seasons)
-    #print('aiaiai',summary.columns)
+
+    # print(summary)
+    """
+    summary = data.groupby(['cadence']).agg({'nsn_med_faint': 'sum',
+                                             'nsn_med_medium': 'sum',
+                                             'zlim_faint': 'median',
+                                             'zlim_medium': 'median', }).reset_index()
+    """
+    # print(summary_fields_seasons)
+    # print('aiaiai',summary.columns)
     # change some of the type for printing
     summary.round({'zlim_faint_med': 2, 'zlim_medium_med': 2})
     summary['nsn_med_faint'] = summary['nsn_med_faint'].astype(int)
@@ -205,21 +223,40 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint',fieldNames=['COSMOS'],n
     # plotNSN(summary_fields_seasons, forPlot, sntype='faint', ztype='med')
     # plotNSN(summary_fields_seasons, forPlot, sntype='faint', ztype='weighted')
 
-    #plotNSN(data, forPlot, sntype=sntype, varx='zlim_faint')
+    # plotNSN(data, forPlot, sntype=sntype, varx='zlim_faint')
 
     # per field, for all seasons
     # plotNSN(summary_fields, forPlot, sntype=sntype, varx='zlim_faint')
     # Summary plot: one (NSN,zlim) per cadence (sum for NSN, median zlim over the fields/seasons)
 
-    plotNSN(summary, forPlot, sntype=sntype, varx='zlim_faint_med')
-    plotNSN(summary, forPlot, sntype=sntype, varx='zlim_faint_weighted')
-    plotNSN(summary, forPlot, sntype=sntype, varx='rms_zlim_faint')
-    
+    #plotNSN(summary, forPlot, sntype=sntype, varx='zlim_faint_med')
+    """
+    for fieldname in summary_fields['fieldname'].unique():
+        idx = summary_fields['fieldname'] == fieldname
+        sel = summary_fields[idx]
+        plotNSN(sel, forPlot, sntype=sntype, varx='zlim_faint')
+    """
+    # plotNSN(summary, forPlot, sntype=sntype, varx='zlim_faint_weighted')
+    idx = summary['cadence'] == 'ddf_dither0.00_v1.7_10yrs'
+    norm = summary[idx]
+    plotNSN(summary, forPlot,
+            varx='rms_zlim_{}'.format(sntype),
+            vary='nsn_med_{}'.format(sntype),
+            legx='weighted RMS($z_{lim}$)',
+            legy='$N_{SN}/N_{SN}^{no dither} (z<)$',
+            norm=norm['nsn_med_{}'.format(sntype)].item())
+
+    plotNSN(summary, forPlot,
+            varx='rms_zlim_{}'.format(sntype),
+            vary='zlim_{}_med'.format(sntype),
+            legx='weighted RMS($z_{lim}$)',
+            legy='$\Delta z_{lim}=z_{lim}^{no dither}-z_{lim}$',
+            norm=norm['zlim_{}_med'.format(sntype)].item(), op=operator.sub)
 
 
 def stat_season(grp,
                 corresp=dict(zip(['zlim_faint_med', 'zlim_medium_med', 'zlim_faint_weighted', 'zlim_medium_weighted'],
-                                 ['zlim_medium', 'zlim_faint', 'zlim_medium', 'zlim_faint', 'zlim_medium']))):
+                                 ['zlim_faint', 'zlim_medium', 'zlim_faint', 'zlim_medium']))):
     """
     Method to estimate weighted mean and rms of zlim
 
@@ -250,11 +287,16 @@ def stat_season(grp,
         dictres[rms_zlim] = [np.sqrt(std)]
         dictres[rms_zlim_rel] = [np.sqrt(std)/zlim_weight]
 
-
     return pd.DataFrame(dictres)
 
 
-def plotNSN(summary, forPlot, sntype='faint', varx='zlim_faint_med'):
+def plotNSN(summary, forPlot,
+            varx='zlim_faint_med',
+            vary='nsn_med_faint',
+            legx='$z_{faint}$',
+            legy='$N_{SN} (z<)$',
+            norm=1,
+            op=operator.truediv):
     """
     Plot NSN vs redshift limit
 
@@ -288,7 +330,7 @@ def plotNSN(summary, forPlot, sntype='faint', varx='zlim_faint_med'):
     fontsize = 15
     fig, ax = plt.subplots()
     # varx = 'zlim_{}_{}'.format(sntype, ztype)
-    vary = 'nsn_med_{}'.format(sntype)
+    #vary = 'nsn_med_{}'.format(sntype)
     xshift = 1.0
     yshift = 1.01
 
@@ -299,25 +341,25 @@ def plotNSN(summary, forPlot, sntype='faint', varx='zlim_faint_med'):
         marker = sel['marker'].unique()[0]
         color = sel['color'].unique()[0]
 
-        #print('ici', sel['dbName'].str.strip(), summary['cadence'])
+        # print('ici', sel['dbName'].str.strip(), summary['cadence'])
         selcad = summary[summary['cadence'].str.strip().isin(
             sel['dbName'].str.strip())]
 
         # plot
-        ax.plot(selcad[varx], selcad[vary], color=color,
+        ax.plot(selcad[varx], op(selcad[vary], norm), color=color,
                 marker=marker, lineStyle='None')
 
         # get the centroid of the data and write it
         centroid_x = selcad[varx].mean()
-        centroid_y = selcad[vary].mean()
+        centroid_y = op(selcad[vary], norm).mean()
         ax.text(xshift*0.99*centroid_x, yshift *
-                1.01*centroid_y, group, color=color, fontsize=fontsize)
+                1.01*centroid_y, group, color=color, fontsize=fontsize-3)
 
     ax.grid()
-    ax.set_xlabel('$z_{'+sntype+'}$')
-    ax.set_ylabel('$N_{SN} (z<)$')
+    ax.set_xlabel(legx)
+    ax.set_ylabel(legy)
 
-    fig.text(0.3, 0.8, 'Preliminary',
+    fig.text(0.8, 0.8, 'Preliminary',
              fontsize=25, color='blue',
              ha='right', va='bottom', alpha=0.5)
 
@@ -1324,8 +1366,9 @@ class plot_DD_Moll:
             print(fieldName, sel[ida])
 
         sel = pd.DataFrame(sel)
-        sel[['nsn_med_faint','zlim_faint']] = sel[['nsn_med_faint','zlim_faint']].round(2)
-        sel = np.around(sel,decimals=2)
+        sel[['nsn_med_faint', 'zlim_faint']] = sel[[
+            'nsn_med_faint', 'zlim_faint']].round(2)
+        sel = np.around(sel, decimals=2)
         xmin = 0.01
         xmax = np.max(sel['nsn_med_faint'])
         self.plotMollview(sel, 'nsn_med_faint',
@@ -1383,43 +1426,49 @@ class plot_DD_Moll:
 
         plt.savefig('Plots_pixels/Moll_{}.png'.format(name))
 
-def plotArea(data,nside):
+
+def plotArea(data, nside):
     pixArea = hp.nside2pixarea(nside, degrees=True)
 
-    grpa = area(data,pixArea)
+    grpa = area(data, pixArea)
     # select data with zlim_faint>0. and NSN > 10.
 
     idx = data['zlim_faint'] > 0.
     # idx &= metricValues['nsn_zfaint'] > 10.
     data = data[idx]
-    grpb  = area(data,pixArea)
-    
-    grp = pd.merge(grpa,grpb, on=['cadence','dbName_plot'],how='left').reset_index()
+    grpb = area(data, pixArea)
+
+    grp = pd.merge(grpa, grpb, on=['cadence',
+                                   'dbName_plot'], how='left').reset_index()
 
     grp['eff_area'] = grp['Npixels_y']/grp['Npixels_x']
     grp = grp.sort_values('cadence')
     figa, axa = plt.subplots()
 
-    axa.plot(grp['dbName_plot'],grp['Npixels_x'],color='k',label='total area')
-    axa.plot(grp['dbName_plot'],grp['Npixels_y'],color='r',label='effective area')
+    axa.plot(grp['dbName_plot'], grp['Npixels_x'],
+             color='k', label='total area')
+    axa.plot(grp['dbName_plot'], grp['Npixels_y'],
+             color='r', label='effective area')
     axa.tick_params(axis='x', labelrotation=20.)
     axa.grid()
     axa.set_ylabel('Median survey area per season [deg$^2$]')
     axa.legend()
-    
+
     figb, axb = plt.subplots()
 
     grp = grp.sort_values('eff_area')
     axb.barh(grp['dbName_plot'], grp['eff_area'])
     axb.set_xlabel('Effective area fraction')
     axb.grid()
-    #axb.tick_params(axis='x', labelrotation=270.)
-    
-def area(data,pixArea):
+    # axb.tick_params(axis='x', labelrotation=270.)
 
-    grpa = data.groupby(['cadence','season','fieldname','dbName_plot']).apply(lambda x: pd.DataFrame({'Npixels': [len(x)*pixArea]})).reset_index()
 
-    grpa_sum = grpa.groupby(['cadence','season','dbName_plot']).sum()
-    grpa_med = grpa_sum.groupby(['cadence','dbName_plot']).median()
+def area(data, pixArea):
+
+    grpa = data.groupby(['cadence', 'season', 'fieldname', 'dbName_plot']).apply(
+        lambda x: pd.DataFrame({'Npixels': [len(x)*pixArea]})).reset_index()
+
+    grpa_sum = grpa.groupby(['cadence', 'season', 'dbName_plot']).sum()
+    grpa_med = grpa_sum.groupby(['cadence', 'dbName_plot']).median()
 
     return grpa_med
