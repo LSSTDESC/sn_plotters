@@ -239,6 +239,8 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'],
     plotNSN(summary_fields, forPlot, varx='zlim_faint')
 
     # plotNSN(summary, forPlot, sntype=sntype, varx='zlim_faint_weighted')
+
+    # this is for dithering plots wrt wRMS
     """
     idx = summary['cadence'] == 'ddf_dither0.00_v1.7_10yrs'
     norm = summary[idx]
@@ -363,9 +365,11 @@ def plotNSN(summary, forPlot,
     ax.set_xlabel(legx)
     ax.set_ylabel(legy)
 
+    """
     fig.text(0.8, 0.8, 'Preliminary',
              fontsize=25, color='blue',
              ha='right', va='bottom', alpha=0.5)
+    """
 
 
 def mscatter(x, y, ax=None, m=None, **kw):
