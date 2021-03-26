@@ -229,14 +229,14 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'],
     # plotNSN(summary_fields, forPlot, sntype=sntype, varx='zlim_faint')
     # Summary plot: one (NSN,zlim) per cadence (sum for NSN, median zlim over the fields/seasons)
 
-    #plotNSN(summary, forPlot, sntype=sntype, varx='zlim_faint_med')
+    plotNSN(summary, forPlot, varx='zlim_faint_med')
     """
     for fieldname in summary_fields['fieldname'].unique():
         idx = summary_fields['fieldname'] == fieldname
         sel = summary_fields[idx]
         plotNSN(sel, forPlot, varx='zlim_faint')
     """
-    plotNSN(summary_fields, forPlot, varx='zlim_faint')
+    #plotNSN(summary_fields, forPlot, varx='zlim_faint')
 
     # plotNSN(summary, forPlot, sntype=sntype, varx='zlim_faint_weighted')
 
