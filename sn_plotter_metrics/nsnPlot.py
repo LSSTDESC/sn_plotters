@@ -241,9 +241,10 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'],
     # plotNSN(summary, forPlot, sntype=sntype, varx='zlim_faint_weighted')
 
     # this is for dithering plots wrt wRMS
-    """
+
     idx = summary['cadence'] == 'ddf_dither0.00_v1.7_10yrs'
     norm = summary[idx]
+    """
     plotNSN(summary, forPlot,
             varx='rms_zlim_{}'.format(sntype),
             vary='nsn_med_{}'.format(sntype),
@@ -258,6 +259,14 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'],
             legy='$\Delta z_{lim}=z_{lim}^{no dither}-z_{lim}$',
             norm=norm['zlim_{}_med'.format(sntype)].item(), op=operator.sub)
     """
+    plotNSN(summary, forPlot,
+            varx='zlim_{}_med'.format(sntype),
+            vary='nsn_med_{}'.format(sntype),
+            legx='$\Delta z_{complete}$',
+            legy='$N_{SN}/N_{SN}^{no dither} (z<z_{complete})$',
+            normx=norm['zlim_{}_med'.format(sntype)].item(),
+            normy=norm['nsn_med_{}'.format(sntype)].item(),
+            opx=operator.sub)
 
 
 def stat_season(grp,
@@ -301,8 +310,10 @@ def plotNSN(summary, forPlot,
             vary='nsn_med_faint',
             legx='$z_{faint}$',
             legy='$N_{SN} (z<)$',
-            norm=1,
-            op=operator.truediv):
+            normx=1,
+            normy=1,
+            opx=operator.truediv,
+            opy=operator.truediv):
     """
     Plot NSN vs redshift limit
 
@@ -315,16 +326,22 @@ def plotNSN(summary, forPlot,
       zlim_medium: redshift corresponding to medium SN (x1=0.0,color=0.0)
       nsn_zfaint: number of SN with z<zlim_faint
       nsn_zmedium: number of medium SN with z<zlim_medium
-    forPlot: numpy array
-      array with a set of plotting information (marker, color) for each cadence:
-      dbName: cadence name
-      newName: new cadence name
-      group: name of the group the cadence is bzelonging to
-      Namepl: name of the cadence for plotting
-      color: marker color
-      marker: marker type
-    sntype: str,opt
-      type of the supernova (faint or medium) for the display (default: faint)
+    varx: str, opt
+      name of the x var to display (default: 'zlim_faint_med')
+    vary: str, opt
+      name of the y variable name to display (default: 'nsn_med_faint')
+    legx: str, opt
+      x-axis label (default: '$z_{faint}$')
+    legy: str, opt
+     y-axis label (default: '$N_{SN} (z<)$',)
+    normx: gloat, opt
+      normalization factor for the x-variable (default: 1)
+    normy: gloat, opt
+      normalization factor for the y-variable (default: 1)
+    opx: operator, opt
+      operator to apply for the x variable (default: operator.truediv)
+    opy: operator, opt
+      operator to apply for the y variable (default: operator.truediv)
 
     Returns
     -----------
@@ -352,12 +369,12 @@ def plotNSN(summary, forPlot,
             sel['dbName'].str.strip())]
 
         # plot
-        ax.plot(selcad[varx], op(selcad[vary], norm), color=color,
+        ax.plot(opx(selcad[varx], normx), opy(selcad[vary], normy), color=color,
                 marker=marker, lineStyle='None')
 
         # get the centroid of the data and write it
-        centroid_x = selcad[varx].mean()
-        centroid_y = op(selcad[vary], norm).mean()
+        centroid_x = opx(selcad[varx], normx).mean()
+        centroid_y = opy(selcad[vary], normy).mean()
         ax.text(xshift*0.99*centroid_x, yshift *
                 1.01*centroid_y, group, color=color, fontsize=fontsize-3)
 
