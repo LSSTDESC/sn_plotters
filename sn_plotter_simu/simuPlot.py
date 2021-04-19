@@ -3,7 +3,9 @@ import numpy as np
 from astropy.table import Table, vstack
 import pprint
 from . import plt, filtercolors, fontsize
-
+import glob
+from sn_tools.sn_utils import multiproc,gather_results
+from sn_tools.sn_io import loopStack
 
 class SimuPlot:
     """
@@ -29,12 +31,53 @@ class SimuPlot:
             zip(self.bands, [(0, 0), (0, 1), (1, 0), (1, 1), (2, 0), (2, 1)]))
 
         # load simulation parameters
-        parName = 'Simu_{}.hdf5'.format(self.dbName)
-        params = self.load_params('{}/{}'.format(self.dbDir, parName))
+        parNames = glob.glob('{}/{}/Simu_*SN_Ia*.hdf5'.format(self.dbDir,self.dbName))
+        print('Nfiles to load',len(parNames))
+        pp = {}
+        pp['fichtype']='astropyTable'
+        params = multiproc(parNames,pp,self.load_multiproc,8)
+        
+        #params = self.load_params('{}/{}'.format(self.dbDir, parName))
         # loop on this file using the simuPars list
         # select only LC with status=1
         ik = params['status'] == 1
         self.simuPars = params[ik]
+
+
+    def load_multiproc(self,data,params={}, j=0, output_q=None):
+        """
+        Function to load simulation parameters for multiptocessing
+        
+        Parameters
+        ----------------
+        data: list? 
+        data to process
+        params: dict, opt
+        parameters for the multiprocessing
+
+        Returns
+        ----------
+        loaded data 
+        
+        
+        """
+        
+        fichtype = params['fichtype']
+        dictres = {}
+        print('processing',j,len(data))
+        for io,fname in enumerate(data):
+            res = loopStack([fname], fichtype)
+            dictres[io] = res
+        
+        finres = gather_results(dictres)
+
+        print('end of proc',j,len(finres))
+        if output_q is not None:
+            return output_q.put({j: finres})
+        else:
+            return finres
+
+
 
     def load_params(self, paramFile):
         """
