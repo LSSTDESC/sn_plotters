@@ -13,6 +13,7 @@ from tkinter import font as tkFont
 from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg, NavigationToolbar2Tk)
 matplotlib.use('tkagg')
+from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes, mark_inset
 
 
 def plot_DDArea(metricValues, forPlot, sntype='faint'):
@@ -149,13 +150,13 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'],
     for season in data['season'].unique():
         idx = data['season'] == season
         sel = data[idx]
-        #print(season, sel[['healpixID', 'fieldname', 'zlim_faint']])
+        # print(season, sel[['healpixID', 'fieldname', 'zlim_faint']])
         print(season, np.median(sel['zlim_faint']))
         for fieldname in sel['fieldname'].unique():
             idx = sel['fieldname'] == fieldname
             selb = sel[idx]
             print(fieldname, np.median(selb['zlim_faint']))
-            #plt.hist(selb['zlim_faint'], histtype='step')
+            # plt.hist(selb['zlim_faint'], histtype='step')
             # plt.show()
     # print(test)
     """
@@ -229,14 +230,16 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'],
     # plotNSN(summary_fields, forPlot, sntype=sntype, varx='zlim_faint')
     # Summary plot: one (NSN,zlim) per cadence (sum for NSN, median zlim over the fields/seasons)
 
-    plotNSN(summary, forPlot, varx='zlim_faint_med')
+    plotNSN(summary, forPlot, varx='zlim_faint_med',
+            legx='$z_{complete}^{0.95}$', legy='$N_{SN} (z<z_{complete}^{0.95})$',
+            zoom=dict(zip(['x1', 'x2', 'y1', 'y2', 'nolabel'], [0.61, 0.66, 0., 1000, ['dither', 'baseline', 'dm_heavy']])))
     """
     for fieldname in summary_fields['fieldname'].unique():
         idx = summary_fields['fieldname'] == fieldname
         sel = summary_fields[idx]
         plotNSN(sel, forPlot, varx='zlim_faint')
     """
-    #plotNSN(summary_fields, forPlot, varx='zlim_faint')
+    # plotNSN(summary_fields, forPlot, varx='zlim_faint')
 
     # plotNSN(summary, forPlot, sntype=sntype, varx='zlim_faint_weighted')
 
@@ -244,6 +247,12 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'],
 
     idx = summary['cadence'] == 'ddf_dither0.00_v1.7_10yrs'
     norm = summary[idx]
+    summary['trans_dither_offset'] = summary['cadence'].str.split(
+        '_').str.get(1).str.split('dither').str.get(1).astype(float)
+    # summary['trans_dither_offset'] = summary['trans_dither_offset'].str.split(
+    #    'dither').str.get(1)
+
+    print(summary['trans_dither_offset'])
     """
     plotNSN(summary, forPlot,
             varx='rms_zlim_{}'.format(sntype),
@@ -259,6 +268,7 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'],
             legy='$\Delta z_{lim}=z_{lim}^{no dither}-z_{lim}$',
             norm=norm['zlim_{}_med'.format(sntype)].item(), op=operator.sub)
     """
+    """
     plotNSN(summary, forPlot,
             varx='zlim_{}_med'.format(sntype),
             vary='nsn_med_{}'.format(sntype),
@@ -267,6 +277,15 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'],
             normx=norm['zlim_{}_med'.format(sntype)].item(),
             normy=norm['nsn_med_{}'.format(sntype)].item(),
             opx=operator.sub)
+
+    plotNSN(summary, forPlot,
+            varx='trans_dither_offset',
+            vary='nsn_med_{}'.format(sntype),
+            legx='Translational dither offset [deg]',
+            legy='$N_{SN}/N_{SN}^{no dither} (z<z_{complete})$',
+            normx=1,
+            normy=norm['nsn_med_{}'.format(sntype)].item(), plotlabel=False)
+    """
 
 
 def stat_season(grp,
@@ -313,7 +332,9 @@ def plotNSN(summary, forPlot,
             normx=1,
             normy=1,
             opx=operator.truediv,
-            opy=operator.truediv):
+            opy=operator.truediv,
+            plotlabel=True,
+            zoom={}):
     """
     Plot NSN vs redshift limit
 
@@ -342,6 +363,8 @@ def plotNSN(summary, forPlot,
       operator to apply for the x variable (default: operator.truediv)
     opy: operator, opt
       operator to apply for the y variable (default: operator.truediv)
+    zoom: dict
+      dict of params if zoom required.
 
     Returns
     -----------
@@ -351,11 +374,13 @@ def plotNSN(summary, forPlot,
     """
 
     fontsize = 15
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(16, 10))
     # varx = 'zlim_{}_{}'.format(sntype, ztype)
-    #vary = 'nsn_med_{}'.format(sntype)
+    # vary = 'nsn_med_{}'.format(sntype)
     xshift = 1.0
     yshift = 1.01
+    if zoom:
+        axins = zoomed_inset_axes(ax, 2.5, loc='center right')  # zoom = 3
 
     for group in np.unique(forPlot['group']):
         idx = forPlot['group'] == group
@@ -371,16 +396,46 @@ def plotNSN(summary, forPlot,
         # plot
         ax.plot(opx(selcad[varx], normx), opy(selcad[vary], normy), color=color,
                 marker=marker, lineStyle='None')
+        if zoom:
+            axins.plot(opx(selcad[varx], normx), opy(selcad[vary], normy), color=color,
+                       marker=marker, lineStyle='None')
 
         # get the centroid of the data and write it
-        centroid_x = opx(selcad[varx], normx).mean()
-        centroid_y = opy(selcad[vary], normy).mean()
-        ax.text(xshift*0.99*centroid_x, yshift *
-                1.01*centroid_y, group, color=color, fontsize=fontsize-3)
+        if plotlabel:
+            centroid_x = opx(selcad[varx], normx).mean()
+            centroid_y = opy(selcad[vary], normy).mean()
+            labelIt = True
+            if zoom and 'nolabel' in zoom.keys():
+                for bb in zoom['nolabel']:
+                    print('hhh', group, bb, group.find(bb))
+                    if group.find(bb) == 0:
+                        labelIt = False
+
+            if labelIt:
+                ax.text(xshift*0.99*centroid_x, yshift *
+                        1.01*centroid_y, group, color=color, fontsize=fontsize-3)
+            if zoom:
+                axins.text(xshift*0.995*centroid_x, yshift *
+                           1.01*centroid_y, group, color=color, fontsize=fontsize-5)
 
     ax.grid()
     ax.set_xlabel(legx)
     ax.set_ylabel(legy)
+
+    if zoom:
+        axins.grid()
+        # sub region of the original image
+        # x1, x2, y1, y2 = 0.61, 0.66, 0., 1000
+        x1, x2, y1, y2 = zoom['x1'], zoom['x2'], zoom['y1'], zoom['y2']
+        axins.set_xlim(x1, x2)
+        axins.set_ylim(y1, y2)
+
+        plt.xticks(visible=False)
+        plt.yticks(visible=False)
+
+        # draw a bbox of the region of the inset axes in the parent axes and
+        # connecting lines between the bbox and the inset axes area
+        mark_inset(ax, axins, loc1=3, loc2=4, fc="none", ec="0.5")
 
     """
     fig.text(0.8, 0.8, 'Preliminary',
