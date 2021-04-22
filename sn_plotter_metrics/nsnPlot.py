@@ -179,7 +179,11 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'],
                                                                                    'zlim_faint': 'median',
                                                                                    'zlim_medium': 'median', }).reset_index()
     """
-    summary_fields_seasons = data.groupby(['dbName', 'fieldname', 'season', 'healpixID']).apply(
+    # summary_fields_seasons = data.groupby(['dbName', 'fieldname', 'season', 'healpixID']).apply(
+    #    lambda x: stat_season(x)).reset_index()
+
+    print('hhh', data['dbName'])
+    summary_fields_seasons = data.groupby(['dbName', 'fieldname', 'season']).apply(
         lambda x: stat_season(x)).reset_index()
 
     # print(summary_fields_seasons)
@@ -192,7 +196,7 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'],
     summary = summary_fields_seasons.groupby(['cadence']).apply(
         lambda x: stat_season(x, corresp)).reset_index()
     """
-
+    print(summary_fields_seasons.columns)
     summary = summary_fields_seasons.groupby(['dbName']).agg({'nsn_med_faint': 'sum',
                                                               'nsn_med_medium': 'sum',
                                                               'zlim_faint_med': 'median',
@@ -224,7 +228,7 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'],
     # plotNSN(summary_fields_seasons, forPlot, sntype='faint', ztype='med')
     # plotNSN(summary_fields_seasons, forPlot, sntype='faint', ztype='weighted')
     print(summary_fields_seasons.columns)
-
+    """
     idx = summary_fields_seasons['cadence'] < 1.5
     sel = summary_fields_seasons[idx]
     print(sel.columns)
@@ -245,7 +249,7 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'],
 
     plotNSN(summary_fields_seasons, forPlot, varx='cadence', vary='zlim_faint_med',
             legx='cadence [days]', legy='$z_{complete}^{0.95}$')
-
+    """
     # plotNSN(data, forPlot, sntype=sntype, varx='zlim_faint')
 
     # per field, for all seasons
@@ -257,6 +261,12 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'],
             legx='$z_{complete}^{0.95}$', legy='$N_{SN} (z<z_{complete}^{0.95})$',
             zoom=dict(zip(['x1', 'x2', 'y1', 'y2', 'nolabel'], [0.61, 0.66, 0., 1000, ['dither', 'baseline', 'dm_heavy']])))
     """
+    print(summary[['dbName', 'zlim_faint_med']])
+    """
+    plotNSN(summary, forPlot, varx='zlim_faint_med',
+            legx='$z_{complete}^{0.95}$', legy='$N_{SN} (z<z_{complete}^{0.95})$')
+    """
+    plotDithering(summary, forPlot)
     """
     for fieldname in summary_fields['fieldname'].unique():
         idx = summary_fields['fieldname'] == fieldname
@@ -269,14 +279,6 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'],
 
     # this is for dithering plots wrt wRMS
 
-    idx = summary['dbName'] == 'ddf_dither0.00_v1.7_10yrs'
-    norm = summary[idx]
-    summary['trans_dither_offset'] = summary['dbName'].str.split(
-        '_').str.get(1).str.split('dither').str.get(1).astype(float)
-    # summary['trans_dither_offset'] = summary['trans_dither_offset'].str.split(
-    #    'dither').str.get(1)
-
-    print(summary['trans_dither_offset'])
     """
     plotNSN(summary, forPlot,
             varx='rms_zlim_{}'.format(sntype),
@@ -327,6 +329,7 @@ def stat_season(grp,
 
     """
     dictres = {}
+
     vv = ['cadence', 'gap_max', 'gap_med', 'season_length']
     for b in 'grizy':
         vv.append('m5_med_{}'.format(b))
@@ -364,7 +367,8 @@ def plotNSN(summary, forPlot,
             opx=operator.truediv,
             opy=operator.truediv,
             plotlabel=True,
-            zoom={}):
+            zoom={}, ax=None,
+            lineStyle='None'):
     """
     Plot NSN vs redshift limit
 
@@ -395,6 +399,9 @@ def plotNSN(summary, forPlot,
       operator to apply for the y variable (default: operator.truediv)
     zoom: dict
       dict of params if zoom required.
+    ax: axis
+      matplotlib axis - to superimpose multiple results
+
 
     Returns
     -----------
@@ -404,9 +411,9 @@ def plotNSN(summary, forPlot,
     """
 
     fontsize = 15
-    fig, ax = plt.subplots(figsize=(16, 10))
-    # varx = 'zlim_{}_{}'.format(sntype, ztype)
-    # vary = 'nsn_med_{}'.format(sntype)
+    if not ax:
+        fig, ax = plt.subplots(figsize=(16, 10))
+
     xshift = 1.0
     yshift = 1.01
     if zoom:
@@ -425,10 +432,10 @@ def plotNSN(summary, forPlot,
 
         # plot
         ax.plot(opx(selcad[varx], normx), opy(selcad[vary], normy), color=color,
-                marker=marker, lineStyle='None')
+                marker=marker, lineStyle=lineStyle)
         if zoom:
             axins.plot(opx(selcad[varx], normx), opy(selcad[vary], normy), color=color,
-                       marker=marker, lineStyle='None')
+                       marker=marker, lineStyle=lineStyle)
 
         # get the centroid of the data and write it
         if plotlabel:
@@ -437,7 +444,6 @@ def plotNSN(summary, forPlot,
             labelIt = True
             if zoom and 'nolabel' in zoom.keys():
                 for bb in zoom['nolabel']:
-                    print('hhh', group, bb, group.find(bb))
                     if group.find(bb) == 0:
                         labelIt = False
 
@@ -466,6 +472,147 @@ def plotNSN(summary, forPlot,
         # draw a bbox of the region of the inset axes in the parent axes and
         # connecting lines between the bbox and the inset axes area
         mark_inset(ax, axins, loc1=3, loc2=4, fc="none", ec="0.5")
+
+    """
+    fig.text(0.8, 0.8, 'Preliminary',
+             fontsize=25, color='blue',
+             ha='right', va='bottom', alpha=0.5)
+    """
+
+
+def plotDithering(summary, forPlot, sntype='faint'):
+
+    forPlotf = forPlot[forPlot['dbName'].str.contains("dither")]
+    sel = summary[summary['dbName'].str.contains("dither")]
+    sel['trans_dither_offset'] = sel['dbName'].str.split(
+        '_').str.get(1).str.split('dither').str.get(1).astype(float)
+
+    # sel['family'] = sel['dbName'].str.split(
+    #    '_').str.get(3).astype(float).astype(int)
+
+    sel['family'] = sel['dbName'].str.split(
+        '_').str.get(3)
+    sel['family'] = sel['dbName'].str.split('_').str.get(
+        0) + '_'+sel['family'].astype(str)
+
+    print(sel.columns, type(forPlot))
+    sel = sel.merge(forPlot, left_on=['dbName'], right_on=['dbName'])
+    # summary['trans_dither_offset'] = summary['trans_dither_offset'].str.split(
+    #    'dither').str.get(1)
+
+    print(sel[['trans_dither_offset', 'family']])
+
+    fig, ax = plt.subplots(figsize=(16, 10))
+    figb, axb = plt.subplots(figsize=(16, 10))
+
+    for family in np.unique(sel['family']):
+        ia = sel['family'] == family
+        sela = sel[ia]
+        ib = sela['trans_dither_offset'] < 1.e-5
+        norm = sela[ib]
+        lineStyle = 'dashed'
+        if 'ddf' in family:
+            lineStyle = 'solid'
+        fsl = family.split('_')
+        if 'Fakes' in family:
+            label = fsl[0]+' cad={}'.format(int(float(fsl[1])))
+        else:
+            label = fsl[0]+'_dither'
+        plotNSN_noloop(sela, forPlot,
+                       varx='trans_dither_offset',
+                       vary='nsn_med_{}'.format(sntype),
+                       legx='Translational dither offset [deg]',
+                       legy='$N_{SN}/N_{SN}^{no dither} (z<z_{complete})$',
+                       normx=1,
+                       normy=norm['nsn_med_{}'.format(sntype)].item(), label=label, ax=ax, lineStyle=lineStyle)
+        plotNSN_noloop(sela, forPlot,
+                       varx='trans_dither_offset',
+                       vary='zlim_{}_med'.format(sntype),
+                       legx='Translational dither offset [deg]',
+                       legy='$\Delta z_{complete}$',
+                       normx=1,
+                       normy=norm['zlim_{}_med'.format(sntype)].item(), opy=operator.sub, label=label, ax=axb, lineStyle=lineStyle)
+
+    ax.grid()
+    ax.legend()
+    ax.grid()
+
+    axb.legend()
+    axb.grid()
+    axb.grid()
+
+
+def plotNSN_noloop(summary, forPlot,
+                   varx='zlim_faint_med',
+                   vary='nsn_med_faint',
+                   legx='$z_{faint}$',
+                   legy='$N_{SN} (z<)$',
+                   normx=1,
+                   normy=1,
+                   opx=operator.truediv,
+                   opy=operator.truediv,
+                   label='',
+                   zoom={}, ax=None,
+                   lineStyle='None'):
+    """
+    Plot NSN vs redshift limit
+
+    Parameters
+    ----------------
+    summary: pandas Dataframe
+     data to display:
+      cadence: name of the cadence
+      zlim_faint: redshift corresponding to faintest SN (x1=-2.0,color=0.2)
+      zlim_medium: redshift corresponding to medium SN (x1=0.0,color=0.0)
+      nsn_zfaint: number of SN with z<zlim_faint
+      nsn_zmedium: number of medium SN with z<zlim_medium
+    varx: str, opt
+      name of the x var to display (default: 'zlim_faint_med')
+    vary: str, opt
+      name of the y variable name to display (default: 'nsn_med_faint')
+    legx: str, opt
+      x-axis label (default: '$z_{faint}$')
+    legy: str, opt
+     y-axis label (default: '$N_{SN} (z<)$',)
+    normx: gloat, opt
+      normalization factor for the x-variable (default: 1)
+    normy: gloat, opt
+      normalization factor for the y-variable (default: 1)
+    opx: operator, opt
+      operator to apply for the x variable (default: operator.truediv)
+    opy: operator, opt
+      operator to apply for the y variable (default: operator.truediv)
+    zoom: dict
+      dict of params if zoom required.
+    ax: axis
+      matplotlib axis - to superimpose multiple results
+
+
+    Returns
+    -----------
+    Plot (NSN, zlim)
+
+
+    """
+
+    fontsize = 15
+    if not ax:
+        fig, ax = plt.subplots(figsize=(16, 10))
+
+    marker = summary['marker'].unique()[0]
+    color = summary['color'].unique()[0]
+
+    # print('ici', sel['dbName'].str.strip(), summary['cadence'])
+    selcad = summary[summary['dbName'].str.strip().isin(
+        summary['dbName'].str.strip())].to_records(index=False)
+
+    # plot
+    ax.plot(opx(selcad[varx], normx), opy(selcad[vary], normy), color=color,
+            marker=marker, lineStyle=lineStyle, label=label, ms=10)
+
+    ax.grid()
+    ax.set_xlabel(legx)
+    ax.set_ylabel(legy)
 
     """
     fig.text(0.8, 0.8, 'Preliminary',
