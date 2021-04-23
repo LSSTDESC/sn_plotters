@@ -502,9 +502,14 @@ def plotDithering(summary, forPlot, sntype='faint'):
 
     print(sel[['trans_dither_offset', 'family']])
 
+    """
     fig, ax = plt.subplots(figsize=(16, 10))
     figb, axb = plt.subplots(figsize=(16, 10))
-
+    """
+    fig, axs = plt.subplots(2, 1, sharex=True, figsize=(16, 12))
+    # Remove horizontal space between axes
+    fig.subplots_adjust(hspace=0)
+    fig.subplots_adjust(right=0.85)
     for family in np.unique(sel['family']):
         ia = sel['family'] == family
         sela = sel[ia]
@@ -524,22 +529,24 @@ def plotDithering(summary, forPlot, sntype='faint'):
                        legx='Translational dither offset [deg]',
                        legy='$N_{SN}/N_{SN}^{no dither} (z<z_{complete})$',
                        normx=1,
-                       normy=norm['nsn_med_{}'.format(sntype)].item(), label=label, ax=ax, lineStyle=lineStyle)
+                       normy=norm['nsn_med_{}'.format(sntype)].item(), label=label, ax=axs[0], lineStyle=lineStyle)
         plotNSN_noloop(sela, forPlot,
                        varx='trans_dither_offset',
                        vary='zlim_{}_med'.format(sntype),
                        legx='Translational dither offset [deg]',
-                       legy='$\Delta z_{complete}$',
+                       legy='$\Delta z_{complete}=z_{complete}^{no dither}-z_{complete}$',
                        normx=1,
-                       normy=norm['zlim_{}_med'.format(sntype)].item(), opy=operator.sub, label=label, ax=axb, lineStyle=lineStyle)
+                       normy=norm['zlim_{}_med'.format(sntype)].item(), opy=operator.sub, label=label, ax=axs[1], lineStyle=lineStyle)
 
-    ax.grid()
-    ax.legend()
-    ax.grid()
-
-    axb.legend()
+    axs[0].grid()
+    axs[0].legend(bbox_to_anchor=(1., 0.15), ncol=1,
+                  fontsize=12, frameon=False)
+    axs[0].grid()
+    """
+    axb.legend(fontsize=15)
     axb.grid()
     axb.grid()
+    """
 
 
 def plotNSN_noloop(summary, forPlot,
@@ -608,11 +615,11 @@ def plotNSN_noloop(summary, forPlot,
 
     # plot
     ax.plot(opx(selcad[varx], normx), opy(selcad[vary], normy), color=color,
-            marker=marker, lineStyle=lineStyle, label=label, ms=10)
+            marker=marker, lineStyle=lineStyle, label=label, ms=7, linewidth=1)
 
     ax.grid()
-    ax.set_xlabel(legx)
-    ax.set_ylabel(legy)
+    ax.set_xlabel(legx, fontsize=fontsize)
+    ax.set_ylabel(legy, fontsize=fontsize)
 
     """
     fig.text(0.8, 0.8, 'Preliminary',
