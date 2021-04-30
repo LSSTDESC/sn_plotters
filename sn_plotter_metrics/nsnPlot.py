@@ -506,10 +506,10 @@ def plotDithering(summary, forPlot, sntype='faint'):
     fig, ax = plt.subplots(figsize=(16, 10))
     figb, axb = plt.subplots(figsize=(16, 10))
     """
-    fig, axs = plt.subplots(2, 1, sharex=True, figsize=(16, 12))
+    fig, axs = plt.subplots(2, 1, sharex=True, figsize=(12, 8))
     # Remove horizontal space between axes
     fig.subplots_adjust(hspace=0)
-    fig.subplots_adjust(right=0.85)
+    # fig.subplots_adjust(right=0.85)
     for family in np.unique(sel['family']):
         ia = sel['family'] == family
         sela = sel[ia]
@@ -520,7 +520,11 @@ def plotDithering(summary, forPlot, sntype='faint'):
             lineStyle = 'solid'
         fsl = family.split('_')
         if 'Fakes' in family:
-            label = fsl[0]+' cad={}'.format(int(float(fsl[1])))
+            cad = int(float(fsl[1]))
+            dd = 'days'
+            if cad < 2:
+                dd = 'day'
+            label = fsl[0]+' - cadence: {} {}'.format(cad, dd)
         else:
             label = fsl[0]+'_dither'
         plotNSN_noloop(sela, forPlot,
@@ -539,9 +543,14 @@ def plotDithering(summary, forPlot, sntype='faint'):
                        normy=norm['zlim_{}_med'.format(sntype)].item(), opy=operator.sub, label=label, ax=axs[1], lineStyle=lineStyle)
 
     axs[0].grid()
-    axs[0].legend(bbox_to_anchor=(1., 0.15), ncol=1,
-                  fontsize=12, frameon=False)
+    # axs[0].legend(bbox_to_anchor=(1., 0.15), ncol=1,
+    #              fontsize=12, frameon=False)
+    axs[0].legend(bbox_to_anchor=(0.1, 1.1), ncol=3,
+                  frameon=False, loc='upper left')
     axs[0].grid()
+    legx = 'Translational dither offset [deg]'
+    axs[1].set_xlabel(r'{}'.format(legx), fontweight='bold')
+
     """
     axb.legend(fontsize=15)
     axb.grid()
@@ -602,9 +611,8 @@ def plotNSN_noloop(summary, forPlot,
 
     """
 
-    fontsize = 15
     if not ax:
-        fig, ax = plt.subplots(figsize=(16, 10))
+        fig, ax = plt.subplots(figsize=(12, 8))
 
     marker = summary['marker'].unique()[0]
     color = summary['color'].unique()[0]
@@ -614,12 +622,12 @@ def plotNSN_noloop(summary, forPlot,
         summary['dbName'].str.strip())].to_records(index=False)
 
     # plot
-    ax.plot(opx(selcad[varx], normx), opy(selcad[vary], normy), color=color,
+    ax.plot(opx(selcad[varx], normx), opy(selcad[vary], normy),
             marker=marker, lineStyle=lineStyle, label=label, ms=7, linewidth=1)
 
     ax.grid()
-    ax.set_xlabel(legx, fontsize=fontsize)
-    ax.set_ylabel(legy, fontsize=fontsize)
+    #ax.set_xlabel(r'{}'.format(legx), fontproperties=fontproperties)
+    ax.set_ylabel(r'{}'.format(legy))
 
     """
     fig.text(0.8, 0.8, 'Preliminary',
