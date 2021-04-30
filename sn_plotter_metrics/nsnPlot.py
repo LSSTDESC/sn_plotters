@@ -256,17 +256,16 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'],
     # plotNSN(summary_fields, forPlot, sntype=sntype, varx='zlim_faint')
     # Summary plot: one (NSN,zlim) per cadence (sum for NSN, median zlim over the fields/seasons)
 
-    """
     plotNSN(summary, forPlot, varx='zlim_faint_med',
             legx='$z_{complete}^{0.95}$', legy='$N_{SN} (z<z_{complete}^{0.95})$',
-            zoom=dict(zip(['x1', 'x2', 'y1', 'y2', 'nolabel'], [0.61, 0.66, 0., 1000, ['dither', 'baseline', 'dm_heavy']])))
+            zoom=dict(zip(['x1', 'x2', 'y1', 'y2', 'nolabel'], [0.61, 0.67, 0., 1000, ['dither', 'baseline', 'dm_heavy']])))
     """
     print(summary[['dbName', 'zlim_faint_med']])
-    """
+
     plotNSN(summary, forPlot, varx='zlim_faint_med',
             legx='$z_{complete}^{0.95}$', legy='$N_{SN} (z<z_{complete}^{0.95})$')
     """
-    plotDithering(summary, forPlot)
+    #plotDithering(summary, forPlot)
     """
     for fieldname in summary_fields['fieldname'].unique():
         idx = summary_fields['fieldname'] == fieldname
@@ -286,7 +285,7 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'],
             legx='weighted RMS($z_{lim}$)',
             legy='$N_{SN}/N_{SN}^{no dither} (z<)$',
             norm=norm['nsn_med_{}'.format(sntype)].item())
-
+    
     plotNSN(summary, forPlot,
             varx='rms_zlim_{}'.format(sntype),
             vary='zlim_{}_med'.format(sntype),
@@ -448,11 +447,42 @@ def plotNSN(summary, forPlot,
                         labelIt = False
 
             if labelIt:
-                ax.text(xshift*0.99*centroid_x, yshift *
-                        1.01*centroid_y, group, color=color, fontsize=fontsize-3)
+                xc = 1
+                yc = 1
+                if 'ddf_heavy' in group:
+                    xc = 0.99
+                    yc = 0.92
+                if 'agnddf' in group:
+                    xc = 0.99
+                    yc = 1.04
+
+                ax.text(xshift*xc*0.99*centroid_x, yshift * yc *
+                        1.02*centroid_y, group, color=color, fontsize=fontsize)
             if zoom:
-                axins.text(xshift*0.995*centroid_x, yshift *
-                           1.01*centroid_y, group, color=color, fontsize=fontsize-5)
+                xc = 1.
+                yc = 1
+                if 'dm_heavy' in group:
+                    xc = 1.012
+                if 'dither0.05' in group:
+                    xc = 1.012
+                    yc = 0.92
+                if 'baseline' in group:
+                    xc = 1.005
+                    yc = 0.8
+                if 'dither0.30' in group:
+                    xc = 0.992
+                    yc = 0.92
+                if 'dither0.10' in group:
+                    xc = 1.012
+                    yc = 0.95
+                if 'dither2.0' in group:
+                    xc = 1.012
+                    yc = 0.95
+                if 'dither1.5' in group:
+                    yc = 1.1
+
+                axins.text(xshift*xc*0.99*centroid_x, yshift * yc *
+                           1.05*centroid_y, group, color=color, fontsize=fontsize)
 
     ax.grid()
     ax.set_xlabel(legx)
@@ -545,7 +575,7 @@ def plotDithering(summary, forPlot, sntype='faint'):
     axs[0].grid()
     # axs[0].legend(bbox_to_anchor=(1., 0.15), ncol=1,
     #              fontsize=12, frameon=False)
-    axs[0].legend(bbox_to_anchor=(0.1, 1.1), ncol=3,
+    axs[0].legend(bbox_to_anchor=(-0.015, 1.25), ncol=3,
                   frameon=False, loc='upper left')
     axs[0].grid()
     legx = 'Translational dither offset [deg]'
