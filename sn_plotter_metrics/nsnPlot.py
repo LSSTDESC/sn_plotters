@@ -265,7 +265,7 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'],
     plotNSN(summary, forPlot, varx='zlim_faint_med',
             legx='$z_{complete}^{0.95}$', legy='$N_{SN} (z<z_{complete}^{0.95})$')
     """
-    #plotDithering(summary, forPlot)
+    plotDithering(summary, forPlot)
     """
     for fieldname in summary_fields['fieldname'].unique():
         idx = summary_fields['fieldname'] == fieldname
@@ -417,6 +417,8 @@ def plotNSN(summary, forPlot,
     yshift = 1.01
     if zoom:
         axins = zoomed_inset_axes(ax, 2.5, loc='center right')  # zoom = 3
+        axins.set_xticks([], minor=True)
+        axins.set_yticks([], minor=True)
 
     for group in np.unique(forPlot['group']):
         idx = forPlot['group'] == group
@@ -536,7 +538,7 @@ def plotDithering(summary, forPlot, sntype='faint'):
     fig, ax = plt.subplots(figsize=(16, 10))
     figb, axb = plt.subplots(figsize=(16, 10))
     """
-    fig, axs = plt.subplots(2, 1, sharex=True, figsize=(12, 8))
+    fig, axs = plt.subplots(2, 1, sharex=True, figsize=(12, 10))
     # Remove horizontal space between axes
     fig.subplots_adjust(hspace=0)
     # fig.subplots_adjust(right=0.85)
@@ -642,7 +644,7 @@ def plotNSN_noloop(summary, forPlot,
     """
 
     if not ax:
-        fig, ax = plt.subplots(figsize=(12, 8))
+        fig, ax = plt.subplots(figsize=(12, 10))
 
     marker = summary['marker'].unique()[0]
     color = summary['color'].unique()[0]
@@ -653,7 +655,7 @@ def plotNSN_noloop(summary, forPlot,
 
     # plot
     ax.plot(opx(selcad[varx], normx), opy(selcad[vary], normy),
-            marker=marker, lineStyle=lineStyle, label=label, ms=7, linewidth=1)
+            marker=marker, lineStyle=lineStyle, label=label, ms=7, linewidth=2)
 
     ax.grid()
     #ax.set_xlabel(r'{}'.format(legx), fontproperties=fontproperties)
