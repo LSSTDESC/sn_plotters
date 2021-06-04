@@ -192,7 +192,7 @@ class plotEffi:
         nsn_cum_norm, zlimit = self.get_zlims(
             data, ax, healpixID, season, sn_x1=sn_x1, sn_color=sn_color, zlim_coeff=zlim_coeff, zplot=zplot)
         ax.plot(zplot, nsn_cum_norm, label=label)
-        zcomp = '$z_{complete}$ = '
+        zcomp = '$z_{complete}^{0.95}$ = '
         ax.text(0.05, 0.908-0.08*season,
                 zcomp+'{}'.format(np.round(zlimit, 2)), fontsize=15, color=plt.gca().lines[-1].get_color())
         ax.plot([zlimit]*2, [0., 0.95], color='k', ls='dashed')
