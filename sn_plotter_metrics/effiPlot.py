@@ -77,8 +77,8 @@ class plotEffi:
                 self.plotEffi_indiv(sel, ax, healpixID, season, 'effi', 'effi_err',
                                     'Observing Efficiencies', ls='-', label='season {}'.format(season))
 
-            ax.set_xlabel('z', weight='bold')
-            ax.set_ylabel('Observing Efficiency', weight='bold')
+            ax.set_xlabel('z')
+            ax.set_ylabel('Observing Efficiency')
             ax.legend()
             ax.set_xlim([0.0, 0.7])
             ax.grid()
@@ -225,7 +225,7 @@ class plotEffi:
         zplotb = np.arange(0.01, zlimit+0.005, 0.01)
         nsn_zlimit = np.cumsum(effiInterp(zplotb)*rateInterp(zplotb))[-1]
         print(nsn_zlimit)
-        zcomp = '$N_{SN}^{z\leq z_{complete}^{0.95}}$ = '
+        zcomp = '$\mathrm{N_{SN}^{z\leq z_{complete}^{0.95}}}$ = '
         if season <= 5:
             xpos = 0.1
             ypos = 14.-2.*season
