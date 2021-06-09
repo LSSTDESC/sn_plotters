@@ -257,7 +257,7 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'],
     # Summary plot: one (NSN,zlim) per cadence (sum for NSN, median zlim over the fields/seasons)
 
     plotNSN(summary, forPlot, varx='zlim_faint_med',
-            legx='$z_{complete}^{0.95}$', legy='$N_{SN} (z<z_{complete}^{0.95})$',
+            legx='$\mathrm{z_{complete}^{0.95}}$', legy='$\mathrm{N_{SN} (z<z_{complete}^{0.95})}$',
             zoom=dict(zip(['x1', 'x2', 'y1', 'y2', 'nolabel'], [0.61, 0.67, 0., 1000, ['dither', 'baseline', 'dm_heavy']])))
     """
     print(summary[['dbName', 'zlim_faint_med']])
@@ -563,14 +563,14 @@ def plotDithering(summary, forPlot, sntype='faint'):
                        varx='trans_dither_offset',
                        vary='nsn_med_{}'.format(sntype),
                        legx='Translational dither offset [deg]',
-                       legy='$N_{SN}/N_{SN}^{no dither} (z<z_{complete})$',
+                       legy='$\mathrm{N_{SN}/N_{SN}^{no dither} (z<z_{complete})}$',
                        normx=1,
                        normy=norm['nsn_med_{}'.format(sntype)].item(), label=label, ax=axs[0], lineStyle=lineStyle)
         plotNSN_noloop(sela, forPlot,
                        varx='trans_dither_offset',
                        vary='zlim_{}_med'.format(sntype),
                        legx='Translational dither offset [deg]',
-                       legy='$\Delta z_{complete}=z_{complete}^{no dither}-z_{complete}$',
+                       legy='$\mathrm{\Delta z_{complete}=z_{complete}^{no dither}-z_{complete}}$',
                        normx=1,
                        normy=norm['zlim_{}_med'.format(sntype)].item(), opy=operator.sub, label=label, ax=axs[1], lineStyle=lineStyle)
 
@@ -578,10 +578,10 @@ def plotDithering(summary, forPlot, sntype='faint'):
     # axs[0].legend(bbox_to_anchor=(1., 0.15), ncol=1,
     #              fontsize=12, frameon=False)
     axs[0].legend(bbox_to_anchor=(-0.015, 1.25), ncol=3,
-                  frameon=False, loc='upper left')
+                  frameon=False, loc='upper left', fontsize=18)
     axs[0].grid()
     legx = 'Translational dither offset [deg]'
-    axs[1].set_xlabel(r'{}'.format(legx), fontweight='bold')
+    axs[1].set_xlabel(r'{}'.format(legx), fontweight='normal')
 
     """
     axb.legend(fontsize=15)
