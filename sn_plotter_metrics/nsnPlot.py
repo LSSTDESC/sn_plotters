@@ -257,7 +257,7 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'],
     # Summary plot: one (NSN,zlim) per cadence (sum for NSN, median zlim over the fields/seasons)
 
     plotNSN(summary, forPlot, varx='zlim_faint_med',
-            legx='$\mathrm{z_{complete}^{0.95}}$', legy='$\mathrm{N_{SN} (z<z_{complete}^{0.95})}$',
+            legx='${z_{\mathrm{complete}}^{\mathrm{0.95}}}$', legy='N$_{\mathrm{SN}} (z<z_{\mathrm{complete}}^{\mathrm{0.95}})}$',
             zoom=dict(zip(['x1', 'x2', 'y1', 'y2', 'nolabel'], [0.61, 0.67, 0., 1000, ['dither', 'baseline', 'dm_heavy']])))
     """
     print(summary[['dbName', 'zlim_faint_med']])
@@ -563,14 +563,14 @@ def plotDithering(summary, forPlot, sntype='faint'):
                        varx='trans_dither_offset',
                        vary='nsn_med_{}'.format(sntype),
                        legx='Translational dither offset [deg]',
-                       legy='$\mathrm{N_{SN}/N_{SN}^{no dither} (z<z_{complete})}$',
+                       legy='N$_{\mathrm{SN}}$/N$_{\mathrm{SN}}^{\mathrm{no\ dither}} (z \leq z_{\mathrm{complete}})}$',
                        normx=1,
                        normy=norm['nsn_med_{}'.format(sntype)].item(), label=label, ax=axs[0], lineStyle=lineStyle)
         plotNSN_noloop(sela, forPlot,
                        varx='trans_dither_offset',
                        vary='zlim_{}_med'.format(sntype),
                        legx='Translational dither offset [deg]',
-                       legy='$\mathrm{\Delta z_{complete}=z_{complete}^{no dither}-z_{complete}}$',
+                       legy='$\Delta z_{\mathrm{complete}} = z_{\mathrm{complete}}^{\mathrm{no\ dither}}-z_{\mathrm{complete}}$',
                        normx=1,
                        normy=norm['zlim_{}_med'.format(sntype)].item(), opy=operator.sub, label=label, ax=axs[1], lineStyle=lineStyle)
 
