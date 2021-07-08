@@ -168,8 +168,8 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'],
                                              'zlim_faint': 'median',
                                              'zlim_medium': 'median', }).reset_index()
     """
-    summary_fields = data.groupby(['dbName', 'fieldname']).agg({'nsn_med_faint': 'sum',
-                                                                'nsn_med_medium': 'sum',
+    summary_fields = data.groupby(['dbName', 'fieldname']).agg({'nsn_zlim_faint': 'sum',
+                                                                'nsn_zlim_medium': 'sum',
                                                                 'zlim_faint': 'median',
                                                                 'zlim_medium': 'median', }).reset_index()
 
@@ -197,8 +197,8 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'],
         lambda x: stat_season(x, corresp)).reset_index()
     """
     print(summary_fields_seasons.columns)
-    summary = summary_fields_seasons.groupby(['dbName']).agg({'nsn_med_faint': 'sum',
-                                                              'nsn_med_medium': 'sum',
+    summary = summary_fields_seasons.groupby(['dbName']).agg({'nsn_zlim_faint': 'sum',
+                                                              'nsn_zlim_medium': 'sum',
                                                               'zlim_faint_med': 'median',
                                                               'zlim_medium_med': 'median',
                                                               'zlim_faint_weighted': 'median',
@@ -219,8 +219,8 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'],
     # print('aiaiai',summary.columns)
     # change some of the type for printing
     summary.round({'zlim_faint_med': 2, 'zlim_medium_med': 2})
-    summary['nsn_med_faint'] = summary['nsn_med_faint'].astype(int)
-    summary['nsn_med_medium'] = summary['nsn_med_medium'].astype(int)
+    summary['nsn_zlim_faint'] = summary['nsn_zlim_faint'].astype(int)
+    summary['nsn_zlim_medium'] = summary['nsn_zlim_medium'].astype(int)
 
     # plot the results
 
@@ -285,7 +285,7 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'],
             legx='weighted RMS($z_{lim}$)',
             legy='$N_{SN}/N_{SN}^{no dither} (z<)$',
             norm=norm['nsn_med_{}'.format(sntype)].item())
-    
+
     plotNSN(summary, forPlot,
             varx='rms_zlim_{}'.format(sntype),
             vary='zlim_{}_med'.format(sntype),
@@ -338,7 +338,7 @@ def stat_season(grp,
 
     for vv in ['faint', 'medium']:
 
-        nsn = 'nsn_med_{}'.format(vv)
+        nsn = 'nsn_zlim_{}'.format(vv)
         zlim_med = 'zlim_{}_med'.format(vv)
         zlim_weighted = 'zlim_{}_weighted'.format(vv)
         rms_zlim = 'rms_zlim_{}'.format(vv)
@@ -358,7 +358,7 @@ def stat_season(grp,
 
 def plotNSN(summary, forPlot,
             varx='zlim_faint_med',
-            vary='nsn_med_faint',
+            vary='nsn_zlim_faint',
             legx='$z_{faint}$',
             legy='$N_{SN} (z<)$',
             normx=1,
@@ -561,11 +561,11 @@ def plotDithering(summary, forPlot, sntype='faint'):
             label = fsl[0]+'_dither'
         plotNSN_noloop(sela, forPlot,
                        varx='trans_dither_offset',
-                       vary='nsn_med_{}'.format(sntype),
+                       vary='nsn_zlim_{}'.format(sntype),
                        legx='Translational dither offset [deg]',
                        legy='N$_{\mathrm{SN}}$/N$_{\mathrm{SN}}^{\mathrm{no\ dither}} (z \leq z_{\mathrm{complete}})}$',
                        normx=1,
-                       normy=norm['nsn_med_{}'.format(sntype)].item(), label=label, ax=axs[0], lineStyle=lineStyle)
+                       normy=norm['nsn_zlim_{}'.format(sntype)].item(), label=label, ax=axs[0], lineStyle=lineStyle)
         plotNSN_noloop(sela, forPlot,
                        varx='trans_dither_offset',
                        vary='zlim_{}_med'.format(sntype),
@@ -592,7 +592,7 @@ def plotDithering(summary, forPlot, sntype='faint'):
 
 def plotNSN_noloop(summary, forPlot,
                    varx='zlim_faint_med',
-                   vary='nsn_med_faint',
+                   vary='nsn_zlim_faint',
                    legx='$z_{faint}$',
                    legy='$N_{SN} (z<)$',
                    normx=1,
@@ -658,7 +658,7 @@ def plotNSN_noloop(summary, forPlot,
             marker=marker, lineStyle=lineStyle, label=label, ms=7, linewidth=2)
 
     ax.grid()
-    #ax.set_xlabel(r'{}'.format(legx), fontproperties=fontproperties)
+    # ax.set_xlabel(r'{}'.format(legx), fontproperties=fontproperties)
     ax.set_ylabel(r'{}'.format(legy))
 
     """
@@ -763,7 +763,7 @@ class NSNAnalysis:
         # idx &= metricValues['healpixID'] <= 49000
 
         idx &= metricValues['zlim_{}'.format(self.sntype)] > 0.
-        idx &= metricValues['nsn_med_{}'.format(self.sntype)] > 0.
+        idx &= metricValues['nsn_zlim_{}'.format(self.sntype)] > 0.
 
         # self.plot_season(metricValues[idx], varName='nsn_med')
 
@@ -771,7 +771,7 @@ class NSNAnalysis:
         self.data = self.data.applymap(
             lambda x: x.decode() if isinstance(x, bytes) else x)
         print('data', self.data[['healpixID', 'pixRA', 'pixDec', 'zlim_{}'.format(self.sntype),
-                                 'nsn_med_{}'.format(self.sntype), 'nsn', 'season']], self.data.columns)
+                                 'nsn_zlim_{}'.format(self.sntype), 'nsn', 'season']], self.data.columns)
         print(len(np.unique(self.data[['healpixID', 'season']])))
         self.ratiopixels = 1
         self.npixels_eff = len(self.data['healpixID'].unique())
@@ -928,7 +928,8 @@ class NSNAnalysis:
 
         sums['nsn_med'] = sums['nsn_med'].astype(int)
         """
-        return sums['nsn_med_{}'.format(self.sntype)].sum(), int(np.sqrt(sums['err_nsn_med_{}'.format(self.sntype)].sum()))
+        # return sums['nsn_zlim_{}'.format(self.sntype)].sum(), int(np.sqrt(sums['err_nsn_med_{}'.format(self.sntype)].sum()))
+        return sums['nsn_zlim_{}'.format(self.sntype)].sum(), 0.
 
     def Mollview_median(self, var='zlim', legvar='zlimit'):
         """
@@ -949,14 +950,14 @@ class NSNAnalysis:
         self.plotMollview(meds, var, legvar, np.median,
                           xmin=0.000001, xmax=np.max(meds[var]))
 
-    def Mollview_sum(self, var='nsn_med', legvar='NSN'):
+    def Mollview_sum(self, var='nsn_zlim', legvar='NSN'):
         """
         Method to plot a Mollweid view for the sum of a variable
 
         Parameters
         --------------
         var: str,opt
-          variable to show (default: nsn_med)
+          variable to show (default: nsn_zlim)
         legvar: str, opt
            name for title of the plot (default: NSN)
 
@@ -984,8 +985,8 @@ class NSNAnalysis:
         # this is to plot the total number of SN (per pixels) over the sky
         sums = self.data.groupby(['healpixID']).sum().reset_index()
 
-        self.plotMollview(sums, 'nsn_med', 'NSN', np.sum,
-                          xmin=np.min(sums['nsn_med']), xmax=np.max(sums['nsn_med']))
+        self.plotMollview(sums, 'nsn_zlim', 'NSN', np.sum,
+                          xmin=np.min(sums['nsn_zlim']), xmax=np.max(sums['nsn_zlim']))
 
         """
         self.plotMollview(self.data, 'healpixID', 'healpixID', np.mean,
@@ -1670,12 +1671,12 @@ class plot_DD_Moll:
             print(fieldName, sel[ida])
 
         sel = pd.DataFrame(sel)
-        sel[['nsn_med_faint', 'zlim_faint']] = sel[[
-            'nsn_med_faint', 'zlim_faint']].round(2)
+        sel[['nsn_zlim_faint', 'zlim_faint']] = sel[[
+            'nsn_zlim_faint', 'zlim_faint']].round(2)
         sel = np.around(sel, decimals=2)
         xmin = 0.01
-        xmax = np.max(sel['nsn_med_faint'])
-        self.plotMollview(sel, 'nsn_med_faint',
+        xmax = np.max(sel['nsn_zlim_faint'])
+        self.plotMollview(sel, 'nsn_zlim_faint',
                           'NSN', np.sum, xmin, xmax)
 
         xmin = 0.01
