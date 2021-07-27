@@ -725,8 +725,8 @@ class NSNAnalysis:
         self.dbInfo = dbInfo
         self.ztypes = ['zlim','zpeak','zmean']
         # loading data (metric values)
-        search_path = '{}/{}/{}/*NSNMetric_{}*_nside_{}_*.hdf5'.format(
-            dbInfo['dirFile'], dbInfo['dbName'], metricName, fieldType, nside)
+        search_path = '{}/{}/{}/*{}Metric_{}*_nside_{}_*.hdf5'.format(
+            dbInfo['dirFile'], dbInfo['dbName'], metricName, metricName,fieldType, nside)
         print('looking for', search_path)
         fileNames = glob.glob(search_path)
         # fileName='{}/{}_CadenceMetric_{}.npy'.format(dirFile,dbName,band)
@@ -752,6 +752,80 @@ class NSNAnalysis:
 
         """
         metricValues = np.array(loopStack(fileNames, 'astropyTable'))
+       
+        print('hello',metricValues.dtype)
+        
+        idx = metricValues['status'] == 1
+        idx &= metricValues['zcomp'] > 0.
+
+        self.data = pd.DataFrame(metricValues[idx])
+        self.data = self.data.applymap(
+            lambda x: x.decode() if isinstance(x, bytes) else x)
+       
+        print(len(np.unique(self.data[['healpixID', 'season']])))
+        self.ratiopixels = 1
+        self.npixels_eff = len(self.data['healpixID'].unique())
+        if self.npixels > 0:
+            self.ratiopixels = float(
+                npixels)/float(self.npixels_eff)
+
+        nsn_dict= self.nSN_tot()
+        nsn_extrapol = {}
+        for key, nsn in nsn_dict.items():
+            nsn_extrapol[key] = int(np.round(nsn*self.ratiopixels))
+
+        meds = self.data.groupby(['healpixID']).median().reset_index()
+        meds = meds.round({'zcomp' : 5})
+        med_meds = meds.median()
+        resdf = pd.DataFrame(
+            [self.dbInfo['dbName']], columns=['dbName'])
+        
+        resdf['zcomp'] = med_meds['zcomp']
+        
+        for key, vals in nsn_dict.items():
+            resdf[key] = [vals]
+            #resdf['sig_nsn'] = [sig_nsn]
+            resdf['{}_extrapol'.format(key)] = [nsn_extrapol[key]]
+        #resdf['dbName'] = self.dbInfo['dbName']
+        resdf['simuType'] = self.dbInfo['simuType']
+        resdf['simuNum'] = self.dbInfo['simuNum']
+        resdf['family'] = self.dbInfo['family']
+        resdf['color'] = self.dbInfo['color']
+        resdf['marker'] = self.dbInfo['marker']
+        resdf['cadence'] = [med_meds['cadence']]
+        #resdf['season_length'] = [med_meds['season_length']]
+        resdf['gap_max'] = [med_meds['gap_max']]
+        resdf['survey_area'] = self.npixels_eff*self.pixel_area
+        for key, vals in nsn_dict.items():
+            resdf['{}_per_sqdeg'.format(key)] = resdf[key]/resdf['survey_area']
+
+        means  = self.data.groupby(['healpixID']).mean().reset_index()
+        #stds  = self.data.groupby(['healpixID']).std().reset_index()
+
+        for vv in ['cadence_sn','gap_max_sn']:
+            resdf[vv] = means[vv]
+        #for vv in ['cad_sn_std','gap_sn_std']:
+         #   resdf[vv] = stds[vv]
+            
+
+        print(resdf)
+        return resdf
+
+    def process_old(self, fileNames):
+        """
+        Method to process metric values from files
+
+        Parameters
+        ---------------
+        fileNames: list(str)
+          list of files to process
+
+        Returns
+        ----------
+        resdf: pandas df with a summary of metric infos
+
+        """
+        metricValues = np.array(loopStack(fileNames, 'astropyTable'))
 
         """
         df = pd.DataFrame(np.copy(metricValues))
@@ -761,6 +835,7 @@ class NSNAnalysis:
 
         #print(metricValues.dtype)
        
+
         idx = metricValues['status_{}'.format(self.sntype)] == 1
         # idx &= metricValues['healpixID'] >= 48000
         # idx &= metricValues['healpixID'] <= 49000
@@ -949,9 +1024,11 @@ class NSNAnalysis:
         """
         # return sums['nsn_zlim_{}'.format(self.sntype)].sum(), int(np.sqrt(sums['err_nsn_med_{}'.format(self.sntype)].sum()))
         dictout = {}
-
+        dictout['nsn'] = sums['nsn'].sum()
+        """
         for vv in self.ztypes:
             dictout['nsn_{}'.format(vv)] = sums['nsn_{}_{}'.format(vv,self.sntype)].sum()
+        """
         return dictout
 
     def Mollview_median(self, var='zlim', legvar='zlimit'):
