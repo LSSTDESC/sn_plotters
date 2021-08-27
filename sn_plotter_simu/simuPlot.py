@@ -25,6 +25,7 @@ class SimuPlot:
 
         self.dbDir = dbDir
         self.dbName = dbName
+        self.tagName = tagName
 
         # some display parameters
         self.bands = 'ugrizy'
@@ -148,8 +149,30 @@ class SimuPlot:
           time of the window persistency (in sec) (default: 5 sec)
         """
 
+        # get all simu files
+
+        simu_path = '{}/{}/Simu_*{}*.hdf5'.format(
+            self.dbDir, self.dbName, self.tagName)
+
+        simuFiles = glob.glob(simu_path)
+
+        # loop on simuFiles
+        for simuName in simuFiles:
+            # get corresponding LC file
+            namespl = simuName.split('/')
+            namespl[-1] = namespl[-1].replace('Simu', 'LC')
+            lcName = '/'.join(namespl)
+            print('here', simuName, lcName)
+            # loop on simu parameters
+            for par in self.load_params(simuName):
+                print('status', par['status'])
+                lc = Table.read(lcName, path='lc_{}'.format(par['index_hdf5']))
+                self.plotFig(lc, pause_time=pause_time)
+
+        """
         # get LC file
-        lcFile = '{}/LC_{}.hdf5'.format(self.dbDir, self.dbName)
+        lcFile = '{}/{}/LC_*{}*.hdf5'.format(self.dbDir,
+                                             self.dbName, self.tagName)
         f = h5py.File(lcFile, 'r')
         print(f.keys(), len(f.keys()))
 
@@ -157,22 +180,33 @@ class SimuPlot:
 
         # for i, key in enumerate(f.keys()):
         for par in simpars:
-            print('status', par['status'])
-            lc = Table.read(lcFile, path='lc_{}'.format(par['index_hdf5']))
+         """
 
-            fig, ax = plt.subplots(ncols=2, nrows=3, figsize=(12, 8))
-            pprint.pprint(lc.meta)  # metadata
-            figtitle = '($x_1,c$)=({},{})'.format(
-                lc.meta['x1'], lc.meta['color'])
-            figtitle += ' - z={}'.format(np.round(lc.meta['z'], 2))
-            figtitle += ' \n daymax={}'.format(np.round(lc.meta['daymax'], 2))
-            fig.suptitle(figtitle)
+    def plotFig(self, lc, pause_time):
+        """
+        Method to plot lc on fig
 
-            # print(lc)  # light curve points
-            self.plotLC(lc, ax, self.band_id)
-            plt.draw()
-            plt.pause(pause_time)
-            plt.close()
+        Parameters
+        ---------------
+        lc: astropy table
+          lc to plot
+        pause_time: float
+          time for plot persistency (in secs)
+
+        """
+        fig, ax = plt.subplots(ncols=2, nrows=3, figsize=(12, 8))
+        pprint.pprint(lc.meta)  # metadata
+        figtitle = '($x_1,c$)=({},{})'.format(
+            lc.meta['x1'], lc.meta['color'])
+        figtitle += ' - z={}'.format(np.round(lc.meta['z'], 2))
+        figtitle += ' \n daymax={}'.format(np.round(lc.meta['daymax'], 2))
+        fig.suptitle(figtitle)
+
+        # print(lc)  # light curve points
+        self.plotLC(lc, ax, self.band_id)
+        plt.draw()
+        plt.pause(pause_time)
+        plt.close()
 
     def plotLC(self, table, ax, band_id):
         """
