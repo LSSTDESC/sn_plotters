@@ -137,7 +137,7 @@ class SimuPlot:
             axis.set_ylabel('Number of entries', fontsize=thesize)
             axis.tick_params(axis='x', labelsize=thesize)
             axis.tick_params(axis='y', labelsize=thesize)
-        plt.show()
+        # plt.show()
 
     def plotLoopLC(self, pause_time=5):
         """
