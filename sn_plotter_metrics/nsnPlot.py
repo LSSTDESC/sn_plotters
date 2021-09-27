@@ -580,7 +580,7 @@ def plotDithering(summary, forPlot, sntype='faint'):
                        # vary='nsn_zlim_{}'.format(sntype),
                        vary='nsn_med_{}'.format(sntype),
                        legx='Translational dither offset [deg]',
-                       #legy='N$_{\mathrm{SN}}$/N$_{\mathrm{SN}}^{\mathrm{no\ dither}} (z \leq z_{\mathrm{complete}})}$',
+                       # legy='N$_{\mathrm{SN}}$/N$_{\mathrm{SN}}^{\mathrm{no\ dither}} (z \leq z_{\mathrm{complete}})}$',
                        legy='N$_{\mathrm{SN}}$/N$_{\mathrm{SN}}^{\mathrm{no\ dither}}}$',
                        normx=1,
                        # normy=norm['nsn_zlim_{}'.format(sntype)].item(), label=label, ax=axs[0], lineStyle=lineStyle)
@@ -590,7 +590,7 @@ def plotDithering(summary, forPlot, sntype='faint'):
                        # vary='zlim_{}_med'.format(sntype),
                        vary='zlim_{}'.format(sntype),
                        legx='Translational dither offset [deg]',
-                       #legy='$\Delta z_{\mathrm{complete}} = z_{\mathrm{complete}}^{\mathrm{no\ dither}}-z_{\mathrm{complete}}$',
+                       # legy='$\Delta z_{\mathrm{complete}} = z_{\mathrm{complete}}^{\mathrm{no\ dither}}-z_{\mathrm{complete}}$',
                        legy='$\Delta z_{\mathrm{complete}}$',
                        normx=1,
                        # normy=norm['zlim_{}_med'.format(sntype)].item(), opy=operator.sub, label=label, ax=axs[1], lineStyle=lineStyle)
@@ -737,11 +737,9 @@ class NSNAnalysis:
 
         self.nside = nside
         self.npixels = npixels
-<<<<<<< HEAD
+
         print('there man', nside)
-=======
-        print('there man',nside)
->>>>>>> dd0317e0a99de4785f487dd28879d5077f1364e4
+
         self.pixel_area = hp.nside2pixarea(nside, degrees=True)
 
         self.sntype = 'faint'
@@ -749,14 +747,12 @@ class NSNAnalysis:
             self.sntype = 'medium'
 
         self.dbInfo = dbInfo
-<<<<<<< HEAD
+
         self.ztypes = ['zlim', 'zpeak', 'zmean']
-=======
-        self.ztypes = ['zlim','zpeak','zmean']
->>>>>>> dd0317e0a99de4785f487dd28879d5077f1364e4
+
         # loading data (metric values)
         search_path = '{}/{}/{}/*{}Metric_{}*_nside_{}_*.hdf5'.format(
-            dbInfo['dirFile'], dbInfo['dbName'], metricName, metricName,fieldType, nside)
+            dbInfo['dirFile'], dbInfo['dbName'], metricName, metricName, fieldType, nside)
         print('looking for', search_path)
         fileNames = glob.glob(search_path)
         # fileName='{}/{}_CadenceMetric_{}.npy'.format(dirFile,dbName,band)
@@ -782,16 +778,16 @@ class NSNAnalysis:
 
         """
         metricValues = np.array(loopStack(fileNames, 'astropyTable'))
-       
-        print('hello',metricValues.dtype)
-        
+
+        print('hello', metricValues.dtype)
+
         idx = metricValues['status'] == 1
         idx &= metricValues['zcomp'] > 0.
 
         self.data = pd.DataFrame(metricValues[idx])
         self.data = self.data.applymap(
             lambda x: x.decode() if isinstance(x, bytes) else x)
-       
+
         print(len(np.unique(self.data[['healpixID', 'season']])))
         self.ratiopixels = 1
         self.npixels_eff = len(self.data['healpixID'].unique())
@@ -799,44 +795,43 @@ class NSNAnalysis:
             self.ratiopixels = float(
                 npixels)/float(self.npixels_eff)
 
-        nsn_dict= self.nSN_tot()
+        nsn_dict = self.nSN_tot()
         nsn_extrapol = {}
         for key, nsn in nsn_dict.items():
             nsn_extrapol[key] = int(np.round(nsn*self.ratiopixels))
 
         meds = self.data.groupby(['healpixID']).median().reset_index()
-        meds = meds.round({'zcomp' : 5})
+        meds = meds.round({'zcomp': 5})
         med_meds = meds.median()
         resdf = pd.DataFrame(
             [self.dbInfo['dbName']], columns=['dbName'])
-        
+
         resdf['zcomp'] = med_meds['zcomp']
-        
+
         for key, vals in nsn_dict.items():
             resdf[key] = [vals]
-            #resdf['sig_nsn'] = [sig_nsn]
+            # resdf['sig_nsn'] = [sig_nsn]
             resdf['{}_extrapol'.format(key)] = [nsn_extrapol[key]]
-        #resdf['dbName'] = self.dbInfo['dbName']
+        # resdf['dbName'] = self.dbInfo['dbName']
         resdf['simuType'] = self.dbInfo['simuType']
         resdf['simuNum'] = self.dbInfo['simuNum']
         resdf['family'] = self.dbInfo['family']
         resdf['color'] = self.dbInfo['color']
         resdf['marker'] = self.dbInfo['marker']
         resdf['cadence'] = [med_meds['cadence']]
-        #resdf['season_length'] = [med_meds['season_length']]
+        # resdf['season_length'] = [med_meds['season_length']]
         resdf['gap_max'] = [med_meds['gap_max']]
         resdf['survey_area'] = self.npixels_eff*self.pixel_area
         for key, vals in nsn_dict.items():
             resdf['{}_per_sqdeg'.format(key)] = resdf[key]/resdf['survey_area']
 
-        means  = self.data.groupby(['healpixID']).mean().reset_index()
-        #stds  = self.data.groupby(['healpixID']).std().reset_index()
+        means = self.data.groupby(['healpixID']).mean().reset_index()
+        # stds  = self.data.groupby(['healpixID']).std().reset_index()
 
-        for vv in ['cadence_sn','gap_max_sn']:
+        for vv in ['cadence_sn', 'gap_max_sn']:
             resdf[vv] = means[vv]
-        #for vv in ['cad_sn_std','gap_sn_std']:
+        # for vv in ['cad_sn_std','gap_sn_std']:
          #   resdf[vv] = stds[vv]
-            
 
         print(resdf)
         return resdf
@@ -863,13 +858,6 @@ class NSNAnalysis:
         # self.data = df.loc[:,~df.columns.str.contains('mask', case=False)]
        """
 
-<<<<<<< HEAD
-        # print(metricValues.dtype)
-=======
-        #print(metricValues.dtype)
-       
->>>>>>> dd0317e0a99de4785f487dd28879d5077f1364e4
-
         idx = metricValues['status_{}'.format(self.sntype)] == 1
         # idx &= metricValues['healpixID'] >= 48000
         # idx &= metricValues['healpixID'] <= 49000
@@ -882,12 +870,7 @@ class NSNAnalysis:
         self.data = pd.DataFrame(metricValues[idx])
         self.data = self.data.applymap(
             lambda x: x.decode() if isinstance(x, bytes) else x)
-<<<<<<< HEAD
-        # print('data', self.data[['healpixID', 'pixRA', 'pixDec', 'zlim_{}'.format(self.sntype),
-=======
-        #print('data', self.data[['healpixID', 'pixRA', 'pixDec', 'zlim_{}'.format(self.sntype),
->>>>>>> dd0317e0a99de4785f487dd28879d5077f1364e4
-        #                         'nsn_zlim_{}'.format(self.sntype), 'nsn', 'season']], self.data.columns)
+
         print(len(np.unique(self.data[['healpixID', 'season']])))
         self.ratiopixels = 1
         self.npixels_eff = len(self.data['healpixID'].unique())
@@ -896,11 +879,9 @@ class NSNAnalysis:
                 npixels)/float(self.npixels_eff)
 
         # zlim = self.zlim_med()
-<<<<<<< HEAD
+
         nsn_dict = self.nSN_tot()
-=======
-        nsn_dict= self.nSN_tot()
->>>>>>> dd0317e0a99de4785f487dd28879d5077f1364e4
+
         nsn_extrapol = {}
         for key, nsn in nsn_dict.items():
             nsn_extrapol[key] = int(np.round(nsn*self.ratiopixels))
@@ -927,7 +908,6 @@ class NSNAnalysis:
 
         meds = self.data.groupby(['healpixID']).median().reset_index()
         for vv in self.ztypes:
-<<<<<<< HEAD
             meds = meds.round({'{}_{}'.format(vv, self.sntype): 5})
         med_meds = meds.median()
         resdf = pd.DataFrame(
@@ -941,21 +921,7 @@ class NSNAnalysis:
             # resdf['sig_nsn'] = [sig_nsn]
             resdf['{}_extrapol'.format(key)] = [nsn_extrapol[key]]
         # resdf['dbName'] = self.dbInfo['dbName']
-=======
-            meds = meds.round({'{}_{}'.format(vv,self.sntype): 5})
-        med_meds = meds.median()
-        resdf = pd.DataFrame(
-            [self.dbInfo['dbName']], columns=['dbName'])
-        
-        for vv in self.ztypes:
-            resdf[vv] = med_meds['{}_{}'.format(vv,self.sntype)]
-        
-        for key, vals in nsn_dict.items():
-            resdf[key] = [vals]
-            #resdf['sig_nsn'] = [sig_nsn]
-            resdf['{}_extrapol'.format(key)] = [nsn_extrapol[key]]
-        #resdf['dbName'] = self.dbInfo['dbName']
->>>>>>> dd0317e0a99de4785f487dd28879d5077f1364e4
+
         resdf['simuType'] = self.dbInfo['simuType']
         resdf['simuNum'] = self.dbInfo['simuNum']
         resdf['family'] = self.dbInfo['family']
@@ -968,7 +934,6 @@ class NSNAnalysis:
         for key, vals in nsn_dict.items():
             resdf['{}_per_sqdeg'.format(key)] = resdf[key]/resdf['survey_area']
 
-<<<<<<< HEAD
         means = self.data.groupby(['healpixID']).mean().reset_index()
         stds = self.data.groupby(['healpixID']).std().reset_index()
         for vv in ['cad_sn_mean', 'gap_sn_mean']:
@@ -976,15 +941,6 @@ class NSNAnalysis:
         for vv in ['cad_sn_std', 'gap_sn_std']:
             resdf[vv] = stds[vv]
 
-=======
-        means  = self.data.groupby(['healpixID']).mean().reset_index()
-        stds  = self.data.groupby(['healpixID']).std().reset_index()
-        for vv in ['cad_sn_mean','gap_sn_mean']:
-            resdf[vv] = means[vv]
-        for vv in ['cad_sn_std','gap_sn_std']:
-            resdf[vv] = stds[vv]
-            
->>>>>>> dd0317e0a99de4785f487dd28879d5077f1364e4
         for b in bandstat:
             resdf['N_{}'.format(b)] = [med_meds['N_{}'.format(b)]]
             resdf['cadence_{}'.format(b)] = [med_meds['cadence_{}'.format(b)]]
@@ -1092,18 +1048,18 @@ class NSNAnalysis:
         """
         # return sums['nsn_zlim_{}'.format(self.sntype)].sum(), int(np.sqrt(sums['err_nsn_med_{}'.format(self.sntype)].sum()))
         dictout = {}
-<<<<<<< HEAD
 
         for vv in self.ztypes:
             dictout['nsn_{}'.format(vv)] = sums['nsn_{}_{}'.format(
                 vv, self.sntype)].sum()
-=======
-        dictout['nsn'] = sums['nsn'].sum()
+
+        # dictout['nsn'] = sums['nsn'].sum()
         """
         for vv in self.ztypes:
-            dictout['nsn_{}'.format(vv)] = sums['nsn_{}_{}'.format(vv,self.sntype)].sum()
+            dictout['nsn_{}'.format(vv)] = sums['nsn_{}_{}'.format(
+                vv,self.sntype)].sum()
         """
->>>>>>> dd0317e0a99de4785f487dd28879d5077f1364e4
+
         return dictout
 
     def Mollview_median(self, var='zlim', legvar='zlimit'):
@@ -1269,11 +1225,7 @@ class PlotSummary_Annot:
 
     """
 
-<<<<<<< HEAD
     def __init__(self, resdf, hlist=[], xvar='zpeak', yvar='nsn_zpeak', xlabel='$z_{peak}$', ylabel='$N_{SN}(z\leq z_{peak})$', title='(nSN,zpeak) supernovae metric'):
-=======
-    def __init__(self, resdf, hlist=[],xvar='zpeak',yvar='nsn_zpeak',xlabel='$z_{peak}$',ylabel='$N_{SN}(z\leq z_{peak})$',title='(nSN,zpeak) supernovae metric'):
->>>>>>> dd0317e0a99de4785f487dd28879d5077f1364e4
 
         self.fig, self.ax = plt.subplots(figsize=(12, 8))
         # self.ax = ax
@@ -1288,13 +1240,9 @@ class PlotSummary_Annot:
         self.yvar = yvar
         self.xlabel = xlabel
         self.ylabel = ylabel
-<<<<<<< HEAD
+
         self.title = title
 
-=======
-        self.title=title
-        
->>>>>>> dd0317e0a99de4785f487dd28879d5077f1364e4
         self.sc = mscatter(x, y, ax=self.ax, c=c, m=m, s=100)
 
         # this is for the interactive part
@@ -1563,14 +1511,9 @@ class NSN_zlim_GUI_old:
 
 
 class NSN_zlim_GUI:
-<<<<<<< HEAD
+
     def __init__(self, resdf, xvar='zlim', yvar='nsn_zlim', xlabel='$z_{lim}$', ylabel='$N_{SN}(z\leq z_{peak})$', title='(nSN,zlim) supernovae metric'):
 
-=======
-    def __init__(self, resdf, xvar='zlim',yvar='nsn_zlim',xlabel='$z_{lim}$',ylabel='$N_{SN}(z\leq z_{peak})$',title='(nSN,zlim) supernovae metric'):
-
-        
->>>>>>> dd0317e0a99de4785f487dd28879d5077f1364e4
         self.resdf = resdf
 
         # build the GUI here
@@ -1596,13 +1539,9 @@ class NSN_zlim_GUI:
         self.yvar = yvar
         self.xlabel = xlabel
         self.ylabel = ylabel
-<<<<<<< HEAD
+
         self.title = title
 
-=======
-        self.title=title
-        
->>>>>>> dd0317e0a99de4785f487dd28879d5077f1364e4
         # plot the number of visits vs z
         self.plotMetric(self.resdf)
 
@@ -1763,21 +1702,13 @@ class NSN_zlim_GUI:
 
         return resdf
 
-<<<<<<< HEAD
     def plotMetric(self, resdf, hlist=[], norm='', ztype='zpeak'):
 
         nOS = len(resdf)
         # title = '(nSN,{}) supernovae metric - {} OS'.format(ztype,nOS)
 
         title = '{} - {} OS'.format(self.title, nOS)
-=======
-    def plotMetric(self, resdf, hlist=[], norm='',ztype='zpeak'):
 
-        nOS = len(resdf)
-        #title = '(nSN,{}) supernovae metric - {} OS'.format(ztype,nOS)
-
-        title = '{} - {} OS'.format(self.title,nOS)
->>>>>>> dd0317e0a99de4785f487dd28879d5077f1364e4
         resdf['metric_norm'] = resdf[self.yvar]
         # normalize nsn
         ido = resdf['dbName'] == norm
