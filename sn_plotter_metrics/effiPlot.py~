@@ -1,0 +1,7 @@
+class plotEffi:
+    """
+
+    """
+    def __init__(self, dbDir,dbName,fieldName):
+
+        fName = '{}/{}/{}*.hdf5'.format(dbDir,dbName,fieldName)

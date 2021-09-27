@@ -4,8 +4,9 @@ from astropy.table import Table, vstack
 import pprint
 from . import plt, filtercolors, fontsize
 import glob
-from sn_tools.sn_utils import multiproc,gather_results
+from sn_tools.sn_utils import multiproc, gather_results
 from sn_tools.sn_io import loopStack
+
 
 class SimuPlot:
     """
@@ -20,10 +21,11 @@ class SimuPlot:
 
     """
 
-    def __init__(self, dbDir, dbName):
+    def __init__(self, dbDir, dbName, tagName, nproc=8):
 
         self.dbDir = dbDir
         self.dbName = dbName
+        self.tagName = tagName
 
         # some display parameters
         self.bands = 'ugrizy'
@@ -31,23 +33,23 @@ class SimuPlot:
             zip(self.bands, [(0, 0), (0, 1), (1, 0), (1, 1), (2, 0), (2, 1)]))
 
         # load simulation parameters
-        parNames = glob.glob('{}/{}/Simu_*SN_Ia*.hdf5'.format(self.dbDir,self.dbName))
-        print('Nfiles to load',len(parNames))
+        parNames = glob.glob(
+            '{}/{}/Simu_*{}*.hdf5'.format(self.dbDir, self.dbName, tagName))
+        print('Nfiles to load', len(parNames))
         pp = {}
-        pp['fichtype']='astropyTable'
-        params = multiproc(parNames,pp,self.load_multiproc,8)
-        
+        pp['fichtype'] = 'astropyTable'
+        params = multiproc(parNames, pp, self.load_multiproc, nproc)
+
         #params = self.load_params('{}/{}'.format(self.dbDir, parName))
         # loop on this file using the simuPars list
         # select only LC with status=1
         ik = params['status'] == 1
         self.simuPars = params[ik]
 
-
-    def load_multiproc(self,data,params={}, j=0, output_q=None):
+    def load_multiproc(self, data, params={}, j=0, output_q=None):
         """
         Function to load simulation parameters for multiptocessing
-        
+
         Parameters
         ----------------
         data: list? 
@@ -58,26 +60,24 @@ class SimuPlot:
         Returns
         ----------
         loaded data 
-        
-        
+
+
         """
-        
+
         fichtype = params['fichtype']
         dictres = {}
-        print('processing',j,len(data))
-        for io,fname in enumerate(data):
+        print('processing', j, len(data))
+        for io, fname in enumerate(data):
             res = loopStack([fname], fichtype)
             dictres[io] = res
-        
+
         finres = gather_results(dictres)
 
-        print('end of proc',j,len(finres))
+        print('end of proc', j, len(finres))
         if output_q is not None:
             return output_q.put({j: finres})
         else:
             return finres
-
-
 
     def load_params(self, paramFile):
         """
@@ -137,7 +137,7 @@ class SimuPlot:
             axis.set_ylabel('Number of entries', fontsize=thesize)
             axis.tick_params(axis='x', labelsize=thesize)
             axis.tick_params(axis='y', labelsize=thesize)
-        plt.show()
+        # plt.show()
 
     def plotLoopLC(self, pause_time=5):
         """
@@ -149,8 +149,30 @@ class SimuPlot:
           time of the window persistency (in sec) (default: 5 sec)
         """
 
+        # get all simu files
+
+        simu_path = '{}/{}/Simu_*{}*.hdf5'.format(
+            self.dbDir, self.dbName, self.tagName)
+
+        simuFiles = glob.glob(simu_path)
+
+        # loop on simuFiles
+        for simuName in simuFiles:
+            # get corresponding LC file
+            namespl = simuName.split('/')
+            namespl[-1] = namespl[-1].replace('Simu', 'LC')
+            lcName = '/'.join(namespl)
+            print('here', simuName, lcName)
+            # loop on simu parameters
+            for par in self.load_params(simuName):
+                print('status', par['status'])
+                lc = Table.read(lcName, path='lc_{}'.format(par['index_hdf5']))
+                self.plotFig(lc, pause_time=pause_time)
+
+        """
         # get LC file
-        lcFile = '{}/LC_{}.hdf5'.format(self.dbDir, self.dbName)
+        lcFile = '{}/{}/LC_*{}*.hdf5'.format(self.dbDir,
+                                             self.dbName, self.tagName)
         f = h5py.File(lcFile, 'r')
         print(f.keys(), len(f.keys()))
 
@@ -158,22 +180,33 @@ class SimuPlot:
 
         # for i, key in enumerate(f.keys()):
         for par in simpars:
-            print('status', par['status'])
-            lc = Table.read(lcFile, path='lc_{}'.format(par['index_hdf5']))
+         """
 
-            fig, ax = plt.subplots(ncols=2, nrows=3, figsize=(12, 8))
-            pprint.pprint(lc.meta)  # metadata
-            figtitle = '($x_1,c$)=({},{})'.format(
-                lc.meta['x1'], lc.meta['color'])
-            figtitle += ' - z={}'.format(np.round(lc.meta['z'], 2))
-            figtitle += ' \n daymax={}'.format(np.round(lc.meta['daymax'], 2))
-            fig.suptitle(figtitle)
+    def plotFig(self, lc, pause_time):
+        """
+        Method to plot lc on fig
 
-            # print(lc)  # light curve points
-            self.plotLC(lc, ax, self.band_id)
-            plt.draw()
-            plt.pause(pause_time)
-            plt.close()
+        Parameters
+        ---------------
+        lc: astropy table
+          lc to plot
+        pause_time: float
+          time for plot persistency (in secs)
+
+        """
+        fig, ax = plt.subplots(ncols=2, nrows=3, figsize=(12, 8))
+        pprint.pprint(lc.meta)  # metadata
+        figtitle = '($x_1,c$)=({},{})'.format(
+            lc.meta['x1'], lc.meta['color'])
+        figtitle += ' - z={}'.format(np.round(lc.meta['z'], 2))
+        figtitle += ' \n daymax={}'.format(np.round(lc.meta['daymax'], 2))
+        fig.suptitle(figtitle)
+
+        # print(lc)  # light curve points
+        self.plotLC(lc, ax, self.band_id)
+        plt.draw()
+        plt.pause(pause_time)
+        plt.close()
 
     def plotLC(self, table, ax, band_id):
         """
