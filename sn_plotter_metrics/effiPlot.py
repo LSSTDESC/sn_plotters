@@ -11,7 +11,7 @@ from sn_tools.sn_rate import SN_Rate
 
 class plotEffi:
     """
-    class to plot and process efficieicies from the nsn metric
+    class to plot and process efficiencies from the nsn metric
 
     Parameters
     --------------
@@ -71,7 +71,7 @@ class plotEffi:
         for healpixID in np.unique(self.data['healpixID']):
             idx = self.data['healpixID'] == healpixID
             sel = self.data[idx]
-            fig, ax = plt.subplots()
+            fig, ax = plt.subplots(figsize=(12, 10))
             for season in np.unique(sel['season']):
 
                 self.plotEffi_indiv(sel, ax, healpixID, season, 'effi', 'effi_err',
@@ -84,7 +84,7 @@ class plotEffi:
             ax.grid()
         plt.show()
 
-    def plotEffi_indiv(self, data, ax, healpixID, season, vary='effi_err', erry=None, legy='', ls='None', sn_x1=-2.0, sn_color=0.2, lineColor='k', label=None):
+    def plotEffi_indiv(self, data, ax, healpixID, season, vary='effi_err', erry=None, legy='', ls='None', sn_x1=-2.0, sn_color=0.2, lineColor='k', label=None, marker='o'):
         """
         Simple method to plot vs z
 
@@ -125,7 +125,7 @@ class plotEffi:
             yerr = grp[erry]
 
         ax.errorbar(grp['z'], grp[vary], yerr=yerr,
-                    marker='o', label=label, lineStyle=ls)
+                    marker=marker, label=label, lineStyle=ls, ms=10)
 
     def getRates(self, survey_area=9.6):
 
@@ -187,19 +187,23 @@ class plotEffi:
 
         return nsn_cum_norm, zlimit
 
-    def plotCumul(self, data, ax, healpixID, season, sn_x1=-2.0, sn_color=0.2, zlim_coeff=0.95, label=''):
+    def plotCumul(self, data, ax, healpixID, season, shiftplot=0.08, sn_x1=-2.0, sn_color=0.2, zlim_coeff=0.95, label='', ls='None', marker='o'):
         zplot = np.arange(0.01, 0.7, 0.01)
         nsn_cum_norm, zlimit = self.get_zlims(
             data, ax, healpixID, season, sn_x1=sn_x1, sn_color=sn_color, zlim_coeff=zlim_coeff, zplot=zplot)
-        ax.plot(zplot, nsn_cum_norm, label=label)
-        zcomp = '$z_{complete}^{0.95}$ = '
-        ax.text(0.05, 0.908-0.08*season,
-                zcomp+'{}'.format(np.round(zlimit, 2)), fontsize=15, color=plt.gca().lines[-1].get_color())
+        ax.plot(zplot, nsn_cum_norm, label=label, ls=ls, marker=marker)
+        zcomp = '$z_{complete}^{0.95,'+str(season)+'}$ = '
+        """
+        ax.text(0.05, 0.958-0.08*season,
+                zcomp+'{}'.format(np.round(zlimit, 2)), color=plt.gca().lines[-1].get_color())
+        """
+        ax.text(0.05, 0.7-shiftplot,
+                zcomp+'{}'.format(np.round(zlimit, 2)), color=plt.gca().lines[-1].get_color())
         ax.plot([zlimit]*2, [0., 0.95], color='k', ls='dashed')
         # ax.fill_between(zplot, nsn_cum_norm-nsn_cum_norm_err,
         #              nsn_cum_norm+nsn_cum_norm_err, color='y')
 
-    def plotNSN(self, data, ax, healpixID, season, sn_x1=0.0, sn_color=0.0, zlim_coeff=0.95, label=''):
+    def plotNSN(self, data, ax, healpixID, season, shiftplot=0.08, sn_x1=0.0, sn_color=0.0, zlim_coeff=0.95, label='', ls='solid', marker='o'):
 
         rateInterp, rateInterp_err = self.getRates(survey_area=1.)
 
@@ -218,23 +222,27 @@ class plotEffi:
 
         nsn_cum = np.cumsum(effiInterp(zplot)*rateInterp(zplot))
 
-        ax.plot(zplot, nsn_cum, label=label)
+        ax.plot(zplot, nsn_cum, label=label, ls=ls, marker=marker)
 
         nsn_cum_norm, zlimit = self.get_zlims(
             data, ax, healpixID, season, sn_x1=sn_x1, sn_color=sn_color, zlim_coeff=zlim_coeff, zplot=zplot)
         zplotb = np.arange(0.01, zlimit+0.005, 0.01)
         nsn_zlimit = np.cumsum(effiInterp(zplotb)*rateInterp(zplotb))[-1]
         print(nsn_zlimit)
-        zcomp = '$\mathrm{N_{SN}^{z\leq z_{complete}^{0.95}}}$ = '
+        #zcomp = '$\mathrm{N_{SN}^{z\leq z_{complete}^{0.95}}}$ = '
+        zcomp = '$\mathrm{N_{SN}^{'+str(season)+'}}$='
+        """
         if season <= 5:
-            xpos = 0.1
+            xpos = 0.03
             ypos = 14.-2.*season
         else:
             xpos = 0.25
             ypos = 14.-2.*(season-5)
-
+        """
+        xpos = 0.1
+        ypos = 10-shiftplot
         ax.text(xpos, ypos,
-                zcomp+'{}'.format(int(nsn_zlimit)), fontsize=15, color=plt.gca().lines[-1].get_color())
+                zcomp+'{}'.format(int(nsn_zlimit)), color=plt.gca().lines[-1].get_color())
 
         ax.plot([zlimit]*2, [0., nsn_zlimit], ls='dashed', color='k')
         #ax.plot([0., zlimit], [nsn_zlimit]*2, ls='dashed', color='k')
