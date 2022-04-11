@@ -10,6 +10,7 @@ import pandas as pd
 from scipy.interpolate import interp1d
 from pandas.plotting import table
 
+
 class SimuPlot:
     """
     class to analyze and plot simulation output (parameters and LC)
@@ -35,8 +36,10 @@ class SimuPlot:
             zip(self.bands, [(0, 0), (0, 1), (1, 0), (1, 1), (2, 0), (2, 1)]))
 
         # load simulation parameters
-        parNames = glob.glob(
-            '{}/{}/Simu_*{}*.hdf5'.format(self.dbDir, self.dbName, tagName))
+        search_path = '{}/{}/Simu_*{}*.hdf5'.format(
+            self.dbDir, self.dbName, tagName)
+        print('searching files', search_path)
+        parNames = glob.glob(search_path)
         print('Nfiles to load', len(parNames))
         pp = {}
         pp['fichtype'] = 'astropyTable'
@@ -169,7 +172,7 @@ class SimuPlot:
             for par in self.load_params(simuName):
                 print('status', par['status'])
                 lc = Table.read(lcName, path='lc_{}'.format(par['index_hdf5']))
-                print('lc',lc.columns)
+                print('lc', lc.columns)
                 self.plotFig(lc, pause_time=pause_time)
 
         """
@@ -225,6 +228,7 @@ class SimuPlot:
          id of the band
         """
 
+        fontsize = 15.
         for band in 'ugrizy':
             i = band_id[band][0]
             j = band_id[band][1]
@@ -276,7 +280,7 @@ class SimuPlot:
         print('ptime', np.median(ptime))
 
         plt.show()
-  
+
     def plotLoopLC_errmod(self):
         """
         Function to plot LC in loop
@@ -296,8 +300,8 @@ class SimuPlot:
 
         # loop on simuFiles
         #fig, ax = plt.subplots(ncols=2, nrows=3, figsize=(12, 8))
-        #fig.subplots_adjust(wspace=0.5,hspace=0.5)
-        #fig.tight_layout()
+        # fig.subplots_adjust(wspace=0.5,hspace=0.5)
+        # fig.tight_layout()
         for simuName in simuFiles:
             # get corresponding LC file
             namespl = simuName.split('/')
@@ -310,19 +314,19 @@ class SimuPlot:
                 #print('status', par['z','status'])
                 lc = Table.read(lcName, path='lc_{}'.format(par['index_hdf5']))
                 lc['z'] = par['z']
-                lc['lambdabar_z'] = lc['lambdabar']/(1.+lc['z']) 
+                lc['lambdabar_z'] = lc['lambdabar']/(1.+lc['z'])
                 lc['fluxerr_model_rel'] = lc['fluxerr_model']/lc['flux']
-                
-                #print('lc',lc.columns)
-                idx = lc['snr_m5'] >=1
-                idx &= lc['phase']>= -10.
-                idx &= lc['phase']<=50
-                tt = vstack([tt,lc[idx]],metadata_conflicts='silent')    
-        
+
+                # print('lc',lc.columns)
+                idx = lc['snr_m5'] >= 1
+                idx &= lc['phase'] >= -10.
+                idx &= lc['phase'] <= 50
+                tt = vstack([tt, lc[idx]], metadata_conflicts='silent')
+
             tt.convert_bytestring_to_unicode()
-            print('here',tt['band'])
-            self.plotFig_cumul(tt.to_pandas(),self.band_id) 
-  
+            print('here', tt['band'])
+            self.plotFig_cumul(tt.to_pandas(), self.band_id)
+
     def plotFig_cumul(self, table, band_id):
         """
         Method to plot produced LC
@@ -336,12 +340,12 @@ class SimuPlot:
         band_id: int
          id of the band
         """
-        table= table.round({'lambdabar': 2,'lambdabar_z':2})
-        
+        table = table.round({'lambdabar': 2, 'lambdabar_z': 2})
+
         for band in 'grizy':
-            fig,ax = plt.subplots(figsize=(8, 8))
-            #fig.subplots_adjust(right=0.75)
-            self.plot_band(ax,band,table)
+            fig, ax = plt.subplots(figsize=(8, 8))
+            # fig.subplots_adjust(right=0.75)
+            self.plot_band(ax, band, table)
 
     def plotFig_cumul_deprecated(self, ax, table, band_id):
         """
@@ -356,8 +360,8 @@ class SimuPlot:
         band_id: int
          id of the band
         """
-        table= table.round({'lambdabar': 2,'lambdabar_z':2})
-        
+        table = table.round({'lambdabar': 2, 'lambdabar_z': 2})
+
         for band in 'ugrizy':
             i = band_id[band][0]
             j = band_id[band][1]
@@ -365,7 +369,7 @@ class SimuPlot:
             idx = table['band'] == 'LSST::'+band
             sel = table[idx]
             if len(sel) > 0:
-                zbins = np.arange(0.01,1.3,0.05)
+                zbins = np.arange(0.01, 1.3, 0.05)
                 lambdabar = np.mean(sel['lambdabar'])
                 print('ere', band, lambdabar)
                 bins = lambdabar/(1.+zbins)
@@ -374,25 +378,26 @@ class SimuPlot:
                 lambdabar_z = group['lambdabar_z'].median()
                 fluxerr = group['fluxerr_model_rel'].median()
                 zmeds = group['z'].median()
-                ax[i, j].plot(lambdabar_z,fluxerr,color=filtercolors[band], linewidth=1,marker='.')
+                ax[i, j].plot(lambdabar_z, fluxerr,
+                              color=filtercolors[band], linewidth=1, marker='.')
                 #ymin, ymax = ax[i,j].get_ylim()
-                #ax[i,j].plot([380.]*2,[ymin,ymax],ls='dashed',color='k')
-                #ax[i,j].plot([800.]*2,[ymin,ymax],ls='dashed',color='k')
+                # ax[i,j].plot([380.]*2,[ymin,ymax],ls='dashed',color='k')
+                # ax[i,j].plot([800.]*2,[ymin,ymax],ls='dashed',color='k')
 
-                ax2 = ax[i,j].twiny()
-                ax2.plot(lambdabar_z,fluxerr,linewidth=1,marker='.',color=filtercolors[band])
-                df = pd.DataFrame(ax2.get_xticks(),columns=['ticks'])
+                ax2 = ax[i, j].twiny()
+                ax2.plot(lambdabar_z, fluxerr, linewidth=1,
+                         marker='.', color=filtercolors[band])
+                df = pd.DataFrame(ax2.get_xticks(), columns=['ticks'])
                 df['ticks'] = lambdabar/df['ticks']-1
-                df = df.round({'ticks':1})
+                df = df.round({'ticks': 1})
                 df['ticks'] = df['ticks'].astype(str)
-                print('iii',df)
-                #ax2.set_xticks(range(len(df['ticks'])),df['ticks'].to_list())
+                print('iii', df)
+                # ax2.set_xticks(range(len(df['ticks'])),df['ticks'].to_list())
                 ax2.set_xticklabels(df['ticks'].to_list())
-                ax2.set_xlabel(r'$z$',fontdict={'fontsize':fontsize},loc='left')
+                ax2.set_xlabel(r'$z$', fontdict={
+                               'fontsize': fontsize}, loc='left')
 
-                #ax2.set_ylim((ymin,ymax))
-
-
+                # ax2.set_ylim((ymin,ymax))
 
                 """
                 ymin, ymax = ax[i,j].get_xlim()
@@ -404,35 +409,34 @@ class SimuPlot:
                 ax2.plot([],[])
                 """
                 #ax2.plot(zmeds,fluxerr,color='k', linewidth=1,marker='.')
-                #ax2.invert_xaxis()
-                
+                # ax2.invert_xaxis()
+
                 """
                 ax2.plot(lambdabar_z,fluxerr,color='k', linewidth=1,marker='.')
                 ticks = lambdabar/ax2.get_xticks()-1
                 print('ticks',ticks)
                 ax2.set_xticks(ticks)
                 """
-                #ax2.invert_xaxis()
+                # ax2.invert_xaxis()
                 """
                 import matplotlib as mpl
                 print(mpl.__version__)
                 ax2 = ax[i,j].secondary_xaxis('top', functions=(self.ff,self.inv))
                 ax2.invert_xaxis()
                 """
-            
-            #ax[i, j].set_xlabel(r'$\frac{\bar{\lambda}}{1+z}$ [nm]', {'fontsize': fontsize}) 
+
+            #ax[i, j].set_xlabel(r'$\frac{\bar{\lambda}}{1+z}$ [nm]', {'fontsize': fontsize})
             #ax[i, j].set_xlabel(r'$\bar{\lambda}/(1+z)$ [nm]', fontsize=fontsize,loc='right')
             ax[i, j].set_ylabel(r'flux error model')
-           
+
             ax[i, j].text(0.1, 0.9, band, horizontalalignment='center',
                           verticalalignment='center', transform=ax[i, j].transAxes)
-            ax[i,j].grid()
-    
-    def ff(self,x,lambdabar):
+            ax[i, j].grid()
+
+    def ff(self, x, lambdabar):
         return lambdabar/x-1.
 
-
-    def inv(x,lambdabar):
+    def inv(x, lambdabar):
         return lambdabar/(1.+x)
 
     def plot_band(self, ax, band, table):
@@ -441,15 +445,15 @@ class SimuPlot:
         idx = table['band'] == 'LSST::'+band
         sel = table[idx]
         z_blue = {}
-        lambda_vals = [380,370,360,350]
+        lambda_vals = [380, 370, 360, 350]
         r = []
         if len(sel) > 0:
-            zbins = np.arange(0.01,1.3,0.05)
+            zbins = np.arange(0.01, 1.3, 0.05)
             lambdabar = np.mean(sel['lambdabar'])
             for vv in lambda_vals:
-                z_blue[vv] = np.round(lambdabar/vv-1,2)
-                r.append((vv,np.round(lambdabar/vv-1,2)))
-            print('hello',band,z_blue)
+                z_blue[vv] = np.round(lambdabar/vv-1, 2)
+                r.append((vv, np.round(lambdabar/vv-1, 2)))
+            print('hello', band, z_blue)
             bins = lambdabar/(1.+zbins)
             bins.sort()
             group = sel.groupby(pd.cut(sel.lambdabar_z, bins))
@@ -457,49 +461,53 @@ class SimuPlot:
             fluxerr = group['fluxerr_model_rel'].mean()
             fluxerr_std = group['fluxerr_model_rel'].std()
             zmeds = group['z'].median()
-            interp = interp1d(zmeds,fluxerr,bounds_error=False, fill_value=0.)
-            interpp = interp1d(zmeds,fluxerr+fluxerr_std,bounds_error=False, fill_value=0.)
-            interpm = interp1d(zmeds,fluxerr-fluxerr_std,bounds_error=False, fill_value=0.)
-            df = pd.DataFrame(r, columns=['blue_cutoff','z_blue'])
-            df['error'] = np.round(interp(df['z_blue']),3)
-            df['error_plus'] = np.round(interpp(df['z_blue']),3)
-            df['error_minus'] = np.round(interpm(df['z_blue']),3)
+            interp = interp1d(
+                zmeds, fluxerr, bounds_error=False, fill_value=0.)
+            interpp = interp1d(zmeds, fluxerr+fluxerr_std,
+                               bounds_error=False, fill_value=0.)
+            interpm = interp1d(zmeds, fluxerr-fluxerr_std,
+                               bounds_error=False, fill_value=0.)
+            df = pd.DataFrame(r, columns=['blue_cutoff', 'z_blue'])
+            df['error'] = np.round(interp(df['z_blue']), 3)
+            df['error_plus'] = np.round(interpp(df['z_blue']), 3)
+            df['error_minus'] = np.round(interpm(df['z_blue']), 3)
             print(df)
             #table(ax, df, loc="upper right", colWidths=[0.2]*5);
             columns = df.columns.to_list()
-            columns = ['blue cutoff [nm]','$z_{cutoff}$','$\sigma$','$\sigma+$','$\sigma-$']
+            columns = ['blue cutoff [nm]',
+                       '$z_{cutoff}$', '$\sigma$', '$\sigma+$', '$\sigma-$']
             #rows = df['blue_cutoff'].to_list()
             cell_text = []
             for j, vals in df.iterrows():
-                cell_text.append((vals['blue_cutoff'], vals['z_blue'],vals['error'],vals['error_plus'],vals['error_minus']))
-            
+                cell_text.append((vals['blue_cutoff'], vals['z_blue'],
+                                 vals['error'], vals['error_plus'], vals['error_minus']))
+
             the_table = plt.table(cellText=cell_text,
-                                  #rowLabels=rows,
+                                  # rowLabels=rows,
                                   colLabels=columns,
                                   loc='upper right',
                                   colWidths=[0.18]*5,
                                   cellLoc='center')
-                                  #bbox=(1., 0.5,0.5,0.5))
-
-            
-
+            # bbox=(1., 0.5,0.5,0.5))
 
             #ax.plot(lambdabar_z,fluxerr,color=filtercolors[band], linewidth=1,marker='.')
-            ax.errorbar(lambdabar_z,fluxerr,yerr=fluxerr_std,color=filtercolors[band], linewidth=1,marker='.')
+            ax.errorbar(lambdabar_z, fluxerr, yerr=fluxerr_std,
+                        color=filtercolors[band], linewidth=1, marker='.')
             ax2 = ax.twiny()
-            #ax2.plot(lambdabar_z,fluxerr,linewidth=1,marker='.',color=filtercolors[band])
-            ax2.errorbar(lambdabar_z,fluxerr,yerr=fluxerr_std,color=filtercolors[band], linewidth=1,marker='.')
-            df = pd.DataFrame(ax2.get_xticks(),columns=['ticks'])
+            # ax2.plot(lambdabar_z,fluxerr,linewidth=1,marker='.',color=filtercolors[band])
+            ax2.errorbar(lambdabar_z, fluxerr, yerr=fluxerr_std,
+                         color=filtercolors[band], linewidth=1, marker='.')
+            df = pd.DataFrame(ax2.get_xticks(), columns=['ticks'])
             df['ticks'] = lambdabar/df['ticks']-1
-            df = df.round({'ticks':1})
+            df = df.round({'ticks': 1})
             df['ticks'] = df['ticks'].astype(str)
             ax2.set_xticklabels(df['ticks'].to_list())
             ax2.set_xlabel(r'$z$')
 
-            ax.set_xlabel(r'$\frac{\bar{\lambda}}{1+z}$ [nm]',fontsize=20) 
-            ax.set_ylabel(r'$\sigma_{\mathrm{flux}}^{\mathrm{error \, model}}$/flux')
-            
-           
+            ax.set_xlabel(r'$\frac{\bar{\lambda}}{1+z}$ [nm]', fontsize=20)
+            ax.set_ylabel(
+                r'$\sigma_{\mathrm{flux}}^{\mathrm{error \, model}}$/flux')
+
             ax.text(0.9, 0.1, '{}-band'.format(band), horizontalalignment='center',
-                          verticalalignment='center', transform=ax.transAxes)
+                    verticalalignment='center', transform=ax.transAxes)
             ax.grid()

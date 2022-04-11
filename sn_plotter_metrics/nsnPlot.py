@@ -259,16 +259,18 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'],
     # plotNSN(summary_fields, forPlot, sntype=sntype, varx='zlim_faint')
     # Summary plot: one (NSN,zlim) per cadence (sum for NSN, median zlim over the fields/seasons)
 
+    print('fff', summary.columns)
+    # print(test)
     """
     plotNSN(summary, forPlot, varx='zlim_faint_med',
             legx='${z_{\mathrm{complete}}^{\mathrm{0.95}}}$', legy='N$_{\mathrm{SN}} (z<z_{\mathrm{complete}}^{\mathrm{0.95}})}$',
             zoom=dict(zip(['x1', 'x2', 'y1', 'y2', 'nolabel'], [0.61, 0.67, 0., 1000, ['dither', 'baseline', 'dm_heavy']])))
     """
-    """
+
     plotNSN(summary, forPlot, varx='zlim_faint', vary='nsn_med_faint',
             legx='${z_{\mathrm{complete}}^{\mathrm{0.95}}}$', legy='N$_{\mathrm{SN}} (z<z_{\mathrm{complete}}^{\mathrm{0.95}})}$',
-            zoom=dict(zip(['x1', 'x2', 'y1', 'y2', 'nolabel'], [0.61, 0.67, 0., 1000, ['dither', 'baseline', 'dm_heavy']])))
-    """
+            zoom=dict(zip(['x1', 'x2', 'y1', 'y2', 'nolabel'], [0.62, 0.665, 0., 1000, ['dither', 'baseline', 'dm_heavy']])))
+
     """
     print(summary[['dbName', 'zlim_faint_med']])
 
@@ -427,8 +429,8 @@ def plotNSN(summary, forPlot,
     yshift = 1.01
     if zoom:
         axins = zoomed_inset_axes(ax, 2.5, loc='center right')  # zoom = 3
-        axins.set_xticks([], minor=True)
-        axins.set_yticks([], minor=True)
+        #axins.set_xticks([], minor=True)
+        #axins.set_yticks([], minor=True)
 
     for group in np.unique(forPlot['group']):
         idx = forPlot['group'] == group
@@ -511,9 +513,10 @@ def plotNSN(summary, forPlot,
         x1, x2, y1, y2 = zoom['x1'], zoom['x2'], zoom['y1'], zoom['y2']
         axins.set_xlim(x1, x2)
         axins.set_ylim(y1, y2)
-
-        plt.xticks(visible=False)
-        plt.yticks(visible=False)
+        axins.tick_params(axis='both', which='major', labelsize=15)
+        axins.tick_params(axis='both', which='minor', labelsize=15)
+        # plt.xticks(visible=False)
+        # plt.yticks(visible=False)
 
         # draw a bbox of the region of the inset axes in the parent axes and
         # connecting lines between the bbox and the inset axes area

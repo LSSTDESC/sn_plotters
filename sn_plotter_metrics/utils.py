@@ -6,12 +6,14 @@ from abc import ABC, abstractmethod
 
 from sn_tools.sn_utils import multiproc
 
+
 @dataclass
 class Simu:
     type: str
     num: str
     dir: str
     list: str
+
 
 class Infos:
     """
@@ -24,7 +26,7 @@ class Infos:
 
     """
 
-    def __init__(self, simu,ip):
+    def __init__(self, simu, ip):
 
         self.simu = simu
         self.ip = ip
@@ -163,17 +165,16 @@ class Infos:
                              'color': [self.colors[self.ip]],
                              'marker': [self.markers[self.families.index(fam)]]})
 
+
 class ProcessData:
 
-    def __init__(self,nside, metricName, fieldType):
-        
+    def __init__(self, nside, metricName, fieldType):
+
         self.nside = nside
         self.metricName = metricName
         self.fieldType = fieldType
 
-
-    
-    def processMulti(self,toproc, outFile,process_class, nproc=1):
+    def processMulti(self, toproc, outFile, process_class, nproc=1):
         """
         Method to analyze metric output using multiprocesses
         The results are stored in outFile (npy file)
@@ -189,13 +190,13 @@ class ProcessData:
 
         """
         params = {}
-        params['fieldType']= self.fieldType
+        params['fieldType'] = self.fieldType
         params['metricName'] = self.metricName
         params['nside'] = self.nside
         params['process_class'] = process_class
 
-        print('multiprocessing',nproc)
-        resdf = multiproc(toproc,params,self.processLoop,nproc)
+        print('multiprocessing', nproc)
+        resdf = multiproc(toproc, params, self.processLoop, nproc)
         np.save(outFile, resdf.to_records(index=False))
 
     def processLoop(self, toproc, params, j=0, output_q=None):
@@ -226,14 +227,15 @@ class ProcessData:
         # this is to get summary values here
         resdf = pd.DataFrame()
         for index, val in toproc.iterrows():
-            metricdata = process_class(val,self.metricName,self.fieldType,self.nside,npixels)
+            metricdata = process_class(
+                val, self.metricName, self.fieldType, self.nside, npixels)
 
             # metricdata.plot()
             # plt.show()
             if metricdata.data_summary is not None:
                 resdf = pd.concat((resdf, metricdata.data_summary))
 
-        print('end of proc',j)
+        print('end of proc', j)
         if output_q is not None:
             output_q.put({j: resdf})
         else:
@@ -242,7 +244,7 @@ class ProcessData:
 
 class ProcessFile(ABC):
 
-    def __init__(self,info,metricName,fieldType,nside,npixels):
+    def __init__(self, info, metricName, fieldType, nside, npixels):
         """
         class to analyze results from NSN metric
 
@@ -258,7 +260,7 @@ class ProcessFile(ABC):
            healpix nside parameter
         npixels: int
           total number of pixels processed
-        
+
 
         """
         self.info = info
@@ -272,21 +274,21 @@ class ProcessFile(ABC):
     def processFiles(self):
         """
         Method to process a set of files
-        
+
 
         """
 
         search_path = '{}/{}/{}/*{}Metric_{}*_nside_{}_*.hdf5'.format(
             self.info['dirFile'], self.info['dbName'], self.metricName, self.metricName, self.fieldType, self.nside)
         print('looking for', search_path)
-       
+
         fileNames = glob.glob(search_path)
-       
+
         print(fileNames)
         if len(fileNames) > 0:
             self.data_summary = self.process(fileNames)
         else:
-            print('Missing files for', dbName)
+            print('Missing files for', self.info['dbName'])
             self.data_summary = None
 
     @abstractmethod
