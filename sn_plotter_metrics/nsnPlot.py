@@ -267,8 +267,14 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'],
             zoom=dict(zip(['x1', 'x2', 'y1', 'y2', 'nolabel'], [0.61, 0.67, 0., 1000, ['dither', 'baseline', 'dm_heavy']])))
     """
 
+    """
     plotNSN(summary, forPlot, varx='zlim_faint', vary='nsn_med_faint',
             legx='${z_{\mathrm{complete}}^{\mathrm{0.95}}}$', legy='N$_{\mathrm{SN}} (z<z_{\mathrm{complete}}^{\mathrm{0.95}})}$',
+            zoom=dict(zip(['x1', 'x2', 'y1', 'y2', 'nolabel'], [0.62, 0.665, 0., 1000, ['dither', 'baseline', 'dm_heavy']])))
+    """
+
+    plotNSN(summary, forPlot, varx='zlim_faint', vary='nsn_med_faint',
+            legx='${z_{\mathrm{complete}}}$', legy='N$_{\mathrm{SN}} (z<z_{\mathrm{complete}})}$',
             zoom=dict(zip(['x1', 'x2', 'y1', 'y2', 'nolabel'], [0.62, 0.665, 0., 1000, ['dither', 'baseline', 'dm_heavy']])))
 
     """
@@ -680,7 +686,7 @@ def plotNSN_noloop(summary, forPlot,
 
     # plot
     ax.plot(opx(selcad[varx], normx), opy(selcad[vary], normy),
-            marker=marker, lineStyle=lineStyle, label=label, ms=8, linewidth=2)
+            marker=marker, lineStyle=lineStyle, label=label, ms=12, linewidth=3, mfc='None')
 
     ax.grid()
     # ax.set_xlabel(r'{}'.format(legx), fontproperties=fontproperties)
