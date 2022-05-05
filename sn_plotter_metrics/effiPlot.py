@@ -84,7 +84,7 @@ class plotEffi:
             ax.grid()
         plt.show()
 
-    def plotEffi_indiv(self, data, ax, healpixID, season, vary='effi_err', erry=None, legy='', ls='None', sn_x1=-2.0, sn_color=0.2, lineColor='k', label=None, marker='o'):
+    def plotEffi_indiv(self, data, ax, healpixID, season, vary='effi_err', erry=None, legy='', ls='None', sn_x1=-2.0, sn_color=0.2, lineColor='k', label=None, marker='o', lw=2):
         """
         Simple method to plot vs z
 
@@ -125,7 +125,7 @@ class plotEffi:
             yerr = grp[erry]
 
         ax.errorbar(grp['z'], grp[vary], yerr=yerr,
-                    marker=marker, label=label, lineStyle=ls, ms=10)
+                    marker=marker, label=label, lineStyle=ls, ms=15, lw=lw, mfc='None')
 
     def getRates(self, survey_area=9.6):
 
@@ -187,11 +187,13 @@ class plotEffi:
 
         return nsn_cum_norm, zlimit
 
-    def plotCumul(self, data, ax, healpixID, season, shiftplot=0.08, sn_x1=-2.0, sn_color=0.2, zlim_coeff=0.95, label='', ls='None', marker='o'):
+    def plotCumul(self, data, ax, healpixID, season, shiftplot=0.08, sn_x1=-2.0, sn_color=0.2, zlim_coeff=0.95, label='', ls='None', marker='o', lw=2):
+
         zplot = np.arange(0.01, 0.7, 0.01)
         nsn_cum_norm, zlimit = self.get_zlims(
             data, ax, healpixID, season, sn_x1=sn_x1, sn_color=sn_color, zlim_coeff=zlim_coeff, zplot=zplot)
-        ax.plot(zplot, nsn_cum_norm, label=label, ls=ls, marker=marker)
+        ax.plot(zplot, nsn_cum_norm, label=label, ls=ls,
+                marker=marker, lw=lw, ms=10, mfc='None')
         zcomp = '$z_{complete}^{0.95,'+str(season)+'}$ = '
         """
         ax.text(0.05, 0.958-0.08*season,
