@@ -561,7 +561,7 @@ def plotDithering(summary, forPlot, sntype='faint'):
     fig, ax = plt.subplots(figsize=(16, 10))
     figb, axb = plt.subplots(figsize=(16, 10))
     """
-    fig, axs = plt.subplots(2, 1, sharex=True, figsize=(12, 10))
+    fig, axs = plt.subplots(2, 1, sharex=True, figsize=(9, 16))
     # Remove horizontal space between axes
     fig.subplots_adjust(hspace=0.2)
     # fig.subplots_adjust(right=0.85)
@@ -579,7 +579,7 @@ def plotDithering(summary, forPlot, sntype='faint'):
             dd = 'days'
             if cad < 2:
                 dd = 'day'
-            label = fsl[0]+' - cadence: {} {}'.format(cad, dd)
+            label = fsl[0]+' - cad: {} {}'.format(cad, dd)
         else:
             label = fsl[0]+'_dither'
 
