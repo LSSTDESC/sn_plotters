@@ -564,7 +564,7 @@ def plotDithering(summary, forPlot, sntype='faint'):
     fig, axs = plt.subplots(2, 1, sharex=True, figsize=(9, 16))
     # Remove horizontal space between axes
     fig.subplots_adjust(hspace=0.2)
-    # fig.subplots_adjust(right=0.85)
+    fig.subplots_adjust(left=0.15)
     for family in np.unique(sel['family']):
         ia = sel['family'] == family
         sela = sel[ia]
@@ -608,7 +608,7 @@ def plotDithering(summary, forPlot, sntype='faint'):
     axs[0].grid()
     # axs[0].legend(bbox_to_anchor=(1., 0.15), ncol=1,
     #              fontsize=12, frameon=False)
-    axs[0].legend(bbox_to_anchor=(-0.015, 1.40), ncol=2,
+    axs[0].legend(bbox_to_anchor=(-0.1, 1.40), ncol=2,
                   frameon=False, loc='upper left')
     axs[0].grid()
     legx = 'Translational dither offset [deg]'
