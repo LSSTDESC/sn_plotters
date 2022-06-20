@@ -13,6 +13,7 @@ class Simu:
     num: str
     dir: str
     list: str
+    nside: int
 
 
 class Infos:
