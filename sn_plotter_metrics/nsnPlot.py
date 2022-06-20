@@ -1752,8 +1752,8 @@ class NSN_zlim_GUI:
         for col in np.unique(resdf['color']):
             idx = resdf['color'] == col
             tab = resdf[idx]
-            lab = '{}_{}'.format(
-                np.unique(tab['simuType']).item(), np.unique(tab['simuNum']).item())
+            lab = '{}_{}_{}'.format(
+                np.unique(tab['simuType']).item(), np.unique(tab['simuNum']).item(), np.unique(tab['nside']).item())
             patches.append(mpatches.Patch(color=col, label=lab))
         self.ax.legend(handles=patches, fontsize=15, loc='upper left')
 
