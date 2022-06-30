@@ -35,6 +35,7 @@ class Infos:
         self.colors = ['b', 'k', 'r', 'g', 'm', 'c']
         self.markers = [".", "o", "v", "^", "<", ">", "1", "2", "3", "4", "8",
                         "s", "p", "P", "*", "h", "H", "+", "x", "X", "D", "d", "|", "_"]
+        self.markers += ["x", "X", "D", "d", "|", "_"]
 
         dbList = pd.read_csv(simu.list, comment='#')
         print(dbList)
@@ -151,9 +152,10 @@ class Infos:
 
         """
         fam = self.family(dbName)
-        # print(vv, fam)
+
         if fam not in self.families:
             self.families.append(fam)
+        #print('infos', fam, len(self.markers), self.families.index(fam))
         imark = self.families.index(fam)
         print(self.simu.type, self.simu.dir, dbName, fam,
               self.colors[self.ip], self.markers[self.families.index(fam)])
@@ -261,7 +263,6 @@ class ProcessFile(ABC):
            healpix nside parameter
         npixels: int
           total number of pixels processed
-
 
         """
         self.info = info
