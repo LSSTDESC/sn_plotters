@@ -155,7 +155,7 @@ class SimuPlot:
         """
 
         # get all simu files
-
+        """
         simu_path = '{}/{}/Simu_*{}*.hdf5'.format(
             self.dbDir, self.dbName, self.tagName)
 
@@ -174,6 +174,12 @@ class SimuPlot:
                 lc = Table.read(lcName, path='lc_{}'.format(par['index_hdf5']))
                 print('lc', lc.columns)
                 self.plotFig(lc, pause_time=pause_time)
+        """
+        for par in self.simuPars:
+            lc = Table.read(
+                par['lcName'], path='lc_{}'.format(par['index_hdf5']))
+            print('lc', lc.columns)
+            self.plotFig(lc, pause_time=pause_time)
 
         """
         # get LC file
@@ -209,40 +215,10 @@ class SimuPlot:
         fig.suptitle(figtitle)
 
         # print(lc)  # light curve points
-        self.plotLC(lc, ax, self.band_id)
+        plotLC(lc, ax, self.band_id)
         plt.draw()
         plt.pause(pause_time)
         plt.close()
-
-    def plotLC(self, table, ax, band_id):
-        """
-        Method to plot produced LC
-
-        Parameters
-        ---------------
-        table: astropy table
-          LC to display
-        ax: matplotlib axis
-         to display
-        band_id: int
-         id of the band
-        """
-
-        fontsize = 15.
-        for band in 'ugrizy':
-            i = band_id[band][0]
-            j = band_id[band][1]
-            # ax[i,j].set_yscale("log")
-            idx = table['band'] == 'LSST::'+band
-            sel = table[idx]
-
-            ax[i, j].errorbar(sel['time'], sel['flux_e_sec'], yerr=sel['flux_e_sec']/sel['snr_m5'],
-                              markersize=200000., color=filtercolors[band], linewidth=1)
-            if i > 1:
-                ax[i, j].set_xlabel('MJD [day]', {'fontsize': fontsize})
-            ax[i, j].set_ylabel('Flux [pe/sec]', {'fontsize': fontsize})
-            ax[i, j].text(0.1, 0.9, band, horizontalalignment='center',
-                          verticalalignment='center', transform=ax[i, j].transAxes)
 
     def checkLC(self):
         # get LC file
@@ -511,3 +487,34 @@ class SimuPlot:
             ax.text(0.9, 0.1, '{}-band'.format(band), horizontalalignment='center',
                     verticalalignment='center', transform=ax.transAxes)
             ax.grid()
+
+
+def plotLC(table, ax, band_id):
+    """
+    Method to plot produced LC
+
+    Parameters
+    ---------------
+    table: astropy table
+        LC to display
+    ax: matplotlib axis
+        to display
+    band_id: int
+        id of the band
+    """
+
+    fontsize = 15.
+    for band in 'ugrizy':
+        i = band_id[band][0]
+        j = band_id[band][1]
+        # ax[i,j].set_yscale("log")
+        idx = table['band'] == 'LSST::'+band
+        sel = table[idx]
+
+        ax[i, j].errorbar(sel['time'], sel['flux_e_sec'], yerr=sel['flux_e_sec']/sel['snr_m5'],
+                          markersize=200000., color=filtercolors[band], linewidth=1)
+        if i > 1:
+            ax[i, j].set_xlabel('MJD [day]', {'fontsize': fontsize})
+        ax[i, j].set_ylabel('Flux [pe/sec]', {'fontsize': fontsize})
+        ax[i, j].text(0.1, 0.9, band, horizontalalignment='center',
+                      verticalalignment='center', transform=ax[i, j].transAxes)
