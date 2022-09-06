@@ -9,6 +9,7 @@ from sn_tools.sn_io import loopStack
 import pandas as pd
 from scipy.interpolate import interp1d
 from pandas.plotting import table
+import sncosmo
 
 
 class SimuPlot:
@@ -144,7 +145,7 @@ class SimuPlot:
             axis.tick_params(axis='y', labelsize=thesize)
         # plt.show()
 
-    def plotLoopLC(self, pause_time=5):
+    def plotLoopLC(self, pause_time=5, save_fig=False, dir_fig='.'):
         """
         Function to plot LC in loop
 
@@ -152,6 +153,10 @@ class SimuPlot:
         ---------------
         pause_time: int, opt
           time of the window persistency (in sec) (default: 5 sec)
+        save_fig: bool, opt
+          to save figure (default: False)
+        dir_fig: str, opt
+           where saved figs will be copied (default: .)
         """
 
         # get all simu files
@@ -179,7 +184,10 @@ class SimuPlot:
             lc = Table.read(
                 par['lcName'], path='lc_{}'.format(par['index_hdf5']))
             print('lc', lc.columns)
-            self.plotFig(lc, pause_time=pause_time)
+            # self.plotFig(lc, pause_time=pause_time,
+            #             save_fig=save_fig, dir_fig=dir_fig)
+            plot_fitLC(lc, pause_time=pause_time,
+                       save_fig=save_fig, dir_fig=dir_fig)
 
         """
         # get LC file
@@ -194,7 +202,7 @@ class SimuPlot:
         for par in simpars:
          """
 
-    def plotFig(self, lc, pause_time):
+    def plotFig(self, lc, pause_time, save_fig=False, dir_fig='.'):
         """
         Method to plot lc on fig
 
@@ -204,7 +212,10 @@ class SimuPlot:
           lc to plot
         pause_time: float
           time for plot persistency (in secs)
-
+        save_fig: bool, opt
+          to save figure (default: False)
+        dir_fig: str, opt
+           where saved figs will be copied (default: .)
         """
         fig, ax = plt.subplots(ncols=2, nrows=3, figsize=(12, 8))
         pprint.pprint(lc.meta)  # metadata
@@ -216,9 +227,15 @@ class SimuPlot:
 
         # print(lc)  # light curve points
         plotLC(lc, ax, self.band_id)
-        plt.draw()
-        plt.pause(pause_time)
-        plt.close()
+
+        if save_fig:
+            figName = 'LC_{}.png'.format(np.round(lc.meta['z'], 2))
+            plt.savefig('{}/{}'.format(dir_fig, figName))
+
+        if pause_time > 0:
+            plt.draw()
+            plt.pause(pause_time)
+            plt.close()
 
     def checkLC(self):
         # get LC file
@@ -518,3 +535,60 @@ def plotLC(table, ax, band_id):
         ax[i, j].set_ylabel('Flux [pe/sec]', {'fontsize': fontsize})
         ax[i, j].text(0.1, 0.9, band, horizontalalignment='center',
                       verticalalignment='center', transform=ax[i, j].transAxes)
+
+
+def plot_fitLC(table, pause_time, save_fig, dir_fig):
+
+    #print('hhh', table.meta)
+    table.convert_bytestring_to_unicode()
+    idx = table['snr_m5'] >= 1.
+    table = table[idx]
+
+    for b in np.unique(table['band']):
+        io = table['band'] == b
+        sel = table[io]
+        print(b, sel[['phase', 'flux', 'fluxerr', 'snr_m5']])
+
+    #print('LC', len(table))
+    from sn_tools.sn_telescope import Telescope
+    from astropy import units as u
+    telescope = Telescope(airmass=1.2, atmos=1)
+    for band in 'grizy':
+        if telescope.airmass > 0:
+            band = sncosmo.Bandpass(
+                telescope.atmosphere[band].wavelen, telescope.atmosphere[band].sb, name='LSST::'+band, wave_unit=u.nm)
+        else:
+            band = sncosmo.Bandpass(
+                telescope.system[band].wavelen, telescope.system[band].sb, name='LSST::'+band, wave_unit=u.nm)
+        sncosmo.registry.register(band, force=True)
+    param = ['z', 't0', 'x0', 'x1', 'c']
+    source = sncosmo.get_source('salt2-extended', version='1.0')
+    dustmap = sncosmo.OD94Dust()
+    model = sncosmo.Model(source=source, effects=[dustmap, dustmap],
+                          effect_names=['host', 'mw'],
+                          effect_frames=['rest', 'obs'])
+    model.set(mwebv=0.)
+    # print(table.columns)
+    table.remove_column('filter')
+    z_bound_err = 0.00001
+    z_bounds = {
+        'z': (table.meta['z']-z_bound_err, table.meta['z']+z_bound_err)}
+    try:
+        result, fitted_model = sncosmo.fit_lc(
+            table, model, param, bounds=z_bounds, minsnr=1)
+        print('param errors', result.errors)
+        print(result)
+        sncosmo.plot_lc(data=table, model=fitted_model,
+                        errors=result.errors, yfigsize=9, pulls=False)
+
+        if save_fig:
+            figName = 'LC_{}.png'.format(np.round(table.meta['z'], 2))
+            plt.savefig('{}/{}'.format(dir_fig, figName))
+
+        if pause_time > 0:
+            plt.draw()
+            plt.pause(5)
+            plt.close()
+
+    except:
+        print('could not fit', mess, table.meta)
