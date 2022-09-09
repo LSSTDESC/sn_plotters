@@ -165,7 +165,8 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'],
     summary = data.groupby(['dbName']).agg({'nsn_med_faint': 'sum',
                                             'nsn_med_medium': 'sum',
                                             'zlim_faint': 'median',
-                                            'zlim_medium': 'median', }).reset_index()
+                                            'zlim_medium': 'median',
+                                            'pixArea': 'sum', }).reset_index()
     """
     summary_fields = data.groupby(['dbName', 'fieldname']).agg({'nsn_zlim_faint': 'sum',
                                                                 'nsn_zlim_medium': 'sum',
@@ -435,8 +436,8 @@ def plotNSN(summary, forPlot,
     yshift = 1.01
     if zoom:
         axins = zoomed_inset_axes(ax, 2.5, loc='center right')  # zoom = 3
-        #axins.set_xticks([], minor=True)
-        #axins.set_yticks([], minor=True)
+        # axins.set_xticks([], minor=True)
+        # axins.set_yticks([], minor=True)
 
     for group in np.unique(forPlot['group']):
         idx = forPlot['group'] == group
