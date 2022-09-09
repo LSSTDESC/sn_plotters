@@ -1,3 +1,0 @@
-sn_plotter_fitlc
-sn_plotter_metrics
-sn_plotter_simu
