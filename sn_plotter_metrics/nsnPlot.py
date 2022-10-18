@@ -143,7 +143,8 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'],
 
     data = pd.DataFrame(np.copy(metricValues))
     idx = data['fieldname'].isin(fieldNames)
-    idx &= data['zlim_faint'] > 0.
+    #idx &= data['zlim_faint'] > 0.
+    idx &= data['zcomp'] > 0.
     data = data[idx]
 
     """
@@ -161,11 +162,15 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'],
     # print(test)
     """
     # plotArea(data, nside)
-
+    """
     summary = data.groupby(['dbName']).agg({'nsn_med_faint': 'sum',
                                             'nsn_med_medium': 'sum',
                                             'zlim_faint': 'median',
                                             'zlim_medium': 'median', }).reset_index()
+    """
+    summary = data.groupby(['dbName']).agg({'nsn': 'sum',
+                                            'zcomp': 'median',
+                                            }).reset_index()
     """
     summary_fields = data.groupby(['dbName', 'fieldname']).agg({'nsn_zlim_faint': 'sum',
                                                                 'nsn_zlim_medium': 'sum',
@@ -273,9 +278,9 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'],
             zoom=dict(zip(['x1', 'x2', 'y1', 'y2', 'nolabel'], [0.62, 0.665, 0., 1000, ['dither', 'baseline', 'dm_heavy']])))
     """
 
-    plotNSN(summary, forPlot, varx='zlim_faint', vary='nsn_med_faint',
-            legx='${z_{\mathrm{complete}}}$', legy='N$_{\mathrm{SN}} (z<z_{\mathrm{complete}})}$',
-            zoom=dict(zip(['x1', 'x2', 'y1', 'y2', 'nolabel'], [0.62, 0.665, 0., 1000, ['dither', 'baseline', 'dm_heavy']])))
+    plotNSN(summary, forPlot, varx='zcomp', vary='nsn',
+            legx='${z_{\mathrm{complete}}}$', legy='N$_{\mathrm{SN}} (z<z_{\mathrm{complete}})}$')
+    # zoom=dict(zip(['x1', 'x2', 'y1', 'y2', 'nolabel'], [0.62, 0.665, 0., 1000, ['dither', 'baseline', 'dm_heavy']])))
 
     """
     print(summary[['dbName', 'zlim_faint_med']])
@@ -283,7 +288,7 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'],
     plotNSN(summary, forPlot, varx='zlim_faint_med',
             legx='$z_{complete}^{0.95}$', legy='$N_{SN} (z<z_{complete}^{0.95})$')
     """
-    plotDithering(summary, forPlot)
+    ######plotDithering(summary, forPlot)
     """
     for fieldname in summary_fields['fieldname'].unique():
         idx = summary_fields['fieldname'] == fieldname
@@ -383,7 +388,7 @@ def plotNSN(summary, forPlot,
             normy=1,
             opx=operator.truediv,
             opy=operator.truediv,
-            plotlabel=True,
+            plotlabel=False,
             zoom={}, ax=None,
             lineStyle='None'):
     """
@@ -430,7 +435,7 @@ def plotNSN(summary, forPlot,
     fontsize = 18
     if not ax:
         fig, ax = plt.subplots(figsize=(16, 10))
-
+        fig.subplots_adjust(right=0.8)
     xshift = 1.0
     yshift = 1.01
     if zoom:
@@ -454,11 +459,14 @@ def plotNSN(summary, forPlot,
             sel['cadence'].str.strip())]
         """
         # plot
-        ax.plot(opx(selcad[varx], normx), opy(selcad[vary], normy), color=color,
-                marker=marker, lineStyle=lineStyle)
+        print('jjjj', selcad[[varx, vary, 'dbName']])
+        # ax.plot(opx(selcad[varx], normx), opy(selcad[vary], normy), color=color,
+        #        marker=marker, lineStyle=lineStyle)
+        ax.plot(selcad[varx], selcad[vary], color=color,
+                marker=marker, linestyle=lineStyle, label='{} ({})'.format(group, len(selcad)), ms=10.)
         if zoom:
             axins.plot(opx(selcad[varx], normx), opy(selcad[vary], normy), color=color,
-                       marker=marker, lineStyle=lineStyle)
+                       marker=marker, line=lineStyle)
 
         # get the centroid of the data and write it
         if plotlabel:
@@ -528,6 +536,8 @@ def plotNSN(summary, forPlot,
         # connecting lines between the bbox and the inset axes area
         mark_inset(ax, axins, loc1=3, loc2=4, fc="none", ec="0.5")
 
+    ax.legend(bbox_to_anchor=(0.985, 0.95), ncol=1,
+              fontsize=fontsize, frameon=False)
     """
     fig.text(0.8, 0.8, 'Preliminary',
              fontsize=25, color='blue',
