@@ -93,7 +93,7 @@ def useful_area(grp):
     return pd.DataFrame({'frac_area': [npixels_useful/npixels]})
 
 
-def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'], nside=128):
+def plot_DDSummary_deprecated(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'], nside=128):
     """
     Plot to display NSN results for DD fields
 
@@ -334,6 +334,66 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'],
             normx=1,
             normy=norm['nsn_med_{}'.format(sntype)].item(), plotlabel=False)
     """
+
+
+def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'], nside=128):
+    """
+    Plot to display NSN results for DD fields
+
+    Parameters
+    ----------------
+    metricValues: numpy array
+     array of data to display:
+      healpixID: healpixID of the pixel SN
+      season: season to plot
+      pixRA: RA of the pixel SN
+      pixDec: Dec of the pixel SN
+      zlim_faint: redshift corresponding to faintest SN (x1=-2.0,color=0.2)
+      zlim_medium: redshift corresponding to medium SN (x1=0.0,color=0.0)
+      nsn_med_zfaint: number of medium SN with z<zlim_faint
+      nsn_med_zmedium: number of medium SN with z<zlim_medium
+      nsn_zfaint: number of SN with z<zlim_faint
+      nsn_zmedium: number of medium SN with z<zlim_medium
+      fieldname: name of the field
+      fieldnum: number of the field
+      cadence: cadence name
+      nside: nside value for healpix tessallation
+      pixArea: pixel area
+    forPlot: numpy array
+     array with a set of plotting information (marker, color) for each cadence:
+     dbName: cadence name
+     newName: new cadence name
+     group: name of the group the cadence is bzelonging to
+     Namepl: name of the cadence for plotting
+     color: marker color
+     marker: marker type
+    sntype: str,opt
+      type of the supernova (faint or medium) (default: faint) for display
+    fieldNames: list(str),opt
+      list of fields to consider (default: ['COSMOS'])
+    nside: int,opt
+      healpix nside value (default: 128)
+
+    Returns
+    -----------
+    Plot (NSN, zlim)
+
+
+    """
+    data = pd.DataFrame(np.copy(metricValues))
+    idx = data['fieldname'].isin(fieldNames)
+    #idx &= data['zlim_faint'] > 0.
+    idx &= data['zcomp'] > 0.
+    data = data[idx]
+
+    summary = data.groupby(['dbName']).agg({'nsn': 'sum',
+                                            'zcomp': 'median',
+                                            }).reset_index()
+
+    print('fff', summary.columns)
+
+    plotNSN(summary, forPlot, varx='zcomp', vary='nsn',
+            legx='${z_{\mathrm{complete}}}$', legy='N$_{\mathrm{SN}} (z<z_{\mathrm{complete}})}$')
 
 
 def stat_season(grp,
