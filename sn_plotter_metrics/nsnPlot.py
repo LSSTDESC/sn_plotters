@@ -166,7 +166,8 @@ def plot_DDSummary_deprecated(metricValues, forPlot, sntype='faint', fieldNames=
     summary = data.groupby(['dbName']).agg({'nsn_med_faint': 'sum',
                                             'nsn_med_medium': 'sum',
                                             'zlim_faint': 'median',
-                                            'zlim_medium': 'median', }).reset_index()
+                                            'zlim_medium': 'median',
+                                            'pixArea': 'sum', }).reset_index()
     """
     summary = data.groupby(['dbName']).agg({'nsn': 'sum',
                                             'zcomp': 'median',
@@ -500,8 +501,8 @@ def plotNSN(summary, forPlot,
     yshift = 1.01
     if zoom:
         axins = zoomed_inset_axes(ax, 2.5, loc='center right')  # zoom = 3
-        #axins.set_xticks([], minor=True)
-        #axins.set_yticks([], minor=True)
+        # axins.set_xticks([], minor=True)
+        # axins.set_yticks([], minor=True)
 
     for group in np.unique(forPlot['group']):
         idx = forPlot['group'] == group
