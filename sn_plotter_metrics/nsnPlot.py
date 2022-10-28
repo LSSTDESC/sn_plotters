@@ -337,7 +337,7 @@ def plot_DDSummary_deprecated(metricValues, forPlot, sntype='faint', fieldNames=
     """
 
 
-def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'], nside=128):
+def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'], nside=128, figtit=''):
     """
     Plot to display NSN results for DD fields
 
@@ -374,7 +374,8 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'],
       list of fields to consider (default: ['COSMOS'])
     nside: int,opt
       healpix nside value (default: 128)
-
+   figtit: str, opt
+      fig title (default: None)
     Returns
     -----------
     Plot (NSN, zlim)
@@ -394,7 +395,7 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'],
     print('fff', summary.columns)
 
     plotNSN(summary, forPlot, varx='zcomp', vary='nsn',
-            legx='${z_{\mathrm{complete}}}$', legy='N$_{\mathrm{SN}} (z<z_{\mathrm{complete}})}$')
+            legx='${z_{\mathrm{complete}}}$', legy='N$_{\mathrm{SN}} (z<z_{\mathrm{complete}})}$', figtit=figtit)
 
 
 def stat_season(grp,
@@ -451,7 +452,8 @@ def plotNSN(summary, forPlot,
             opy=operator.truediv,
             plotlabel=False,
             zoom={}, ax=None,
-            lineStyle='None'):
+            lineStyle='None',
+            figtit=''):
     """
     Plot NSN vs redshift limit
 
@@ -497,6 +499,7 @@ def plotNSN(summary, forPlot,
     if not ax:
         fig, ax = plt.subplots(figsize=(16, 10))
         fig.subplots_adjust(right=0.8)
+        fig.suptitle(figtit)
     xshift = 1.0
     yshift = 1.01
     if zoom:
