@@ -141,11 +141,11 @@ def plot_DDSummary_deprecated(metricValues, forPlot, sntype='faint', fieldNames=
     # print('selec', sel[['zlim_faint', 'nsn_med_faint']])
     # estimate some stats to display
 
-    data = pd.DataFrame(np.copy(metricValues))
-    idx = data['fieldname'].isin(fieldNames)
+    #data = pd.DataFrame(np.copy(metricValues))
+    idx = metricValues['fieldname'].isin(fieldNames)
     #idx &= data['zlim_faint'] > 0.
-    idx &= data['zcomp'] > 0.
-    data = data[idx]
+    idx &= metricValues['zcomp'] > 0.
+    data = metricValues[idx]
 
     """
     for season in data['season'].unique():
@@ -382,11 +382,11 @@ def plot_DDSummary(metricValues, forPlot, sntype='faint', fieldNames=['COSMOS'],
 
 
     """
-    data = pd.DataFrame(np.copy(metricValues))
-    idx = data['fieldname'].isin(fieldNames)
+    #data = pd.DataFrame(np.copy(metricValues))
+    idx = metricValues['fieldname'].isin(fieldNames)
     #idx &= data['zlim_faint'] > 0.
-    idx &= data['zcomp'] > 0.
-    data = data[idx]
+    idx &= metricValues['zcomp'] > 0.
+    data = metricValues[idx]
 
     summary = data.groupby(['dbName']).agg({'nsn': 'sum',
                                             'zcomp': 'median',
