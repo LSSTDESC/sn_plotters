@@ -3,7 +3,8 @@ from dataclasses import dataclass
 import glob
 import numpy as np
 from abc import ABC, abstractmethod
-
+import healpy as hp
+from sn_tools.sn_io import loopStack
 from sn_tools.sn_utils import multiproc
 
 
@@ -306,3 +307,187 @@ class ProcessFile(ABC):
 
         """
         pass
+
+
+class MetricValues:
+    def __init__(self, dirFile, dbNames, metricName='NSN',
+                 fieldType='DD', fieldNames=['COSMOS'], nside=128, nproc=8):
+        """
+        Class to transform input data and match to DD fieldsgrab metric values
+
+        Parameters
+        ---------------
+        dirFile: str
+          directory of the files to process
+        dbNames: list(str) 
+           list of OS to process
+        metricName: str, opt
+          name of the metric to consider (default: NSN)
+        fieldType: str,opt
+          field type to consider (default: DD)
+        fieldNames: list(str), opt
+          fieldNames to process (default: ['COSMOS'])
+        nside: int, opt
+          nside healpix parameter (default: 128)
+        nproc: int, opt
+          number of procs to use (default: 8)
+
+        Returns
+        ----------
+
+
+        """
+
+        # get pixelArea
+        self.pixArea = hp.nside2pixarea(nside, degrees=True)
+        x1_colors = [(-2.0, 0.2), (0.0, 0.0)]
+        self.corr = dict(zip(x1_colors, ['faint', 'medium']))
+        # self.data = self.process_loop(dirFile, metricName, fieldType, fieldNames,
+        #                              nside, forPlot).to_records()
+
+        params = {}
+        params['dirFile'] = dirFile
+        params['metricName'] = metricName
+        params['fieldType'] = fieldType
+        params['fieldNames'] = fieldNames
+        params['nside'] = nside
+
+        self.data = multiproc(dbNames, params, self.process, nproc)
+
+    def process(self, dbNames, params, j=0, output_q=None):
+
+        dirFile = params['dirFile']
+        metricName = params['metricName']
+        fieldType = params['fieldType']
+        fieldNames = params['fieldNames']
+        nside = params['nside']
+
+        restot = pd.DataFrame()
+        for dbName in dbNames:
+            for fieldName in fieldNames:
+                res = self.process_field(
+                    dirFile, dbName, metricName, fieldType, fieldName, nside)
+                restot = pd.concat((restot, res))
+
+        if output_q is not None:
+            return output_q.put({j: restot})
+        else:
+            return restot
+
+    def process_field(self, dirFile, dbName, metricName, fieldType, fieldName, nside):
+        """
+        Single file processing
+        This method load the files corresponding to dbName and transform it
+        so as to have all infos on one line.
+
+
+        Parameters
+        ----------------
+        dirFile: str
+         directory where the files are located
+        dbName: str
+          name of the cadence to processe
+        metricName: str
+          name of the metric of interest
+        fieldType: str
+          field type: DD or WFD
+        nside: int
+          nside for healpix tessallation
+
+
+        Returns
+        -----------
+         pandas df with metric values and additional info (dbName, fieldName, ...)
+
+        """
+        if fieldType == 'DD':
+            search_path = '{}/{}/{}_{}/*{}Metric_{}*_nside_{}_*.hdf5'.format(
+                dirFile, dbName, metricName,  fieldName, metricName, fieldType, nside)
+        if fieldType == 'WFD':
+            search_path = '{}/{}/{}/*{}Metric_{}*_nside_{}_*.hdf5'.format(
+                dirFile, dbName, metricName, metricName, fieldType, nside)
+        print('looking for', search_path)
+        vars = ['pixRA', 'pixDec', 'healpixID', 'season', 'status']
+        # vars = ['healpixID', 'season']
+        fileNames = glob.glob(search_path)
+        print(fileNames)
+        finaldf = pd.DataFrame()
+        if fileNames:
+            # plt.plot(metricValues['pixRA'],metricValues['pixDec'],'ko')
+            # plt.show()
+            metricValues = loopStack(fileNames, 'astropyTable').to_pandas()
+            metricValues = metricValues.round({'pixRA': 3, 'pixDec': 3})
+            metricValues['dbName'] = dbName
+            metricValues['fieldname'] = fieldName
+            metricValues['pixArea'] = self.pixArea
+            metricValues['filter'] = 'grizy'
+            dbName_split = dbName.split('_')
+            n = len(dbName_split)
+            metricValues['dbName_plot'] = '_'.join(dbName_split[0:n-2])
+
+            print(metricValues.columns)
+            return metricValues
+
+
+def get_dist(data, pixRA_mean=-1, pixDec_mean=-1):
+    """
+    Function to estimate the distance dist = sqrt((deltaRA*cos(Dec))**2+deltaDec**2)
+
+    Parameters
+    ---------------
+    data: pandas df
+      data to process
+
+    Returns
+    ----------
+    pandas df with dist col
+
+    """
+    if pixRA_mean == -1:
+        pixRA_mean = np.mean(data['pixRA'])
+        pixDec_mean = np.mean(data['pixDec'])
+    data['dist'] = np.sqrt(((data['pixRA']-pixRA_mean)*np.cos(np.deg2rad(data['pixDec'])))**2
+                           + (data['pixDec']-pixDec_mean)**2)
+    data['pixRA_mean'] = pixRA_mean
+    data['pixDec_mean'] = pixDec_mean
+
+    return data
+
+
+def dumpcsv_medcad(metricTot):
+    """
+    Function to dump metric results in csv file
+
+    Parameters
+    --------------
+    metricTot: pandas df
+      data to process
+
+    """
+
+    data = pd.DataFrame(metricTot)
+    r = pd.DataFrame()
+
+    summary = data.groupby(['dbName']).agg({'nsn': 'sum',
+                                            'zcomp': 'median',
+                                            }).reset_index()
+
+    summary_fields = data.groupby(['dbName', 'fieldname']).agg({'nsn': 'sum',
+                                                               'zcomp': 'median',
+                                                                }).reset_index()
+    summary_fields_season = data.groupby(['dbName', 'fieldname', 'season']).agg({'nsn': 'sum',
+                                                                                'zcomp': 'median',
+                                                                                 }).reset_index()
+    if 'healpixID' in data.columns:
+        summary_fields_pixels = data.groupby(['dbName', 'fieldname', 'healpixID']).agg({'nsn': 'sum',
+                                                                                        'zcomp': 'median',
+                                                                                        }).reset_index()
+    print(summary)
+    print(summary_fields)
+    summary.to_csv('metric_summary_DD.csv', index=False)
+    summary_fields.to_csv('metric_summary_fields_DD.csv', index=False)
+    summary_fields_season.to_csv(
+        'metric_summary_fields_season_DD.csv', index=False)
+    if 'healpixID' in data.columns:
+        summary_fields_pixels.to_csv(
+            'metric_summary_fields_pixels_DD.csv', index=False)
