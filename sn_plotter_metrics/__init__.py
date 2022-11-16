@@ -11,3 +11,4 @@ plt.rcParams['font.size'] = 20
 #plt.rcParams['font.weight'] = 'bold'
 plt.rcParams['font.family'] = 'Arial'
 #plt.rcParams['font.sans-serif'] = ['Helvetica']
+plt.rcParams['lines.markersize'] = 15
