@@ -513,7 +513,11 @@ def plotNSN(summary, forPlot,
         # print(group, sel['dbName'])
         marker = sel['marker'].unique()[0]
         color = sel['color'].unique()[0]
-
+        mfc = sel['mfc'].unique()[0]
+        if mfc == 1:
+            mfc = color
+        else:
+            mfc = 'None'
         # print('ici', sel['dbName'].str.strip(), summary['cadence'])
 
         selcad = summary[summary['dbName'].str.strip().isin(
@@ -526,8 +530,9 @@ def plotNSN(summary, forPlot,
         print('jjjj', selcad[[varx, vary, 'dbName']])
         # ax.plot(opx(selcad[varx], normx), opy(selcad[vary], normy), color=color,
         #        marker=marker, lineStyle=lineStyle)
+        print('hello', group, marker, color, mfc)
         ax.plot(selcad[varx], selcad[vary], color=color,
-                marker=marker, linestyle=lineStyle, label='{} ({})'.format(group, len(selcad)), ms=10.)
+                marker=marker, linestyle=lineStyle, label='{} ({})'.format(group, len(selcad)), ms=20, mfc=mfc)
         if zoom:
             axins.plot(opx(selcad[varx], normx), opy(selcad[vary], normy), color=color,
                        marker=marker, line=lineStyle)
