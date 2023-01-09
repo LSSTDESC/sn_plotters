@@ -467,18 +467,18 @@ def dumpcsv_medcad(metricTot,prefix='metric_summary_DD'):
 
     data = pd.DataFrame(metricTot)
 
-    summary = data.groupby(['dbName']).agg({'nsn': 'sum',
+    summary = data.groupby(['dbName','family']).agg({'nsn': 'sum',
                                             'zcomp': 'median',
                                             }).reset_index()
 
-    summary_fields = data.groupby(['dbName', 'fieldname']).agg({'nsn': 'sum',
+    summary_fields = data.groupby(['dbName','family','fieldname']).agg({'nsn': 'sum',
                                                                'zcomp': 'median',
                                                                 }).reset_index()
-    summary_fields_season = data.groupby(['dbName', 'fieldname', 'season']).agg({'nsn': 'sum',
+    summary_fields_season = data.groupby(['dbName', 'family','fieldname', 'season']).agg({'nsn': 'sum',
                                                                                 'zcomp': 'median',
                                                                                  }).reset_index()
     if 'healpixID' in data.columns:
-        summary_fields_pixels = data.groupby(['dbName', 'fieldname', 'healpixID','pixRA','pixDec','season']).agg({'nsn': 'sum',
+        summary_fields_pixels = data.groupby(['dbName', 'family','fieldname', 'healpixID','pixRA','pixDec','season']).agg({'nsn': 'sum',
                                                                                         'zcomp': 'median',
                                                                                         }).reset_index()
     print(summary)

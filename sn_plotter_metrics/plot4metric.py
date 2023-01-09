@@ -123,9 +123,10 @@ def plot_vs_OS_dual(data, varx='family', vary=['time_budget'], legy=['Time Budge
         if io == 0:
             ax[io].get_xaxis().set_ticklabels([])
 
-    plotDir = '../../Bureau/ddf_fbs_2.1'
-    plotName = '{}/cad_sl_{}.png'.format(plotDir, title)
-    fig.savefig(plotName)
+    #plotDir = '../../Bureau/ddf_fbs_2.1'
+    #plotName = '{}/cad_sl_{}.png'.format(plotDir, title)
+    #fig.savefig(plotName)
+    plt.show()
 
 
 def plot_hist_OS(data, by='family', what='cadence'):
@@ -224,6 +225,8 @@ def plot_series_fields(df, title='', varx='family', what=['time_budget_field', '
         ax.legend(bbox_to_anchor=(0.5, 1.17), ncol=3,
                   frameon=False, loc='upper center')
         ax.grid()
+        
+    plt.show()
 
 
 def plot_series_median(df, title='', varx='family', what=['time_budget', 'field'], leg=['Time budget [%]', 'DD Field']):
@@ -434,6 +437,7 @@ def plot_field(df, xvars=['season', 'season'], xlab=['Season', 'Season'], yvars=
 
     ax[0].grid()
     ax[1].grid()
+    plt.show()
 
 def plot_filter_alloc(flat, family, field):
     """

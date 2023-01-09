@@ -507,6 +507,8 @@ def plotNSN(summary, forPlot,
         # axins.set_xticks([], minor=True)
         # axins.set_yticks([], minor=True)
 
+    if 'group' not in forPlot.columns:
+        forPlot['group'] = forPlot['family']
     for group in np.unique(forPlot['group']):
         idx = forPlot['group'] == group
         sel = forPlot[idx]
