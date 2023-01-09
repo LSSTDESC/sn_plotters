@@ -454,7 +454,7 @@ def get_dist(data, pixRA_mean=-1, pixDec_mean=-1):
     return data
 
 
-def dumpcsv_medcad(metricTot):
+def dumpcsv_medcad(metricTot,prefix='metric_summary_DD'):
     """
     Function to dump metric results in csv file
 
@@ -466,7 +466,6 @@ def dumpcsv_medcad(metricTot):
     """
 
     data = pd.DataFrame(metricTot)
-    r = pd.DataFrame()
 
     summary = data.groupby(['dbName']).agg({'nsn': 'sum',
                                             'zcomp': 'median',
@@ -479,15 +478,14 @@ def dumpcsv_medcad(metricTot):
                                                                                 'zcomp': 'median',
                                                                                  }).reset_index()
     if 'healpixID' in data.columns:
-        summary_fields_pixels = data.groupby(['dbName', 'fieldname', 'healpixID']).agg({'nsn': 'sum',
+        summary_fields_pixels = data.groupby(['dbName', 'fieldname', 'healpixID','pixRA','pixDec','season']).agg({'nsn': 'sum',
                                                                                         'zcomp': 'median',
                                                                                         }).reset_index()
     print(summary)
     print(summary_fields)
-    summary.to_csv('metric_summary_DD.csv', index=False)
-    summary_fields.to_csv('metric_summary_fields_DD.csv', index=False)
-    summary_fields_season.to_csv(
-        'metric_summary_fields_season_DD.csv', index=False)
+    summary.to_csv('{}.csv'.format(prefix), index=False)
+    summary_fields.to_csv('{}_fields.csv'.format(prefix), index=False)
+    summary_fields_season.to_csv('{}_fields_season.csv'.format(prefix), index=False)
     if 'healpixID' in data.columns:
         summary_fields_pixels.to_csv(
-            'metric_summary_fields_pixels_DD.csv', index=False)
+            '{}_fields_pixels.csv'.format(prefix), index=False)
