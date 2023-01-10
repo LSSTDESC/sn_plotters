@@ -523,3 +523,38 @@ def plot_cumsum(selb, title='', xvar='zcomp', xleg='$z_{complete}$',
     ax.legend(bbox_to_anchor=(1.4, 0.8), ncol=1, frameon=False)
     ax.set_xlabel(xleg)
     ax.set_ylabel(yleg)
+
+def plot_pixels(data,yvar='nsn',yleg='$N_{SN}^{z\leq z_{complete}}$',fig=None,ax=None,figtitle='',marker='s',color='k',mfc='None',showIt=True,rebin=True,label=''):
+
+    if fig is None:    
+        fig, ax = plt.subplots(figsize=(14, 8))
+    
+    from sn_plotter_metrics.utils import get_dist
+    df_dist = get_dist(data)
+    df_dist = df_dist.sort_values(by=['dist'])
+    if not rebin:
+        plot_centers = df_dist['dist']
+        plot_values = df_dist[yvar]
+        
+    
+    if rebin:
+        #rebin to have a "better" plot
+        import pandas as pd
+        bins = np.linspace(0.1, 2., 15)
+        group = data.groupby(pd.cut(data.dist, bins))
+        plot_centers = (bins[:-1] + bins[1:])/2
+        plot_values = group[yvar].mean()
+    
+    ax.plot(plot_centers,plot_values,marker=marker,color=color,mfc=mfc,label=label)
+
+    if showIt:
+        fig.suptitle(figtitle)
+        ax.grid()
+        ax.set_xlabel('dist [deg]')
+        ax.set_ylabel(yleg)
+        ax.legend(bbox_to_anchor=(0.3, 0.3),ncol=1,frameon=False)
+        plt.show()
+
+    
+
+
