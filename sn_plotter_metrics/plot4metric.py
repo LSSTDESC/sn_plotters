@@ -524,8 +524,43 @@ def plot_cumsum(selb, title='', xvar='zcomp', xleg='$z_{complete}$',
     ax.set_xlabel(xleg)
     ax.set_ylabel(yleg)
 
-def plot_pixels(data,yvar='nsn',yleg='$N_{SN}^{z\leq z_{complete}}$',fig=None,ax=None,figtitle='',marker='s',color='k',mfc='None',showIt=True,rebin=True,label=''):
+def plot_pixels(data,yvar='nsn',yleg='$N_{SN}^{z\leq z_{complete}}$',fig=None,ax=None,figtitle='',marker='s',color='k',mfc='None',showIt=True,rebin=True,label='',ls='solid'):
+    """
+    Function to plot metric pixel values vs distance to the cluster center
 
+    Parameters
+    ----------
+    data : pandas df
+        data to plot.
+    yvar : str, optional
+        y-axis col. The default is 'nsn'.
+    yleg : str, optional
+        y-axis legend. The default is '$N_{SN}^{z\leq z_{complete}}$'.
+    fig : matplotlib figure, optional
+        Figure of the plot. The default is None.
+    ax : matplotlib axis, optional
+        axis of the plot. The default is None.
+    figtitle : str, optional
+        Figure title. The default is ''.
+    marker : str, optional
+        Marker type. The default is 's'.
+    color : str, optional
+        Marker color. The default is 'k'.
+    mfc : str, optional
+        Marker font color. The default is 'None'.
+    showIt : bool, optional
+        to display the figure. The default is True.
+    rebin : bool, optional
+        To perform a rebining of the plot. The default is True.
+    label : str, optional
+        Legend for the plot. The default is ''.
+
+    Returns
+    -------
+    None.
+
+    """
+    
     if fig is None:    
         fig, ax = plt.subplots(figsize=(14, 8))
     
@@ -545,13 +580,16 @@ def plot_pixels(data,yvar='nsn',yleg='$N_{SN}^{z\leq z_{complete}}$',fig=None,ax
         plot_centers = (bins[:-1] + bins[1:])/2
         plot_values = group[yvar].mean()
     
-    ax.plot(plot_centers,plot_values,marker=marker,color=color,mfc=mfc,label=label)
-
+    ax.plot(plot_centers,plot_values,marker=marker,color=color,mfc=mfc,label=label,ls=ls)
+    ax.tick_params(axis='y', colors=color)
+    ax.set_xlabel('dist [deg]')
+    ax.set_ylabel(yleg)    
     if showIt:
         fig.suptitle(figtitle)
         ax.grid()
         ax.set_xlabel('dist [deg]')
-        ax.set_ylabel(yleg)
+        ax.yaxis.label.set_color(color)
+        ax.spines['right'].set_color(color)
         ax.legend(bbox_to_anchor=(0.3, 0.3),ncol=1,frameon=False)
         plt.show()
 
