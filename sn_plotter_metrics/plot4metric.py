@@ -8,7 +8,7 @@ Created on Mon Jan  9 15:14:11 2023
 from sn_plotter_metrics import plt
 import numpy as np
 
-def plot_vs_OS(data, varx='family', vary='time_budget', legy='Time Budget [%]', title='', fig=None, ax=None, label='', color='k', marker='.', ls='solid', mfc='k'):
+def plot_vs_OS(data, varx='family', vary='time_budget', legy='Time Budget [%]', title='', fig=None, ax=None, label='', color='k', marker='.', ls='solid', mfc='k',mec='k'):
     """
     Function to plot results vs OS name
 
@@ -54,7 +54,7 @@ def plot_vs_OS(data, varx='family', vary='time_budget', legy='Time Budget [%]', 
     # if label != '':
     #    ll = data['field'].unique()
     ax.plot(data[varx], data[vary], color=color,
-            marker=marker, label='{}'.format(label), linestyle=ls, mfc=mfc)
+            marker=marker, label='{}'.format(label), linestyle=ls, mfc=mfc,mec=mec)
 
     ax.grid()
     ax.tick_params(axis='x', labelrotation=20., labelsize=12)
@@ -66,7 +66,7 @@ def plot_vs_OS(data, varx='family', vary='time_budget', legy='Time Budget [%]', 
     ax.set_ylabel(legy)
 
 
-def plot_vs_OS_dual(data, varx='family', vary=['time_budget'], legy=['Time Budget [%]'], title='', fig=None, ax=None, color='k', marker='.', ls='solid'):
+def plot_vs_OS_dual(data, varx='family', vary=['time_budget'], legy=['Time Budget [%]'], title='', fig=None, ax=None, color=['r','r'], marker=['o','o'], ls=['solid','solid'],mfc=['None','None'],mec=['k','k']):
     """
     Function to plot two results vs OS name
 
@@ -111,8 +111,8 @@ def plot_vs_OS_dual(data, varx='family', vary=['time_budget'], legy=['Time Budge
 
     lsize = 17
     for io, vv in enumerate(vary):
-        ax[io].plot(data[varx], data[vv], color=color,
-                    marker=marker)
+        ax[io].plot(data[varx], data[vv], color=color[io],
+                    marker=marker[io],ls=ls[io],mfc=mfc[io],mec=mec[io])
         ax[io].grid()
         ax[io].tick_params(axis='x', labelrotation=20., labelsize=lsize)
         for tick in ax[io].xaxis.get_majorticklabels():
@@ -432,11 +432,13 @@ def plot_field(df, xvars=['season', 'season'], xlab=['Season', 'Season'], yvars=
         color = sel['color'].unique()[0]
         plot_indiv(sel, dbName, fig=fig, ax=ax, xvars=xvars, xlab=xlab, yvars=yvars, ylab=ylab,
                    label=family, marker=marker, color=color, mfc='None')
+        ax[0].grid()
+        ax[1].grid()
 
-    ax[1].legend(bbox_to_anchor=(1., 1.), ncol=1, frameon=False)
+    ax[0].legend(bbox_to_anchor=(1., 1.), ncol=1, frameon=False)
 
-    ax[0].grid()
-    ax[1].grid()
+    #ax[0].grid()
+    #ax[1].grid()
     plt.show()
 
 def plot_filter_alloc(flat, family, field):
@@ -583,7 +585,8 @@ def plot_pixels(data,yvar='nsn',yleg='$N_{SN}^{z\leq z_{complete}}$',fig=None,ax
     ax.plot(plot_centers,plot_values,marker=marker,color=color,mfc=mfc,label=label,ls=ls)
     ax.tick_params(axis='y', colors=color)
     ax.set_xlabel('dist [deg]')
-    ax.set_ylabel(yleg)    
+    ax.set_ylabel(yleg) 
+    ax.grid()
     if showIt:
         fig.suptitle(figtitle)
         ax.grid()
@@ -595,4 +598,48 @@ def plot_pixels(data,yvar='nsn',yleg='$N_{SN}^{z\leq z_{complete}}$',fig=None,ax
 
     
 
+def plotMollview(nside, data, varName, leg, op, xmin, xmax):
+        """
+        Method to display results as a Mollweid map
 
+        Parameters
+        ---------------
+        data: pandas df
+          data to consider
+        varName: str
+          name of the variable to display
+        leg: str
+          legend of the plot
+        op: operator
+          operator to apply to the pixelize data(median, sum, ...)
+        xmin: float
+          min value for the display
+        xmax: float
+         max value for the display
+
+        """
+        import healpy as hp
+        npix = hp.nside2npix(nside)
+
+        hpxmap = np.zeros(npix, dtype=np.float)
+        hpxmap = np.full(hpxmap.shape, 0.)
+        hpxmap[data['healpixID'].astype(
+            int)] += data[varName]
+
+        norm = plt.cm.colors.Normalize(xmin, xmax)
+        cmap = plt.cm.jet
+        cmap.set_under('w')
+        resleg = op(data[varName])
+        if 'nsn' in varName:
+            resleg = int(resleg)
+        else:
+            resleg = np.round(resleg, 2)
+        title = '{}: {}'.format(leg, resleg)
+
+        hp.mollview(hpxmap, min=xmin, max=xmax, cmap=cmap,
+                    title=title, nest=True, norm=norm)
+        hp.graticule()
+
+        # save plot here
+        name = leg.replace(' - ', '_')
+        name = name.replace(' ', '_')
