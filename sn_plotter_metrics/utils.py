@@ -405,7 +405,7 @@ class MetricValues:
                 dirFile, dbName, metricName,  fieldName, metricName, fieldType, nside)
         if fieldType == 'WFD':
             search_path = '{}/{}/{}/*{}Metric_{}*_nside_{}_*.hdf5'.format(
-                dirFile, dbName, metricName, metricName, fieldType, nside)
+                dirFile, dbName,metricName, metricName, fieldType, nside)
         print('looking for', search_path)
         vars = ['pixRA', 'pixDec', 'healpixID', 'season', 'status']
         # vars = ['healpixID', 'season']
@@ -477,10 +477,18 @@ def dumpcsv_medcad(metricTot,prefix='metric_summary_DD'):
     summary_fields_season = data.groupby(['dbName', 'family','fieldname', 'season']).agg({'nsn': 'sum',
                                                                                 'zcomp': 'median',
                                                                                  }).reset_index()
-    if 'healpixID' in data.columns:
+    if 'healpixID' in data.columns and 'gap_max' in data.columns:
         summary_fields_pixels = data.groupby(['dbName', 'family','fieldname', 'healpixID','pixRA','pixDec','season']).agg({'nsn': 'sum',
                                                                                         'zcomp': 'median',
+                                                                                        'cadence': 'median',
+                                                                                        'gap_max': 'median',
+                                                                                        'season_length': 'median'
                                                                                         }).reset_index()
+        
+    if 'healpixID' in data.columns :
+        summary_fields_pixels = data.groupby(['dbName', 'family','fieldname', 'healpixID','pixRA','pixDec','season']).agg({'nsn': 'sum',
+                                                                                        'zcomp': 'median'
+                                                                                        }).reset_index()    
     print(summary)
     print(summary_fields)
     summary.to_csv('{}.csv'.format(prefix), index=False)
