@@ -8,7 +8,12 @@ Created on Mon Jan  9 15:14:11 2023
 from sn_plotter_metrics import plt
 import numpy as np
 
-def plot_vs_OS(data, varx='family', vary='time_budget', legy='Time Budget [%]', title='', fig=None, ax=None, label='', color='k', marker='.', ls='solid', mfc='k',mec='k'):
+
+def plot_vs_OS(data, varx='family',
+               vary='time_budget',
+               legy='Time Budget [%]',
+               title='', fig=None, ax=None,
+               label='', color='k', marker='.', ls='solid', mfc='k', mec='k'):
     """
     Function to plot results vs OS name
 
@@ -54,7 +59,8 @@ def plot_vs_OS(data, varx='family', vary='time_budget', legy='Time Budget [%]', 
     # if label != '':
     #    ll = data['field'].unique()
     ax.plot(data[varx], data[vary], color=color,
-            marker=marker, label='{}'.format(label), linestyle=ls, mfc=mfc,mec=mec)
+            marker=marker, label='{}'.format(label),
+            linestyle=ls, mfc=mfc, mec=mec)
 
     ax.grid()
     ax.tick_params(axis='x', labelrotation=20., labelsize=12)
@@ -66,7 +72,13 @@ def plot_vs_OS(data, varx='family', vary='time_budget', legy='Time Budget [%]', 
     ax.set_ylabel(legy)
 
 
-def plot_vs_OS_dual(data, varx='family', vary=['time_budget'], legy=['Time Budget [%]'], title='', fig=None, ax=None, color=['r','r'], marker=['o','o'], ls=['solid','solid'],mfc=['None','None'],mec=['k','k']):
+def plot_vs_OS_dual(data, varx='family',
+                    vary=['time_budget'],
+                    legy=['Time Budget [%]'],
+                    title='', fig=None, ax=None,
+                    color=['r', 'r'], marker=['o', 'o'],
+                    ls=['solid', 'solid'],
+                    mfc=['None', 'None'], mec=['k', 'k']):
     """
     Function to plot two results vs OS name
 
@@ -102,7 +114,7 @@ def plot_vs_OS_dual(data, varx='family', vary=['time_budget'], legy=['Time Budge
     None.
 
     """
-   
+
     if ax is None:
         fig, ax = plt.subplots(figsize=(12, 8), ncols=1, nrows=len(vary))
 
@@ -112,7 +124,7 @@ def plot_vs_OS_dual(data, varx='family', vary=['time_budget'], legy=['Time Budge
     lsize = 17
     for io, vv in enumerate(vary):
         ax[io].plot(data[varx], data[vv], color=color[io],
-                    marker=marker[io],ls=ls[io],mfc=mfc[io],mec=mec[io])
+                    marker=marker[io], ls=ls[io], mfc=mfc[io], mec=mec[io])
         ax[io].grid()
         ax[io].tick_params(axis='x', labelrotation=20., labelsize=lsize)
         for tick in ax[io].xaxis.get_majorticklabels():
@@ -123,9 +135,9 @@ def plot_vs_OS_dual(data, varx='family', vary=['time_budget'], legy=['Time Budge
         if io == 0:
             ax[io].get_xaxis().set_ticklabels([])
 
-    #plotDir = '../../Bureau/ddf_fbs_2.1'
-    #plotName = '{}/cad_sl_{}.png'.format(plotDir, title)
-    #fig.savefig(plotName)
+    # plotDir = '../../Bureau/ddf_fbs_2.1'
+    # plotName = '{}/cad_sl_{}.png'.format(plotDir, title)
+    # fig.savefig(plotName)
     plt.show()
 
 
@@ -161,7 +173,10 @@ def plot_hist_OS(data, by='family', what='cadence'):
         print(fam, len(np.unique(sel['dbName'])), pm, p, pp)
 
 
-def plot_series(df, title='', varx='family', what=['time_budget', 'field'], leg=['Time budget [%]', 'DD Field']):
+def plot_series(df, title='',
+                varx='family',
+                what=['time_budget', 'field'],
+                leg=['Time budget [%]', 'DD Field']):
     """
     Function to plot a serie of figures
 
@@ -188,7 +203,11 @@ def plot_series(df, title='', varx='family', what=['time_budget', 'field'], leg=
         plot_vs_OS(df, varx=varx, vary=vv, legy=leg[i], title=title)
 
 
-def plot_series_fields(df, title='', varx='family', what=['time_budget_field', 'time_budget_rel'], leg=['Field Time budget [%]', 'Relative Field Time budget [%]']):
+def plot_series_fields(df, title='',
+                       varx='family',
+                       what=['time_budget_field', 'time_budget_rel'],
+                       leg=['Field Time budget [%]',
+                            'Relative Field Time budget [%]']):
     """
     Function to plot a serie of plots per field
 
@@ -201,9 +220,12 @@ def plot_series_fields(df, title='', varx='family', what=['time_budget_field', '
     varx : str, optional
         x-axis column. The default is 'family'.
     what : list(str), optional
-        List of y-axis columns to plot. The default is ['time_budget_field', 'time_budget_rel'].
+        List of y-axis columns to plot. The default is ['time_budget_field',
+                                                        'time_budget_rel'].
     leg : list(str), optional
-        List of y-axis legends. The default is ['Field Time budget [%]', 'Relative Field Time budget [%]'].
+        List of y-axis legends.
+        The default is ['Field Time budget [%]',
+                        'Relative Field Time budget [%]'].
 
     Returns
     -------
@@ -221,15 +243,21 @@ def plot_series_fields(df, title='', varx='family', what=['time_budget_field', '
             idx = df['field'] == field
             sel = df[idx]
             plot_vs_OS(sel, varx=varx, vary=vv,
-                       legy=leg[i], title=title, fig=fig, ax=ax, ls=ls[io], label='{}'.format(field), marker=marker[io], mfc='None', color=colors[io])
+                       legy=leg[i], title=title, fig=fig, ax=ax,
+                       ls=ls[io], label='{}'.format(field),
+                       marker=marker[io], mfc='None',
+                       color=colors[io])
         ax.legend(bbox_to_anchor=(0.5, 1.17), ncol=3,
                   frameon=False, loc='upper center')
         ax.grid()
-        
+
     plt.show()
 
 
-def plot_series_median(df, title='', varx='family', what=['time_budget', 'field'], leg=['Time budget [%]', 'DD Field']):
+def plot_series_median(df, title='',
+                       varx='family',
+                       what=['time_budget', 'field'],
+                       leg=['Time budget [%]', 'DD Field']):
     """
     Function to plot a set of figures with median values
 
@@ -257,9 +285,11 @@ def plot_series_median(df, title='', varx='family', what=['time_budget', 'field'
         plot_vs_OS(df, varx=varx, vary=vv, legy=leg[i], title=title)
 
 
-def plot_series_median_fields(df, title='', varx='family', what=['time_budget', 'field'], leg=['Time budget [%]', 'DD Field']):
+def plot_series_median_fields(df, title='', varx='family',
+                              what=['time_budget', 'field'],
+                              leg=['Time budget [%]', 'DD Field']):
     """
-    
+
     Function to plot a serie of plots per field - median values
 
     Parameters
@@ -271,10 +301,13 @@ def plot_series_median_fields(df, title='', varx='family', what=['time_budget', 
     varx : str, optional
         x-axis column. The default is 'family'.
     what : list(str), optional
-        List of y-axis columns to plot. The default is ['time_budget_field', 'time_budget_rel'].
+        List of y-axis columns to plot. The default is ['time_budget_field',
+                                                        'time_budget_rel'].
     leg : list(str), optional
-        List of y-axis legends. The default is ['Field Time budget [%]', 'Relative Field Time budget [%]'].
-   
+        List of y-axis legends.
+        The default is ['Field Time budget [%]',
+                        'Relative Field Time budget [%]'].
+
 
     Returns
     -------
@@ -318,8 +351,8 @@ def plot_night(df, dbName, field):
     for season in sel['season'].unique():
         ids = sel['season'] == season
         sels = sel[ids]
-        fig, ax = plt.subplots(figsize=(12,8))
-        fig.suptitle('{} - Season {}'.format(field,season))
+        fig, ax = plt.subplots(figsize=(12, 8))
+        fig.suptitle('{} - Season {}'.format(field, season))
         r = sels['filter_alloc'].tolist()[0]
         rb = sels['filter_frac'].tolist()[0]
         rt = []
@@ -338,7 +371,12 @@ def plot_night(df, dbName, field):
     plt.show()
 
 
-def plot_indiv(data, dbName, fig=None, ax=None, xvars=['season', 'season'], xlab=['Season', 'Season'], yvars=['season_length', 'cadence_mean'], ylab=['Season length [days]', 'Mean Cadence [days]'], label='', color='k', marker='.', mfc='k'):
+def plot_indiv(data, dbName, fig=None, ax=None,
+               xvars=['season', 'season'],
+               xlab=['Season', 'Season'],
+               yvars=['season_length', 'cadence_mean'],
+               ylab=['Season length [days]', 'Mean Cadence [days]'],
+               label='', color='k', marker='.', mfc='k'):
     """
     function to plot parameters corresponding to a field.
 
@@ -357,9 +395,11 @@ def plot_indiv(data, dbName, fig=None, ax=None, xvars=['season', 'season'], xlab
     xlab : list(str), optional
         x-axis legends. The default is ['Season', 'Season'].
     yvars : list(str), optional
-        y-axis columns to plot. The default is ['season_length', 'cadence_mean'].
+        y-axis columns to plot. The default is ['season_length',
+                                                'cadence_mean'].
     ylab : list(str), optional
-        y-axis legends. The default is ['Season length [days]', 'Mean Cadence [days]'].
+        y-axis legends. The default is ['Season length [days]',
+                                        'Mean Cadence [days]'].
     label : str, optional
         label. The default is ''.
     color : str, optional
@@ -374,11 +414,10 @@ def plot_indiv(data, dbName, fig=None, ax=None, xvars=['season', 'season'], xlab
     None.
 
     """
-    
 
     if fig is None:
         fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(12, 8))
-        fig.suptitle('{} pointings'.format(field))
+        # fig.suptitle('{} pointings'.format(field))
         fig.subplots_adjust(hspace=0.02)
 
     # dbName = sel['dbName'].unique()[0]
@@ -396,9 +435,12 @@ def plot_indiv(data, dbName, fig=None, ax=None, xvars=['season', 'season'], xlab
         ax[io].grid()
 
 
-def plot_field(df, xvars=['season', 'season'], xlab=['Season', 'Season'], yvars=['season_length', 'cadence_mean'], ylab=['Season length [days]', 'Mean Cadence [days]'], title=''):
+def plot_field(df, xvars=['season', 'season'],
+               xlab=['Season', 'Season'],
+               yvars=['season_length', 'cadence_mean'],
+               ylab=['Season length [days]', 'Mean Cadence [days]'], title=''):
     """
-    function to plot parameters corresponding to a field  - one plot per db  
+    function to plot parameters corresponding to a field  - one plot per db
 
     Parameters
     ----------
@@ -409,9 +451,11 @@ def plot_field(df, xvars=['season', 'season'], xlab=['Season', 'Season'], yvars=
     xlab : list(str), optional
         List of x-axis label. The default is ['Season', 'Season'].
     yvars : list(str), optional
-        List of y-axis parameters to plot. The default is ['season_length', 'cadence_mean'].
+        List of y-axis parameters to plot. The default is ['season_length',
+                                                           'cadence_mean'].
     ylab : str, optional
-        List of y-axis label. The default is ['Season length [days]', 'Mean Cadence [days]'].
+        List of y-axis label. The default is ['Season length [days]',
+                                              'Mean Cadence [days]'].
     title : str, optional
         Figure title. The default is ''.
 
@@ -423,23 +467,25 @@ def plot_field(df, xvars=['season', 'season'], xlab=['Season', 'Season'], yvars=
     fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(14, 8))
     fig.suptitle(title)
     fig.subplots_adjust(hspace=0.02, right=0.75)
-    
+
     for dbName in df['dbName'].unique():
         idx = df['dbName'] == dbName
         sel = df[idx]
         family = sel['family'].unique()[0]
         marker = sel['marker'].unique()[0]
         color = sel['color'].unique()[0]
-        plot_indiv(sel, dbName, fig=fig, ax=ax, xvars=xvars, xlab=xlab, yvars=yvars, ylab=ylab,
+        plot_indiv(sel, dbName, fig=fig, ax=ax, xvars=xvars, xlab=xlab,
+                   yvars=yvars, ylab=ylab,
                    label=family, marker=marker, color=color, mfc='None')
         ax[0].grid()
         ax[1].grid()
 
     ax[0].legend(bbox_to_anchor=(1., 1.), ncol=1, frameon=False)
 
-    #ax[0].grid()
-    #ax[1].grid()
+    # ax[0].grid()
+    # ax[1].grid()
     plt.show()
+
 
 def plot_filter_alloc(flat, family, field):
     """
@@ -526,7 +572,11 @@ def plot_cumsum(selb, title='', xvar='zcomp', xleg='$z_{complete}$',
     ax.set_xlabel(xleg)
     ax.set_ylabel(yleg)
 
-def plot_pixels(data,yvar='nsn',yleg='$N_{SN}^{z\leq z_{complete}}$',fig=None,ax=None,figtitle='',marker='s',color='k',mfc='None',showIt=True,rebin=True,label='',ls='solid'):
+
+def plot_pixels(data, yvar='nsn',
+                yleg='$N_{SN}^{z\leq z_{complete}}$',
+                fig=None, ax=None, figtitle='', marker='s', color='k',
+                mfc='None', showIt=True, rebin=True, label='', ls='solid'):
     """
     Function to plot metric pixel values vs distance to the cluster center
 
@@ -562,30 +612,30 @@ def plot_pixels(data,yvar='nsn',yleg='$N_{SN}^{z\leq z_{complete}}$',fig=None,ax
     None.
 
     """
-    
-    if fig is None:    
+
+    if fig is None:
         fig, ax = plt.subplots(figsize=(14, 8))
-    
+
     from sn_plotter_metrics.utils import get_dist
     df_dist = get_dist(data)
     df_dist = df_dist.sort_values(by=['dist'])
     if not rebin:
         plot_centers = df_dist['dist']
         plot_values = df_dist[yvar]
-        
-    
+
     if rebin:
-        #rebin to have a "better" plot
+        # rebin to have a "better" plot
         import pandas as pd
         bins = np.linspace(0.1, 2., 15)
         group = data.groupby(pd.cut(data.dist, bins))
         plot_centers = (bins[:-1] + bins[1:])/2
         plot_values = group[yvar].mean()
-    
-    ax.plot(plot_centers,plot_values,marker=marker,color=color,mfc=mfc,label=label,ls=ls)
+
+    ax.plot(plot_centers, plot_values, marker=marker,
+            color=color, mfc=mfc, label=label, ls=ls)
     ax.tick_params(axis='y', colors=color)
     ax.set_xlabel('dist [deg]')
-    ax.set_ylabel(yleg) 
+    ax.set_ylabel(yleg)
     ax.grid()
     if showIt:
         fig.suptitle(figtitle)
@@ -593,53 +643,147 @@ def plot_pixels(data,yvar='nsn',yleg='$N_{SN}^{z\leq z_{complete}}$',fig=None,ax
         ax.set_xlabel('dist [deg]')
         ax.yaxis.label.set_color(color)
         ax.spines['right'].set_color(color)
-        ax.legend(bbox_to_anchor=(0.3, 0.3),ncol=1,frameon=False)
+        ax.legend(bbox_to_anchor=(0.3, 0.3), ncol=1, frameon=False)
         plt.show()
 
-    
 
-def plotMollview(nside, data, varName, leg, op, xmin, xmax):
-        """
-        Method to display results as a Mollweid map
+def plotMollview(nside, fig, data, varName, leg, op, xmin, xmax):
+    """
+    Method to display results as a Mollweid map
 
-        Parameters
-        ---------------
-        data: pandas df
-          data to consider
-        varName: str
-          name of the variable to display
-        leg: str
-          legend of the plot
-        op: operator
-          operator to apply to the pixelize data(median, sum, ...)
-        xmin: float
-          min value for the display
-        xmax: float
-         max value for the display
+    Parameters
+    ---------------
+    nside: int.
+       healpix nside parameter.
+    fig: matplotlib figure.
+       figure of the plot.
+    data: pandas df
+      data to consider
+    varName: str
+      name of the variable to display
+    leg: str
+      legend of the plot
+    op: operator
+      operator to apply to the pixelize data(median, sum, ...)
+    xmin: float
+      min value for the display
+    xmax: float
+     max value for the display
 
-        """
-        import healpy as hp
-        npix = hp.nside2npix(nside)
+    """
+    import healpy as hp
+    npix = hp.nside2npix(nside)
 
-        hpxmap = np.zeros(npix, dtype=np.float)
-        hpxmap = np.full(hpxmap.shape, 0.)
-        hpxmap[data['healpixID'].astype(
-            int)] += data[varName]
+    hpxmap = np.zeros(npix, dtype=np.float)
+    hpxmap = np.full(hpxmap.shape, 0.)
+    hpxmap[data['healpixID'].astype(
+        int)] += data[varName]
 
-        norm = plt.cm.colors.Normalize(xmin, xmax)
-        cmap = plt.cm.jet
-        cmap.set_under('w')
-        resleg = op(data[varName])
-        if 'nsn' in varName:
-            resleg = int(resleg)
+    norm = plt.cm.colors.Normalize(xmin, xmax)
+    cmap = plt.cm.jet
+    cmap.set_under('w')
+    resleg = op(data[varName])
+    if 'nsn' in varName:
+        resleg = int(resleg)
+    else:
+        resleg = np.round(resleg, 2)
+    title = '{}: {}'.format(leg, resleg)
+
+    hp.mollview(hpxmap, fig=fig, min=xmin, max=xmax, cmap=cmap,
+                title=title, nest=True, norm=norm)
+    hp.graticule()
+
+    # save plot here
+    name = leg.replace(' - ', '_')
+    name = name.replace(' ', '_')
+
+
+def plotMollview_seasons(nside, data, dbName,
+                         yvar='nsn', yleg='N$_{SN}^{z \leq z_{complete}}$',
+                         op=np.sum, seasons=[3]):
+    """
+    Plot Mollview for all seasons
+
+    Parameters
+    ----------
+    nside : int
+        healpix nside.
+    data : pandas df
+        data to plot.
+    dbName : str
+        db to plot.
+    yvar : str, optional
+        variable to plot. The default is 'nsn'.
+    yleg : str, optional
+        var legend (in the plot title).
+        The default is 'N$_{SN}^{z \leq z_{complete}}$'.
+    op: numpy operator, optional.
+        operator for summary (title) info. The default is np.sum
+    seasons: list(int), opt.
+        list of seasons to display. The default is [3].
+
+    Returns
+    -------
+    None.
+
+    """
+
+    for season in seasons:
+        fig, ax = plt.subplots(figsize=(12, 9))
+        ax.axis('off')
+        idb = data['season'] == season
+        sels = data[idb]
+        xmin = np.max([0.001, np.min(sels[yvar])])
+        xmax = np.max(sels[yvar])
+        tit = dbName + ' - season {}'.format(season)
+        tit += '\n {}'.format(yleg)
+        plotMollview(nside, fig, sels, yvar, tit, op, xmin, xmax)
+
+
+def plot_xy(data, xvar='cadence', xleg='cadence [day]',
+            yvar='zcomp', yleg='$z_{complete}$',
+            rebin=True, rbmin=2, rbmax=12, rbstep=11, seasons=[3], op='mean'):
+
+    fig, ax = plt.subplots(figsize=(12, 8))
+
+    for seas in seasons:
+        idx = data['season'] == seas
+        sel = data[idx]
+        plot_centers, plot_values, plot_std = get_data(sel, xvar=xvar,
+                                                       yvar=yvar,
+                                                       rebin=rebin,
+                                                       rbmin=rbmin,
+                                                       rbmax=rbmax,
+                                                       rbstep=rbstep, op=op)
+        if op == 'mean':
+            ax.errorbar(plot_centers, plot_values, yerr=plot_std, marker='.',
+                        mfc='None', label='season {}'.format(seas))
         else:
-            resleg = np.round(resleg, 2)
-        title = '{}: {}'.format(leg, resleg)
+            ax.plot(plot_centers, plot_values, marker='.', mfc='None')
+    ax.set_xlabel(xleg)
+    ax.set_ylabel(yleg)
+    ax.grid()
+    plt.legend()
 
-        hp.mollview(hpxmap, min=xmin, max=xmax, cmap=cmap,
-                    title=title, nest=True, norm=norm)
-        hp.graticule()
 
-        # save plot here
-        name = leg.replace(' - ', '_')
-        name = name.replace(' ', '_')
+def get_data(data, xvar='cadence',
+             yvar='zcomp',
+             rebin=True, rbmin=2, rbmax=12, rbstep=10, op='mean'):
+
+    print('go man', xvar, yvar, rebin, rbmin, rbmax, rbstep)
+    if not rebin:
+        plot_centers = data[xvar]
+        plot_values = data[yvar]
+        plot_std = 0.
+
+    if rebin:
+        # rebin to have a "better" plot
+        import pandas as pd
+        bins = np.linspace(rbmin, rbmax, rbstep)
+        group = data.groupby(pd.cut(data[xvar], bins))
+        plot_centers = (bins[:-1] + bins[1:])/2
+        plot_values = eval('group[yvar].{}()'.format(op))
+        print(group[yvar])
+        plot_std = group[yvar].std()
+
+    return plot_centers, plot_values, plot_std
