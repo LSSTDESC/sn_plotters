@@ -53,7 +53,7 @@ class FitPlots:
 
         return sn
 
-    def plot2D(self, tabs, varx, vary, legx, legy, compare=False):
+    def plot2D(self, tabs, varx, vary, legx, legy, ymax=0.06, compare=False):
         """
         2D plot method
 
@@ -79,7 +79,7 @@ class FitPlots:
         ax.grid()
         ax.set_xlabel(legx)
         ax.set_ylabel(legy)
-        ax.set_ylim([0., 0.12])
+        ax.set_ylim([0., ymax])
         ax.set_xlim([0.1, zlim_max+0.1])
         ax.legend(loc='upper left')
 
@@ -112,22 +112,23 @@ class FitPlots:
         zlims = []
         for key, tab in tabs.items():
             idx = tab[vary] > 0
-            idx &= tab['z']>0.1
+            idx &= tab['z'] > 0.1
             sel = tab[idx]
             sel.sort(keys=[varx])
             print(np.unique(sel['z']), sel[varx, vary])
-            
+
             interp = interp1d(
                 np.sqrt(sel[vary]), sel[varx], bounds_error=False, fill_value=0.)
 
-            interpv = interp1d(sel[varx], np.sqrt(sel[vary]), bounds_error=False, fill_value=0.)
+            interpv = interp1d(sel[varx], np.sqrt(
+                sel[vary]), bounds_error=False, fill_value=0.)
 
             dict_interp[key] = interp1d(sel[varx], np.sqrt(
                 sel[vary]), bounds_error=False, fill_value=0.)
 
             #zlim = interp(color_cut)
 
-            zlim = self.zlim(interpv,color_cut)
+            zlim = self.zlim(interpv, color_cut)
             zlims.append(zlim)
 
             ax.plot(sel[varx], np.sqrt(sel[vary]),
@@ -195,13 +196,11 @@ class FitPlots:
 
         """
 
-        zvals = np.arange(0.2,1.0,0.005)
+        zvals = np.arange(0.2, 1.0, 0.005)
 
         colors = interp(zvals)
 
-       
-
         ii = np.argmin(np.abs(colors-color_cut))
 
-        print(type(colors),colors[ii],zvals[ii])
+        print(type(colors), colors[ii], zvals[ii])
         return zvals[ii]
