@@ -25,7 +25,7 @@ class SimuPlot:
 
     """
 
-    def __init__(self, dbDir, dbName, tagName, fit_model='salt2-extended',fit_model_version='1.0',nproc=8):
+    def __init__(self, dbDir, dbName, tagName, fit_model='salt2-extended', fit_model_version='1.0', nproc=8):
 
         self.dbDir = dbDir
         self.dbName = dbName
@@ -51,9 +51,8 @@ class SimuPlot:
         # select only LC with status=1
         #ik = params['status'] == 1
         self.simuPars = params
-        self.fitlc = FitLC(fit_model=fit_model,fit_model_version=fit_model_version)
-        
-        
+        self.fitlc = FitLC(fit_model=fit_model,
+                           fit_model_version=fit_model_version)
 
     def load_multiproc(self, data, params={}, j=0, output_q=None):
         """
@@ -61,14 +60,14 @@ class SimuPlot:
 
         Parameters
         ----------------
-        data: list? 
+        data: list?
         data to process
         params: dict, opt
         parameters for the multiprocessing
 
         Returns
         ----------
-        loaded data 
+        loaded data
 
 
         """
@@ -133,7 +132,8 @@ class SimuPlot:
         nrows = int(len(toplot)/2)
         print(nrows, ncols)
         fig, ax = plt.subplots(ncols=ncols, nrows=nrows, figsize=(10, 9))
-        #title = '{} - fieldid {} - season {}'.format(fieldname, fieldid, season)
+        # title = '{} - fieldid {} -
+        # season {}'.format(fieldname, fieldid, season)
         title = 'season {}'.format(season)
         fig.suptitle(title)
 
@@ -148,7 +148,8 @@ class SimuPlot:
             axis.tick_params(axis='y', labelsize=thesize)
         # plt.show()
 
-    def plotLoopLC(self, simupars,fitparams=['t0','x1','c','x0'],save_fig=False, dir_fig='.'):
+    def plotLoopLC(self, simupars, fitparams=['t0', 'x1', 'c', 'x0'],
+                   save_fig=False, dir_fig='.'):
         """
         Function to plot LC in loop
 
@@ -185,7 +186,7 @@ class SimuPlot:
                 print('lc', lc.columns)
                 self.plotFig(lc, pause_time=pause_time)
         """
-        
+
         for par in simupars:
             lc = Table.read(
                 par['lcName'], path='lc_{}'.format(par['index_hdf5']))
@@ -197,14 +198,14 @@ class SimuPlot:
             #print('lc', lc.columns)
             # self.plotFig(lc, pause_time=pause_time,
             #             save_fig=save_fig, dir_fig=dir_fig)
-            result, fitted_model= self.fitlc(lc,fitparams=fitparams)
+            print(lc[['flux', 'fluxerr', 'phase', 'time']])
+            result, fitted_model = self.fitlc(lc, fitparams=fitparams)
             if fitted_model is not None:
                 sncosmo.plot_lc(data=lc, model=fitted_model,
                                 errors=result.errors, yfigsize=9, pulls=False)
             else:
-                sncosmo.plot_lc(data=lc,yfigsize=9, pulls=False)
+                sncosmo.plot_lc(data=lc, yfigsize=9, pulls=False)
             plt.show(block=False)
-            
 
         """
         # get LC file
@@ -235,7 +236,7 @@ class SimuPlot:
            where saved figs will be copied (default: .)
         """
         fig, ax = plt.subplots(ncols=2, nrows=3, figsize=(12, 8))
-        #pprint.pprint(lc.meta)  # metadata
+        # pprint.pprint(lc.meta)  # metadata
         figtitle = '($x_1,c$)=({},{})'.format(
             lc.meta['x1'], lc.meta['color'])
         figtitle += ' - z={}'.format(np.round(lc.meta['z'], 2))
@@ -524,9 +525,10 @@ class SimuPlot:
                     verticalalignment='center', transform=ax.transAxes)
             ax.grid()
 
+
 class FitLC:
-    def __init__(self,fit_model='salt2-extended',fit_model_version='1.0'):
-        
+    def __init__(self, fit_model='salt2-extended', fit_model_version='1.0'):
+
         from sn_tools.sn_telescope import Telescope
         from astropy import units as u
         telescope = Telescope(airmass=1.2)
@@ -538,27 +540,26 @@ class FitLC:
                 band = sncosmo.Bandpass(
                     telescope.system[band].wavelen, telescope.system[band].sb, name='LSST::'+band, wave_unit=u.nm)
             sncosmo.registry.register(band, force=True)
-       
+
         source = sncosmo.get_source(fit_model, version=fit_model_version)
         dustmap = sncosmo.OD94Dust()
         model = sncosmo.Model(source=source, effects=[dustmap, dustmap],
-                             effect_names=['host', 'mw'],
-                             effect_frames=['rest', 'obs'])
+                              effect_names=['host', 'mw'],
+                              effect_frames=['rest', 'obs'])
         model.set(mwebv=0.)
         self.sn_model = model
-        
-    def __call__(self,lc,fitparams=['z','t0','x0','x1','c'],sigmaz=0.01):
-         
-        
+
+    def __call__(self, lc, fitparams=['z', 't0', 'x0', 'x1', 'c'], sigmaz=0.01):
+
         z = lc.meta['z']
-        zbounds = {'x1': (-3.0,3.0), 'c': (-0.3,0.3)}
+        zbounds = {'x1': (-3.0, 3.0), 'c': (-0.3, 0.3)}
         if 'z' in fitparams:
-            zbb = {'z': (z-sigmaz*(1+z),z+sigmaz*(1+z))}
+            zbb = {'z': (z-sigmaz*(1+z), z+sigmaz*(1+z))}
             zbounds.update(zbb)
         else:
             self.sn_model.set(z=z)
-   
-        print('zbounds',zbounds)
+
+        print('zbounds', zbounds)
         result = None
         fitted_model = None
         try:
@@ -566,13 +567,10 @@ class FitLC:
                 lc, self.sn_model, fitparams, bounds=zbounds, minsnr=1)
         except:
             print('could not fit')
-        
-        
+
         return result, fitted_model
         sncosmo.plot_lc(data=table, model=fitted_model,
-                       errors=result.errors, yfigsize=9, pulls=False)
-         
-
+                        errors=result.errors, yfigsize=9, pulls=False)
 
 
 def plotLC(table, ax, band_id):
@@ -646,7 +644,7 @@ def plot_fitLC(table, pause_time, save_fig, dir_fig):
         result, fitted_model = sncosmo.fit_lc(
             table, model, param, bounds=z_bounds, minsnr=1)
         #print('param errors', result.errors)
-        #print(result)
+        # print(result)
         sncosmo.plot_lc(data=table, model=fitted_model,
                         errors=result.errors, yfigsize=9, pulls=False)
 
