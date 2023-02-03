@@ -529,18 +529,6 @@ class SimuPlot:
 class FitLC:
     def __init__(self, fit_model='salt2-extended', fit_model_version='1.0'):
 
-        from sn_tools.sn_telescope import Telescope
-        from astropy import units as u
-        telescope = Telescope(airmass=1.2)
-        for band in 'grizy':
-            if telescope.airmass > 0:
-                band = sncosmo.Bandpass(
-                    telescope.atmosphere[band].wavelen, telescope.atmosphere[band].sb, name='LSST::'+band, wave_unit=u.nm)
-            else:
-                band = sncosmo.Bandpass(
-                    telescope.system[band].wavelen, telescope.system[band].sb, name='LSST::'+band, wave_unit=u.nm)
-            sncosmo.registry.register(band, force=True)
-
         source = sncosmo.get_source(fit_model, version=fit_model_version)
         dustmap = sncosmo.OD94Dust()
         model = sncosmo.Model(source=source, effects=[dustmap, dustmap],
@@ -617,17 +605,6 @@ def plot_fitLC(table, pause_time, save_fig, dir_fig):
         print(b, sel[['phase', 'flux', 'fluxerr', 'snr_m5']])
 
     #print('LC', len(table))
-    from sn_tools.sn_telescope import Telescope
-    from astropy import units as u
-    telescope = Telescope(airmass=1.2, atmos=1)
-    for band in 'grizy':
-        if telescope.airmass > 0:
-            band = sncosmo.Bandpass(
-                telescope.atmosphere[band].wavelen, telescope.atmosphere[band].sb, name='LSST::'+band, wave_unit=u.nm)
-        else:
-            band = sncosmo.Bandpass(
-                telescope.system[band].wavelen, telescope.system[band].sb, name='LSST::'+band, wave_unit=u.nm)
-        sncosmo.registry.register(band, force=True)
     param = ['z', 't0', 'x0', 'x1', 'c']
     source = sncosmo.get_source('salt2-extended', version='1.0')
     dustmap = sncosmo.OD94Dust()
