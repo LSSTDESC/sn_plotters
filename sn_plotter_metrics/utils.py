@@ -374,7 +374,8 @@ class MetricValues:
         else:
             return restot
 
-    def process_field(self, dirFile, dbName, metricName, fieldType, fieldName, nside):
+    def process_field(self, dirFile, dbName, metricName, fieldType,
+                      fieldName, nside):
         """
         Single file processing
         This method load the files corresponding to dbName and transform it
@@ -397,15 +398,17 @@ class MetricValues:
 
         Returns
         -----------
-         pandas df with metric values and additional info (dbName, fieldName, ...)
+         pandas df with metric values and additional info 
+         (dbName, fieldName, ...)
 
         """
         if fieldType == 'DD':
             search_path = '{}/{}/{}_{}/*{}Metric_{}*_nside_{}_*.hdf5'.format(
-                dirFile, dbName, metricName,  fieldName, metricName, fieldType, nside)
+                dirFile, dbName, metricName,  fieldName, metricName,
+                fieldType, nside)
         if fieldType == 'WFD':
             search_path = '{}/{}/{}/*{}Metric_{}*_nside_{}_*.hdf5'.format(
-                dirFile, dbName,metricName, metricName, fieldType, nside)
+                dirFile, dbName, metricName, metricName, fieldType, nside)
         print('looking for', search_path)
         vars = ['pixRA', 'pixDec', 'healpixID', 'season', 'status']
         # vars = ['healpixID', 'season']
@@ -454,7 +457,7 @@ def get_dist(data, pixRA_mean=-1, pixDec_mean=-1):
     return data
 
 
-def dumpcsv_medcad(metricTot,prefix='metric_summary_DD'):
+def dumpcsv_medcad(metricTot, prefix='metric_summary_DD'):
     """
     Function to dump metric results in csv file
 
@@ -467,33 +470,34 @@ def dumpcsv_medcad(metricTot,prefix='metric_summary_DD'):
 
     data = pd.DataFrame(metricTot)
 
-    summary = data.groupby(['dbName','family']).agg({'nsn': 'sum',
-                                            'zcomp': 'median',
-                                            }).reset_index()
+    summary = data.groupby(['dbName', 'family']).agg({'nsn': 'sum',
+                                                     'zcomp': 'median',
+                                                      }).reset_index()
 
-    summary_fields = data.groupby(['dbName','family','fieldname']).agg({'nsn': 'sum',
-                                                               'zcomp': 'median',
-                                                                }).reset_index()
-    summary_fields_season = data.groupby(['dbName', 'family','fieldname', 'season']).agg({'nsn': 'sum',
-                                                                                'zcomp': 'median',
-                                                                                 }).reset_index()
+    summary_fields = data.groupby(['dbName', 'family', 'fieldname']).agg({'nsn': 'sum',
+                                                                          'zcomp': 'median',
+                                                                          }).reset_index()
+    summary_fields_season = data.groupby(['dbName', 'family', 'fieldname', 'season']).agg({'nsn': 'sum',
+                                                                                          'zcomp': 'median',
+                                                                                           }).reset_index()
     if 'healpixID' in data.columns and 'gap_max' in data.columns:
-        summary_fields_pixels = data.groupby(['dbName', 'family','fieldname', 'healpixID','pixRA','pixDec','season']).agg({'nsn': 'sum',
-                                                                                        'zcomp': 'median',
-                                                                                        'cadence': 'median',
-                                                                                        'gap_max': 'median',
-                                                                                        'season_length': 'median'
-                                                                                        }).reset_index()
-        
-    if 'healpixID' in data.columns :
-        summary_fields_pixels = data.groupby(['dbName', 'family','fieldname', 'healpixID','pixRA','pixDec','season']).agg({'nsn': 'sum',
-                                                                                        'zcomp': 'median'
-                                                                                        }).reset_index()    
+        summary_fields_pixels = data.groupby(['dbName', 'family', 'fieldname', 'healpixID', 'pixRA', 'pixDec', 'season']).agg({'nsn': 'sum',
+                                                                                                                               'zcomp': 'median',
+                                                                                                                              'cadence': 'median',
+                                                                                                                               'gap_max': 'median',
+                                                                                                                               'season_length': 'median'
+                                                                                                                               }).reset_index()
+
+    if 'healpixID' in data.columns:
+        summary_fields_pixels = data.groupby(['dbName', 'family', 'fieldname', 'healpixID', 'pixRA', 'pixDec', 'season']).agg({'nsn': 'sum',
+                                                                                                                               'zcomp': 'median'
+                                                                                                                               }).reset_index()
     print(summary)
     print(summary_fields)
     summary.to_csv('{}.csv'.format(prefix), index=False)
     summary_fields.to_csv('{}_fields.csv'.format(prefix), index=False)
-    summary_fields_season.to_csv('{}_fields_season.csv'.format(prefix), index=False)
+    summary_fields_season.to_csv(
+        '{}_fields_season.csv'.format(prefix), index=False)
     if 'healpixID' in data.columns:
         summary_fields_pixels.to_csv(
             '{}_fields_pixels.csv'.format(prefix), index=False)
