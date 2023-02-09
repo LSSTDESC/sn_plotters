@@ -482,8 +482,8 @@ def plot_field(df, xvars=['season', 'season'],
 
     ax[0].legend(bbox_to_anchor=(1., 1.), ncol=1, frameon=False)
 
-    # ax[0].grid()
-    # ax[1].grid()
+    ax[0].grid()
+    ax[1].grid()
     plt.show()
 
 
@@ -513,6 +513,7 @@ def plot_filter_alloc(flat, family, field):
     # idx &= np.abs(flat['season']-1) < 1.e-5
     sel = flat[idx]
 
+    print('ici sel', len(sel))
     tit = '{} - {}'.format(family, field)
     plot_series(sel, title=tit, varx='filter_alloc', what=toplot, leg=leg)
 
