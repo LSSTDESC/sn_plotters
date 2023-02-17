@@ -363,6 +363,9 @@ class MetricValues:
         nside = params['nside']
 
         restot = pd.DataFrame()
+
+        if fieldType == 'WFD':
+            fieldNames = ['WFD']
         for dbName in dbNames:
             for fieldName in fieldNames:
                 res = self.process_field(
