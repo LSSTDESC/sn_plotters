@@ -627,8 +627,10 @@ def plot_pixels(data, yvar='nsn',
     if rebin:
         # rebin to have a "better" plot
         import pandas as pd
-        bins = np.linspace(0.1, 2., 15)
+        bins = np.linspace(0.1, 2.5, 15)
+        #bins = np.arange(0.1, 2.22, 0.22)
         group = data.groupby(pd.cut(data.dist, bins))
+        print(group)
         plot_centers = (bins[:-1] + bins[1:])/2
         plot_values = group[yvar].mean()
 
