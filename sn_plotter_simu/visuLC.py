@@ -4,7 +4,7 @@ from astropy.table import Table, vstack
 
 
 class VisuLC:
-    def __init__(self, metaDir,metaFile,
+    def __init__(self, metaDir, metaFile,
                  SNFile=None, SNDir=None):
         """
         Class to visualize (and fit) LCs
@@ -25,15 +25,14 @@ class VisuLC:
         None.
 
         """
-        
+
         meta = Read_LightCurve(file_name=metaFile, inputDir=metaDir)
 
         paths = meta.get_path()
 
         self.lcs = {}
         self.metaTot = meta.get_all_data()
-        
-        
+
         """
         meta = Read_LightCurve(file_name=metaFileInput, inputDir=metaDirInput)
 
@@ -99,11 +98,11 @@ class VisuLC:
         # get lc
         lcDir = metadata['lc_dir'].value[0]
         lcName = metadata['lc_fileName'].value[0]
-        
+
         lcs = Read_LightCurve(file_name=lcName, inputDir=lcDir)
-        
+
         lc = lcs.get_table(lcpath)
-        
+
         # trying to fit here
         outfit = self.fit(lc)
 
@@ -138,8 +137,8 @@ class VisuLC:
         import matplotlib.pyplot as plt
         idx = lc['flux']/lc['fluxerr'] >= 1
         sel_lc = lc[idx]
-        
-        fig, ax = plt.subplots(figsize=(7,9))
+
+        fig, ax = plt.subplots(figsize=(7, 9))
         import numpy as np
         colors = dict(zip('ugrizy', ['b', 'c', 'g', 'y', 'r', 'm']))
         for band in np.unique(sel_lc['band']):
@@ -148,7 +147,7 @@ class VisuLC:
             sel_b = sel_lc[ido]
             ax.errorbar(sel_b['phase'], sel_b['flux'],
                         yerr=sel_b['fluxerr'],
-                        marker='o', color=color, ls='None',label=band)
+                        marker='o', color=color, ls='None', label=band)
         ax.grid()
         ax.set_ylabel('flux (pe/s)')
         ax.set_xlabel('phase')
@@ -176,18 +175,17 @@ class SNToLC:
         None.
 
         """
-        
+
         # fit instance
         self.fit = Fit_LC(model='salt3', version='2.0', outType='dict_res')
-        
+
         # load SN
         SN = load_SN(SNDir, SNFile)
 
         # get production ID
         prodID = SNFile.split('.hdf5')[0]
         prodID = prodID[3:]
-    
-    
+
         # get corresponding simu meta data
         meta = get_meta(prodID, metaDir)
 
@@ -209,18 +207,18 @@ class SNToLC:
         None.
 
         """
-        
+
         lcs = {}
         io = 0
-        
+
         outdir = 'OutFig'
         from sn_tools.sn_io import checkDir
         checkDir(outdir)
         for vv in SN:
             io += 1
-            #if io >= 3:
+            # if io >= 3:
             #    continue
-            
+
             snid = vv['SNID']
             idx = meta['SNID'] == snid
             metadata = meta[idx]
@@ -230,18 +228,16 @@ class SNToLC:
             lcName = metadata['lc_fileName'].value[0]
             if not lcs or lcName not in lcs.keys():
                 lcs[lcName] = Read_LightCurve(file_name=lcName, inputDir=lcDir)
-            
+
             lc = lcs[lcName].get_table(snid)
-            
+
             # trying to fit here
             outfit = self.fit(lc)
             import matplotlib.pyplot as plt
             fig = self.fit.plotIt(outfit['lc'],
-                            outfit['fitted_model'],
-                            outfit['res_errors'],
-                            outfit['fitstatus'])
-            outname = '{}/SN_{}.png'.format(outdir,io)
+                                  outfit['fitted_model'],
+                                  outfit['res_errors'],
+                                  outfit['fitstatus'])
+            outname = '{}/SN_{}.png'.format(outdir, io)
             fig.savefig(outname)
             plt.close(fig)
-            
-      
