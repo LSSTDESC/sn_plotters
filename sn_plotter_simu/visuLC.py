@@ -5,7 +5,7 @@ from astropy.table import Table, vstack
 
 class VisuLC:
     def __init__(self, metaDir, metaFile,
-                 SNFile=None, SNDir=None):
+                 SNFile='None', SNDir='None'):
         """
         Class to visualize (and fit) LCs
 
@@ -63,7 +63,9 @@ class VisuLC:
         print(metaTot['SNID'])
         self.metaTot = metaTot
         """
-        print(self.metaTot['SNID'])
+
+        self.metaTot['SNID', 'z'].pprint_all()
+
         # fit instance
         self.fit = Fit_LC(model='salt3', version='2.0')
 
@@ -106,10 +108,10 @@ class VisuLC:
         # trying to fit here
         outfit = self.fit(lc)
 
-        if len(self.SN) > 0:
-            self.plot_SN(lcpath, lc)
+        printInfo = len(self.SN) > 0
+        self.plot_SN(lcpath, lc, printInfo)
 
-    def plot_SN(self, lcpath, lc):
+    def plot_SN(self, lcpath, lc, printInfo=False):
         """
         Method to plot SN info and LC tagged by lcpath
 
@@ -126,15 +128,19 @@ class VisuLC:
 
         """
 
-        idl = self.SN['SNID'] == lcpath
-        SNsel = self.SN[idl]
-        ll = ['SNID', 'x1', 'color', 'daymax', 'n_epochs_m10_p35',
-              'n_epochs_m10_p5', 'n_epochs_p5_p20', 'n_bands_m8_p10',
-              'selected']
+        if printInfo:
+            idl = self.SN['SNID'] == lcpath
+            SNsel = self.SN[idl]
 
-        SNsel.round({'x1': 2, 'color': 4, 'daymax': 1})
-        print(SNsel[ll])
+            ll = ['SNID', 'x1', 'color', 'daymax', 'n_epochs_m10_p35',
+                  'n_epochs_m10_p5', 'n_epochs_p5_p20', 'n_bands_m8_p10',
+                  'selected']
+
+            SNsel.round({'x1': 2, 'color': 4, 'daymax': 1})
+            print(SNsel[ll])
+
         import matplotlib.pyplot as plt
+
         idx = lc['flux']/lc['fluxerr'] >= 1
         sel_lc = lc[idx]
 
@@ -152,7 +158,70 @@ class VisuLC:
         ax.set_ylabel('flux (pe/s)')
         ax.set_xlabel('phase')
         plt.legend()
+
+        ttext = self.get_text(lc.meta)
+        ax.text(0.1, 1.07, ttext, horizontalalignment='center',
+                verticalalignment='center',
+                transform=ax.transAxes, fontsize=15)
+
+        ttextb = self.get_text(lc.meta,
+                               ddict=dict(zip(['z', 'daymax'], [2, 1])))
+        ax.text(0.4, 1.07, ttextb, horizontalalignment='center',
+                verticalalignment='center',
+                transform=ax.transAxes, fontsize=15)
+
         plt.show(block=False)
+
+    def get_text(self, meta, ddict=dict(zip(['x1', 'color'], [1, 2]))):
+        """
+        Method to write a text from metadata
+
+        Parameters
+        ----------
+        meta : dict
+            metadata.
+        ddict : dict, optional
+            what to write (var, round). 
+            The default is dict(zip(['x1', 'color'], [1, 2])).
+
+        Returns
+        -------
+        ttext : str
+            the text.
+
+        """
+
+        ttext = ''
+        for key, vals in ddict.items():
+            ttext += self.simple_text(key, meta, vals)
+            ttext += '\n'
+
+        return ttext
+
+    def simple_text(self, var, meta, rounding):
+        """
+        Method to write a simple text
+
+        Parameters
+        ----------
+        var : str
+            var to write.
+        meta : dict
+            metadata.
+        rounding : int
+            rounding for the writing.
+
+        Returns
+        -------
+        ttext : str
+            the text.
+
+        """
+
+        import numpy as np
+        ttext = '{}: {}'.format(var, np.round(meta[var], rounding))
+
+        return ttext
 
 
 class SNToLC:
@@ -193,7 +262,7 @@ class SNToLC:
 
     def sn_vs_lc(self, SN, meta):
         """
-        Method to display LC corresponding to SN 
+        Method to display LC corresponding to SN
 
         Parameters
         ----------
@@ -214,15 +283,22 @@ class SNToLC:
         outdir = 'OutFig'
         from sn_tools.sn_io import checkDir
         checkDir(outdir)
+
+        idx = SN['n_epochs_bef'] >= 4
+        idx &= SN['n_epochs_bef'] >= 10
+        SN = SN[idx]
+
         for vv in SN:
             io += 1
             # if io >= 3:
             #    continue
 
+            if not vv['selected']:
+                continue
             snid = vv['SNID']
             idx = meta['SNID'] == snid
             metadata = meta[idx]
-            print(metadata)
+            # print(metadata.keys())
             # get lc
             lcDir = metadata['lc_dir'].value[0]
             lcName = metadata['lc_fileName'].value[0]
