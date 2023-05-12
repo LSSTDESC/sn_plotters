@@ -115,11 +115,17 @@ class FitPlots:
         print(tabs.keys())
         dict_interp = {}
         zlims = []
+
         for key, tab in tabs.items():
             idx = tab[vary] > 0
             idx &= tab[varx] >= zmin
             sel = tab[idx]
-            print('alors', len(sel), vary, zmin)
+            if varx == 'z':
+                zmin = np.min(sel['z'])
+                zmax = np.max(sel['z'])
+                bins = np.arange(zmin, zmax, 0.02)
+                sel = self.make_bins(sel, varx, vary, bins)
+
             sel.sort(keys=[varx])
             print(np.unique(sel[vary]), sel[varx, vary])
 
@@ -212,6 +218,21 @@ class FitPlots:
         print(type(colors), colors[ii], zvals[ii])
         return zvals[ii]
 
+    def make_bins(self, tab, varx, vary, bins):
+
+        zmin = np.min(tab[varx])
+        zmax = np.max(tab[varx])
+        data = tab.to_pandas()
+
+        print('ALORS bins', bins)
+        group = data.groupby(pd.cut(eval('data.{}'.format(varx)), bins))
+
+        bin_centers = (bins[:-1] + bins[1:])/2
+        df = pd.DataFrame(bin_centers, columns=[varx])
+        df[vary] = group[vary].mean().to_list()
+
+        return Table.from_pandas(df)
+
     def plot_snr_sigmaC(self, tabs):
 
         for key, tab in tabs.items():
@@ -252,11 +273,14 @@ class FitPlots:
             var = 'SNR_{}'.format(b)
             idx = sna[var] > 0.
             sel = sna[idx]
-            ax.plot(sel[var], np.sqrt(sel['Cov_colorcolor']),
+            bins = np.arange(0., 80., 5)
+            sel['sigma_color'] = np.sqrt(sel['Cov_colorcolor'])
+            sel = self.make_bins(sel, var, 'sigma_color', bins)
+            ax.plot(sel[var], sel['sigma_color'],
                     color=filtercolors[b], label='${}$ band'.format(b),
                     ls=lsb[b], lw=lw)
-            ii = interp1d(np.sqrt(sna['Cov_colorcolor']),
-                          sna['SNR_{}'.format(b)])
+            ii = interp1d(sel['sigma_color'],
+                          sel['SNR_{}'.format(b)])
             snrmin[b] = ii(0.04)
 
         ax.set_xlim([0., 80.])
