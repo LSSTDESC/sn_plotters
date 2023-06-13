@@ -116,36 +116,45 @@ class FitPlots:
         dict_interp = {}
         zlims = []
 
-        for key, tab in tabs.items():
-            idx = tab[vary] > 0
-            idx &= tab[varx] >= zmin
-            sel = tab[idx]
-            if varx == 'z':
-                zmin = np.min(sel['z'])
-                zmax = np.max(sel['z'])
-                bins = np.arange(zmin, zmax, 0.02)
-                sel = self.make_bins(sel, varx, vary, bins)
+        for key, tabb in tabs.items():
+            seasons = np.unique(tabb['season'])
+            for seas in seasons:
+                idx = tabb['season'] == seas
+                tab = tabb[idx]
+                idx = tab[vary] > 0
+                idx &= tab[varx] >= zmin
+                sel = tab[idx]
+                """
+                if varx == 'z':
+                    zmin = np.min(sel['z'])
+                    zmax = np.max(sel['z'])
+                    bins = np.arange(zmin, zmax, 0.02)
+                    sel = self.make_bins(sel, varx, vary, bins)
+                """
+                sel.sort(keys=[varx])
+                print(np.unique(sel[vary]), sel[varx, vary])
 
-            sel.sort(keys=[varx])
-            print(np.unique(sel[vary]), sel[varx, vary])
+                interp = interp1d(
+                    np.sqrt(sel[vary]), sel[varx], bounds_error=False,
+                    fill_value=0.)
 
-            interp = interp1d(
-                np.sqrt(sel[vary]), sel[varx], bounds_error=False,
-                fill_value=0.)
+                interpv = interp1d(sel[varx], np.sqrt(
+                    sel[vary]), bounds_error=False, fill_value=0.)
 
-            interpv = interp1d(sel[varx], np.sqrt(
-                sel[vary]), bounds_error=False, fill_value=0.)
+                dict_interp[key] = interp1d(sel[varx], np.sqrt(
+                    sel[vary]), bounds_error=False, fill_value=0.)
 
-            dict_interp[key] = interp1d(sel[varx], np.sqrt(
-                sel[vary]), bounds_error=False, fill_value=0.)
+                # zlim = interp(color_cut)
 
-            # zlim = interp(color_cut)
+                # zlim = self.zlim(interpv, color_cut)
+                zlim = interp(color_cut)
+                zlims.append(zlim)
 
-            zlim = self.zlim(interpv, color_cut)
-            zlims.append(zlim)
+                ax.plot(sel[varx], np.sqrt(sel[vary]),
+                        label='{}_{} - zlim={}'.format(key, seas, np.round(zlim, 3)), lw=lw)
 
-            ax.plot(sel[varx], np.sqrt(sel[vary]),
-                    label='{} - zlim={}'.format(key, np.round(zlim, 2)), lw=lw)
+            print('zlim stat', np.min(zlims), np.max(
+                zlims), np.median(zlims), np.mean(zlims), np.std(zlims))
 
             """
             ax.plot(np.sqrt(sel[vary]),sel[varx],
