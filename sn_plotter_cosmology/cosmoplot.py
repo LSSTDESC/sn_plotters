@@ -124,8 +124,7 @@ class Process_OS:
 def cosmo_plot(df,
                varx='season', legx='season',
                vary='MoM', legy='MoM',
-               prior='noprior',
-               ax=None):
+               ax=None, ls='solid', marker='.', color='k', leg='', msize=10):
     """
     Function to make a cosmo plot
 
@@ -145,6 +144,16 @@ def cosmo_plot(df,
         prior value. The default is 'noprior'.
     ax : matplotlib axis, optional
         where the plot show be made. The default is None.
+    ls : str, optional
+        Line style. The default is 'solid'.
+    marker : str, optional
+        Marker type. The default is '.'.
+    color : str, optional
+        color. The default is 'k'.
+    leg : str, optional
+        Label for legend. The default is ''.
+    msize : float, optional
+        Marker size. The default is 10.
 
     Returns
     -------
@@ -158,7 +167,8 @@ def cosmo_plot(df,
     vary_m = '{}_mean'.format(vary)
     vary_std = '{}_std'.format(vary)
 
-    ax.errorbar(df[varx], df[vary_m], yerr=df[vary_std])
+    ax.errorbar(df[varx], df[vary_m], yerr=df[vary_std],
+                ls=ls, marker=marker, color=color, label=leg, markersize=msize)
 
     ax.grid()
     ax.set_xlabel(legx)
@@ -197,7 +207,6 @@ def cosmo_four(resdf):
         for prior in priors:
             ix = ipos[vary]
             jx = jpos[prior]
-            print('there man', vary, prior, ix, jx)
             ido = resdf['prior'] == prior
             cosmo_plot(resdf[ido], varx=varx, legx=legx, vary=vary,
                        legy=leg[vary], prior=prior, ax=ax[ix, jx])
