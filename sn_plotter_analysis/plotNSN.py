@@ -53,8 +53,9 @@ def plot_NSN(df, xvar='z', xlabel='z', yvar='N', ylabel='NSN',
     fields = df[loopvar].unique()
 
     if fig is None:
-        fig, ax = plt.subplots(figsize=(10, 8))
+        fig, ax = plt.subplots(figsize=(12, 9))
 
+    fig.subplots_adjust(right=0.8)
     if title != '':
         fig.suptitle(title)
 
@@ -80,8 +81,10 @@ def plot_NSN(df, xvar='z', xlabel='z', yvar='N', ylabel='NSN',
     xmin = df[xvar].min()
     xmax = df[xvar].max()
     ax.set_xlim(xmin, xmax)
-    ax.legend(fontsize=12)
-
+    # ax.legend(fontsize=12)
+    ax.legend(loc='upper center',
+              bbox_to_anchor=(1.15, 0.7),
+              ncol=1, fontsize=12, frameon=False)
     if plotName != '':
         plt.savefig('{}/{}'.format(plotDir, plotName))
 
