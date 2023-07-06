@@ -7,13 +7,15 @@ with open("version.py") as fp:
 
 setup(
     name='sn_plotters',
-    version= pkg_vars['__version__'],
+    version=pkg_vars['__version__'],
     description='Set of tools used to display SN pipeline results',
     url='http://github.com/lsstdesc/sn_plotters',
     author='Philippe Gris',
     author_email='philippe.gris@clermont.in2p3.fr',
     license='BSD',
-    packages=['sn_plotter_simu', 'sn_plotter_fitlc','sn_plotter_metrics','sn_plotter_analysis'],
+    packages=['sn_plotter_simu', 'sn_plotter_fitlc',
+              'sn_plotter_metrics', 'sn_plotter_analysis',
+              'sn_plotter_cosmology'],
     python_requires='>=3.5',
     zip_safe=False
 )
