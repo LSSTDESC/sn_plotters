@@ -77,10 +77,20 @@ class Process_OS:
 
         idx = grp['MoM'] > 0.
 
-        grp_a = grp[idx]
+        grp_am = grp[idx]
         grp_ba = grp[~idx]
 
-        grp_a = self.calc(grp_a, calcCol='MoM')
+        grp_a = self.calc(grp_am, calcCol='MoM')
+
+        grp_am['sigma_w0'] = 100.*np.sqrt(grp_am['Cov_w0_w0_fit'])
+        grp_am['sigma_wa'] = 100.*np.sqrt(grp_am['Cov_wa_wa_fit'])
+
+        grp_a_w0 = self.calc(grp_am, calcCol='sigma_w0')
+        grp_a_wa = self.calc(grp_am, calcCol='sigma_wa')
+
+        grp_n = pd.DataFrame()
+        if 'MoM_DETF' in grp.columns:
+            grp_n = self.calc(grp_am, calcCol='MoM_DETF')
 
         grp_ba['sigma_w'] = 100.*np.sqrt(grp_ba['Cov_w0_w0_fit'])
         grp_b = self.calc(grp_ba, calcCol='sigma_w')
@@ -98,6 +108,10 @@ class Process_OS:
         set_diff = set(colb) - set(cola)
         diff = list(set_diff)
         grp_a = pd.concat((grp_a, grp_b[diff]), axis=1)
+
+        grp_a = pd.concat((grp_a, grp_n), axis=1)
+        grp_a = pd.concat((grp_a, grp_a_w0), axis=1)
+        grp_a = pd.concat((grp_a, grp_a_wa), axis=1)
 
         for key, vals in dict_field.items():
             grp_a = pd.concat((grp_a, vals), axis=1)
@@ -228,8 +242,9 @@ def cosmo_four(resdf):
                 ax[ix, jx].set_title(prior)
 
 
-def plot_allOS(resdf, config, prior='prior', vary='MoM', legy='$MoM$',
-               figtitle=True):
+def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
+               prior='prior', vary='MoM', legy='$MoM$',
+               figtitle='with prior'):
     """
     Function to plot all OS on one single plot
 
@@ -239,14 +254,18 @@ def plot_allOS(resdf, config, prior='prior', vary='MoM', legy='$MoM$',
         Data to plot.
     config : pandas df
         Configuration (marker, linestyle, ...).
+    dataCol: str, optional.
+        Data columns for selection. The default is dbName_DD.
+    configCol: str, optional.
+        Name of the config column. The default is 'dbName'.
     prior : str, optional
         Prior status (prior or noprior). The default is 'prior'.
     vary : str, optional
         y-axis var. The default is 'MoM'.
     legy : str, optional
         y-axis label. The default is '$MoM$'.
-    figtitle : bool, optional
-        To set a figure suptitle. The default is True.
+    figtitle : str, optional
+        Figure suptitle. The default is 'with prior.
 
     Returns
     -------
@@ -256,16 +275,15 @@ def plot_allOS(resdf, config, prior='prior', vary='MoM', legy='$MoM$',
 
     fig, ax = plt.subplots(figsize=(14, 8))
     fig.subplots_adjust(right=0.78)
-    dd = dict(zip(['noprior', 'prior'], ['no prior', 'with prior']))
-    if figtitle:
-        fig.suptitle(dd[prior])
+
+    fig.suptitle(figtitle)
 
     for i, row in config.iterrows():
-        idx = resdf['dbName_DD'] == row['dbName']
+        idx = resdf[dataCol] == row[configCol]
         idx &= resdf['prior'] == prior
         sel = resdf[idx]
         cosmo_plot(sel, vary=vary, legy=legy, ax=ax, ls=row['ls'],
-                   marker=row['marker'], color=row['color'], leg=row['dbName'])
+                   marker=row['marker'], color=row['color'], leg=row[configCol])
 
     ax.grid()
     ax.legend(loc='upper center',
