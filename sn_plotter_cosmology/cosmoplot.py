@@ -289,3 +289,4 @@ def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
     ax.legend(loc='upper center',
               bbox_to_anchor=(1.15, 0.7),
               ncol=1, fontsize=12, frameon=False)
+    ax.grid()
