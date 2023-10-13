@@ -149,7 +149,7 @@ class Process_OS:
 def cosmo_plot(df,
                varx='season', legx='season',
                vary='MoM', legy='MoM',
-               ax=None, ls='solid', marker='.', color='k', leg='', msize=10):
+               ax=None, ls='solid', marker='.', color='k', leg='', msize=5):
     """
     Function to make a cosmo plot
 
@@ -289,4 +289,4 @@ def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
     ax.legend(loc='upper center',
               bbox_to_anchor=(1.15, 0.7),
               ncol=1, fontsize=12, frameon=False)
-    ax.grid()
+    # ax.grid()
