@@ -149,7 +149,7 @@ class Process_OS:
 def cosmo_plot(df,
                varx='season', legx='season',
                vary='MoM', legy='MoM',
-               ax=None, ls='solid', marker='.', color='k', leg='', msize=5):
+               ax=None, ls='solid', marker='.', color='k', leg='', msize=10):
     """
     Function to make a cosmo plot
 
@@ -193,7 +193,7 @@ def cosmo_plot(df,
     vary_std = '{}_std'.format(vary)
 
     ax.errorbar(df[varx], df[vary_m], yerr=df[vary_std],
-                ls=ls, marker=marker, color=color, label=leg, markersize=msize)
+                ls=ls, marker=marker, color=color, label=leg, markersize=msize, mfc='None')
 
     ax.grid()
     ax.set_xlabel(legx)
@@ -244,7 +244,7 @@ def cosmo_four(resdf):
 
 def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
                prior='prior', vary='MoM', legy='$MoM$',
-               figtitle='with prior'):
+               figtitle='with prior', dbNorm=''):
     """
     Function to plot all OS on one single plot
 
@@ -266,6 +266,8 @@ def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
         y-axis label. The default is '$MoM$'.
     figtitle : str, optional
         Figure suptitle. The default is 'with prior.
+    dbNorm: str, optional
+       db for normalization
 
     Returns
     -------
@@ -274,19 +276,45 @@ def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
     """
 
     fig, ax = plt.subplots(figsize=(14, 8))
-    fig.subplots_adjust(right=0.78)
+    fig.subplots_adjust(right=0.75)
 
     fig.suptitle(figtitle)
 
+    idx = resdf['prior'] == prior
+    print(resdf.columns)
+    sela = resdf[idx]
+    if dbNorm != '':
+        sela = normalize(sela, dbNorm, dataCol, vary)
+
     for i, row in config.iterrows():
-        idx = resdf[dataCol] == row[configCol]
-        idx &= resdf['prior'] == prior
-        sel = resdf[idx]
+        idx = sela[dataCol] == row[configCol]
+        sel = sela[idx]
+        legs = row[configCol].split('_')
+        leg = '_'.join(legs[:-1])
         cosmo_plot(sel, vary=vary, legy=legy, ax=ax, ls=row['ls'],
-                   marker=row['marker'], color=row['color'], leg=row[configCol])
+                   marker=row['marker'], color=row['color'], leg=leg)
 
     ax.grid()
     ax.legend(loc='upper center',
-              bbox_to_anchor=(1.15, 0.7),
-              ncol=1, fontsize=12, frameon=False)
+              bbox_to_anchor=(1.20, 0.7),
+              ncol=1, fontsize=15, frameon=False)
     # ax.grid()
+
+
+def normalize(sela, dbNorm, dataCol, vary):
+
+    selb = sela[['season', dataCol, '{}_mean'.format(
+        vary), '{}_std'.format(vary)]]
+
+    ido = selb[dataCol] == dbNorm
+    selnorm = selb[ido]
+
+    selm = selb.merge(selnorm, left_on=['season'], right_on=['season'])
+
+    vvm = '{}_mean'.format(vary)
+    vvr = '{}_std'.format(vary)
+    selm[vvm] = selm['{}_x'.format(vvm)]/selm['{}_y'.format(vvm)]
+    selm[vvr] = 0.
+    selm[dataCol] = selm['{}_x'.format(dataCol)]
+
+    return selm
