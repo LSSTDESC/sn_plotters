@@ -244,7 +244,7 @@ def cosmo_four(resdf):
 
 def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
                prior='prior', vary='MoM', legy='$MoM$',
-               figtitle='with prior', dbNorm=''):
+               figtitle='with prior', dbNorm=float('0.3'), leg_prefix=''):
     """
     Function to plot all OS on one single plot
 
@@ -289,8 +289,12 @@ def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
     for i, row in config.iterrows():
         idx = sela[dataCol] == row[configCol]
         sel = sela[idx]
-        legs = row[configCol].split('_')
-        leg = '_'.join(legs[:-1])
+        leg = row[configCol]
+        if isinstance(leg, str):
+            legs = leg.split('_')
+            leg = '_'.join(legs[:-1])
+        if leg_prefix != '':
+            leg = '{}{}'.format(leg_prefix, leg)
         cosmo_plot(sel, vary=vary, legy=legy, ax=ax, ls=row['ls'],
                    marker=row['marker'], color=row['color'], leg=leg)
 
