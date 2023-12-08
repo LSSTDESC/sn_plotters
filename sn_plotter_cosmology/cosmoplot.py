@@ -89,26 +89,28 @@ class Process_OS:
         grp_a_wa = self.calc(grp_am, calcCol='sigma_wa')
 
         grp_n = pd.DataFrame()
+        """
         if 'MoM_DETF' in grp.columns:
             grp_n = self.calc(grp_am, calcCol='MoM_DETF')
 
         grp_ba['sigma_w'] = 100.*np.sqrt(grp_ba['Cov_w0_w0_fit'])
         grp_b = self.calc(grp_ba, calcCol='sigma_w')
-
+        """
         dict_field = {}
         for field in ['CDFS', 'COSMOS', 'EDFSa', 'EDFSb', 'ELAISS1', 'WFD',
                       'XMM-LSS', 'all_Fields']:
-            grp_c = self.calc(grp_ba, calcCol=field)
+            grp_c = self.calc(grp_am, calcCol=field)
             names = ['{}_mean'.format(field), '{}_std'.format(field)]
             grp_c[names] = grp_c[names].astype(int)
             dict_field[field] = grp_c[names]
 
         cola = grp_a.columns
+        """
         colb = grp_b.columns
         set_diff = set(colb) - set(cola)
         diff = list(set_diff)
         grp_a = pd.concat((grp_a, grp_b[diff]), axis=1)
-
+        """
         grp_a = pd.concat((grp_a, grp_n), axis=1)
         grp_a = pd.concat((grp_a, grp_a_w0), axis=1)
         grp_a = pd.concat((grp_a, grp_a_wa), axis=1)
@@ -142,6 +144,7 @@ class Process_OS:
         var_std = '{}_std'.format(calcCol)
         res = pd.DataFrame({var_mean: [df[calcCol].mean()],
                             var_std: [df[calcCol].std()]})
+        res = res.replace([np.inf, -np.inf, np.nan], 0)
 
         return res
 
@@ -193,14 +196,15 @@ def cosmo_plot(df,
     vary_std = '{}_std'.format(vary)
 
     ax.errorbar(df[varx], df[vary_m], yerr=df[vary_std],
-                ls=ls, marker=marker, color=color, label=leg, markersize=msize, mfc='None')
+                ls=ls, marker=marker, color=color,
+                label=leg, markersize=msize, mfc='None')
 
     ax.grid()
     ax.set_xlabel(legx)
     ax.set_ylabel(legy)
 
 
-def cosmo_four(resdf):
+def cosmo_four(resdf, timescale='year'):
     """
     Method to make a plot of 4 variables
 
@@ -218,8 +222,8 @@ def cosmo_four(resdf):
     fig, ax = plt.subplots(nrows=2, ncols=2, figsize=(12, 8))
     fig.subplots_adjust(hspace=0., wspace=0.)
 
-    varx = 'season'
-    legx = 'season'
+    varx = timescale
+    legx = timescale
 
     varys = ['sigma_w', 'MoM']
     priors = ['noprior', 'prior']
@@ -243,7 +247,7 @@ def cosmo_four(resdf):
 
 
 def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
-               prior='prior', vary='MoM', legy='$MoM$',
+               prior='prior', varx='year', legx='year', vary='MoM', legy='$MoM$',
                figtitle='with prior', dbNorm=float('0.3'), leg_prefix=''):
     """
     Function to plot all OS on one single plot
@@ -260,6 +264,10 @@ def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
         Name of the config column. The default is 'dbName'.
     prior : str, optional
         Prior status (prior or noprior). The default is 'prior'.
+    varx : str, optional
+        x-axis var. The default is 'year'.
+    legx : str, optional
+        x-axis label. The default is 'year'.       
     vary : str, optional
         y-axis var. The default is 'MoM'.
     legy : str, optional
@@ -281,10 +289,10 @@ def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
     fig.suptitle(figtitle)
 
     idx = resdf['prior'] == prior
-    print(resdf.columns)
     sela = resdf[idx]
+
     if dbNorm != '':
-        sela = normalize(sela, dbNorm, dataCol, vary)
+        sela = normalize(sela, dbNorm, dataCol, vary, timescale=varx)
 
     for i, row in config.iterrows():
         idx = sela[dataCol] == row[configCol]
@@ -295,7 +303,8 @@ def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
             leg = '_'.join(legs[:-1])
         if leg_prefix != '':
             leg = '{}{}'.format(leg_prefix, leg)
-        cosmo_plot(sel, vary=vary, legy=legy, ax=ax, ls=row['ls'],
+        cosmo_plot(sel, varx=varx, legx=legx, vary=vary,
+                   legy=legy, ax=ax, ls=row['ls'],
                    marker=row['marker'], color=row['color'], leg=leg)
 
     ax.grid()
@@ -305,15 +314,15 @@ def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
     # ax.grid()
 
 
-def normalize(sela, dbNorm, dataCol, vary):
+def normalize(sela, dbNorm, dataCol, vary, timescale='year'):
 
-    selb = sela[['season', dataCol, '{}_mean'.format(
+    selb = sela[[timescale, dataCol, '{}_mean'.format(
         vary), '{}_std'.format(vary)]]
 
     ido = selb[dataCol] == dbNorm
     selnorm = selb[ido]
 
-    selm = selb.merge(selnorm, left_on=['season'], right_on=['season'])
+    selm = selb.merge(selnorm, left_on=[timescale], right_on=[timescale])
 
     vvm = '{}_mean'.format(vary)
     vvr = '{}_std'.format(vary)
