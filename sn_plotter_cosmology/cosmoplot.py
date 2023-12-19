@@ -37,7 +37,9 @@ def drop_col(df):
 
 
 class Process_OS:
-    def __init__(self, data, grpCol):
+    def __init__(self, data, grpCol,
+                 udfs=['COSMOS', 'XMM-LSS'],
+                 dfs=['CDFS', 'EDFS', 'EDFS', 'ELAISS1']):
         """
         Class to process data.
         The goal is to estimate means and std of variables
@@ -55,6 +57,9 @@ class Process_OS:
         None.
 
         """
+
+        self.udfs = udfs
+        self.dfs = dfs
 
         self.res = data.groupby(grpCol).apply(
             lambda x: self.get_mean_std(x)).reset_index()
@@ -97,8 +102,10 @@ class Process_OS:
         grp_b = self.calc(grp_ba, calcCol='sigma_w')
         """
         dict_field = {}
-        for field in ['CDFS', 'COSMOS', 'EDFSa', 'EDFSb', 'ELAISS1', 'WFD',
-                      'XMM-LSS', 'all_Fields']:
+
+        field_list = self.udfs+self.dfs+['all_Fields']
+
+        for field in field_list:
             grp_c = self.calc(grp_am, calcCol=field)
             names = ['{}_mean'.format(field), '{}_std'.format(field)]
             grp_c[names] = grp_c[names].astype(int)
@@ -267,7 +274,7 @@ def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
     varx : str, optional
         x-axis var. The default is 'year'.
     legx : str, optional
-        x-axis label. The default is 'year'.       
+        x-axis label. The default is 'year'.
     vary : str, optional
         y-axis var. The default is 'MoM'.
     legy : str, optional
@@ -307,7 +314,7 @@ def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
                    legy=legy, ax=ax, ls=row['ls'],
                    marker=row['marker'], color=row['color'], leg=leg)
 
-    ax.grid()
+    ax.grid(visible=True)
     ax.legend(loc='upper center',
               bbox_to_anchor=(1.20, 0.7),
               ncol=1, fontsize=15, frameon=False)
