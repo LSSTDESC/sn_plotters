@@ -159,7 +159,8 @@ class Process_OS:
 def cosmo_plot(df,
                varx='season', legx='season',
                vary='MoM', legy='MoM',
-               ax=None, ls='solid', marker='.', color='k', leg='', msize=10):
+               ax=None, ls='solid', marker='.', color='k', leg='',
+               msize=10, comment_on_plot=''):
     """
     Function to make a cosmo plot
 
@@ -189,6 +190,8 @@ def cosmo_plot(df,
         Label for legend. The default is ''.
     msize : float, optional
         Marker size. The default is 10.
+    comment_on_plot: str, opt
+      to add a comment on the plot. The default is ''
 
     Returns
     -------
@@ -255,7 +258,8 @@ def cosmo_four(resdf, timescale='year'):
 
 def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
                prior='prior', varx='year', legx='year', vary='MoM', legy='$MoM$',
-               figtitle='with prior', dbNorm=float('0.3'), leg_prefix=''):
+               figtitle='with prior', dbNorm=float('0.3'), leg_prefix='',
+               comment_on_plot=''):
     """
     Function to plot all OS on one single plot
 
@@ -312,12 +316,14 @@ def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
             leg = '{}{}'.format(leg_prefix, leg)
         cosmo_plot(sel, varx=varx, legx=legx, vary=vary,
                    legy=legy, ax=ax, ls=row['ls'],
-                   marker=row['marker'], color=row['color'], leg=leg)
+                   marker=row['marker'], color=row['color'],
+                   leg=leg, comment_on_plot=comment_on_plot)
 
     ax.grid(visible=True)
     ax.legend(loc='upper center',
               bbox_to_anchor=(1.20, 0.7),
               ncol=1, fontsize=15, frameon=False)
+    ax.text(8, 150, comment_on_plot, color='blue', fontsize=15)
     # ax.grid()
 
 
