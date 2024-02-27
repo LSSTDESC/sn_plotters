@@ -160,7 +160,7 @@ def cosmo_plot(df,
                varx='season', legx='season',
                vary='MoM', legy='MoM',
                ax=None, ls='solid', marker='.', color='k', leg='',
-               msize=10, comment_on_plot=''):
+               msize=10, comment_on_plot='', fill_between=False):
     """
     Function to make a cosmo plot
 
@@ -190,8 +190,10 @@ def cosmo_plot(df,
         Label for legend. The default is ''.
     msize : float, optional
         Marker size. The default is 10.
-    comment_on_plot: str, opt
+    comment_on_plot: str, optional
       to add a comment on the plot. The default is ''
+    fill_between: bool, optional
+      to fill +-1 sigma area with yeallo. The default is False.
 
     Returns
     -------
@@ -208,6 +210,15 @@ def cosmo_plot(df,
     ax.errorbar(df[varx], df[vary_m], yerr=df[vary_std],
                 ls=ls, marker=marker, color=color,
                 label=leg, markersize=msize, mfc='None')
+
+    if fill_between:
+        vary_plus = '{}_plus_sigma'.format(vary)
+        vary_minus = '{}_minus_sigma'.format(vary)
+
+        df[vary_plus] = df[vary_m]+df[vary_std]
+        df[vary_minus] = df[vary_m]-df[vary_std]
+        ax.fill_between(df[varx], df[vary_plus],
+                        df[vary_minus], color='yellow')
 
     ax.grid()
     ax.set_xlabel(legx)
@@ -259,7 +270,7 @@ def cosmo_four(resdf, timescale='year'):
 def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
                prior='prior', varx='year', legx='year', vary='MoM', legy='$MoM$',
                figtitle='with prior', dbNorm=float('0.3'), leg_prefix='',
-               comment_on_plot=''):
+               comment_on_plot='', fill_between=False):
     """
     Function to plot all OS on one single plot
 
@@ -287,6 +298,8 @@ def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
         Figure suptitle. The default is 'with prior.
     dbNorm: str, optional
        db for normalization
+    fill_between: bool, optional
+         to fill +-1 sigma area with yeallo. The default is False.
 
     Returns
     -------
@@ -317,13 +330,14 @@ def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
         cosmo_plot(sel, varx=varx, legx=legx, vary=vary,
                    legy=legy, ax=ax, ls=row['ls'],
                    marker=row['marker'], color=row['color'],
-                   leg=leg, comment_on_plot=comment_on_plot)
+                   leg=leg, comment_on_plot=comment_on_plot,
+                   fill_between=fill_between)
 
     ax.grid(visible=True)
     ax.legend(loc='upper center',
               bbox_to_anchor=(1.20, 0.7),
               ncol=1, fontsize=15, frameon=False)
-    ax.text(8, 150, comment_on_plot, color='blue', fontsize=15)
+    ax.text(8, 50, comment_on_plot, color='blue', fontsize=15)
     # ax.grid()
 
 
