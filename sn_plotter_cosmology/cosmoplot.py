@@ -158,7 +158,8 @@ class Process_OS:
 
 def cosmo_plot(df,
                varx='season', legx='season',
-               vary='MoM', legy='MoM',
+               vary='MoM_mean', legy='MoM',
+               vary_std='MoM_std',
                ax=None, ls='solid', marker='.', color='k', leg='',
                msize=10, comment_on_plot='', fill_between=False):
     """
@@ -204,21 +205,19 @@ def cosmo_plot(df,
     if ax is None:
         fig, ax = plt.subplots(figsize=(12, 8))
 
-    vary_m = '{}_mean'.format(vary)
-    vary_std = '{}_std'.format(vary)
-
-    ax.errorbar(df[varx], df[vary_m], yerr=df[vary_std],
+    ax.errorbar(df[varx], df[vary], yerr=df[vary_std],
                 ls=ls, marker=marker, color=color,
                 label=leg, markersize=msize, mfc='None')
 
     if fill_between:
+        dfb = pd.DataFrame(df)
         vary_plus = '{}_plus_sigma'.format(vary)
         vary_minus = '{}_minus_sigma'.format(vary)
 
-        df[vary_plus] = df[vary_m]+df[vary_std]
-        df[vary_minus] = df[vary_m]-df[vary_std]
-        ax.fill_between(df[varx], df[vary_plus],
-                        df[vary_minus], color='yellow')
+        dfb[vary_plus] = dfb[vary]+dfb[vary_std]
+        dfb[vary_minus] = dfb[vary]-dfb[vary_std]
+        ax.fill_between(dfb[varx], dfb[vary_plus],
+                        dfb[vary_minus], color='yellow')
 
     ax.grid()
     ax.set_xlabel(legx)
@@ -269,6 +268,7 @@ def cosmo_four(resdf, timescale='year'):
 
 def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
                prior='prior', varx='year', legx='year', vary='MoM', legy='$MoM$',
+               vary_std='MoM_std',
                figtitle='with prior', dbNorm=float('0.3'), leg_prefix='',
                comment_on_plot='', fill_between=False):
     """
