@@ -257,8 +257,10 @@ def cosmo_four(resdf, timescale='year'):
             ix = ipos[vary]
             jx = jpos[prior]
             ido = resdf['prior'] == prior
-            cosmo_plot(resdf[ido], varx=varx, legx=legx, vary=vary,
+            sel = resdf[ido]
+            cosmo_plot(sel, varx=varx, legx=legx, vary=vary,
                        legy=leg[vary], prior=prior, ax=ax[ix, jx])
+
             if jx == 1:
                 ax[ix, jx].yaxis.tick_right()
                 ax[ix, jx].yaxis.set_label_position("right")
@@ -315,6 +317,16 @@ def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
     idx = resdf['prior'] == prior
     sela = resdf[idx]
 
+    idxa = sela[varx] == 11
+    print(sela.columns)
+    selb = sela[idxa]
+
+    print(selb[['dbName', 'MoM_mean', 'MoM_std']])
+
+    selb = selb.sort_values(by=['MoM_mean'])
+    selb[['dbName', 'MoM_mean', 'MoM_std']].to_csv(
+        'smom_final.csv', index=False)
+    print_latex(selb)
     if dbNorm != '':
         sela = normalize(sela, dbNorm, dataCol, vary, timescale=varx)
 
@@ -358,3 +370,27 @@ def normalize(sela, dbNorm, dataCol, vary, timescale='year'):
     selm[dataCol] = selm['{}_x'.format(dataCol)]
 
     return selm
+
+
+def print_latex(res):
+
+    print('\\begin{table}[!htbp]')
+    print('\\begin{center}')
+    print(
+        '\caption{\smom~values (ascending order) after a 10-season survey. The standard deviation corresponding to \smom~distribution resulting from the fit of 50 random surveys is also quoted.}\label{tab:smom_final}')
+    print('\\begin{tabular}{l|c}')
+    print('\hline')
+    print('\hline')
+    print('Observing Strategy & \smom \\\\')
+    print('\hline')
+    for i, row in res.iterrows():
+        dbName = row['dbName']
+        dbName = '_'.join(dbName.split('_')[:-1])
+        dbName = dbName.replace('_', '\_')
+        print('{} & {} $\pm$ {}\\\\'.format(
+            dbName, int(np.rint(row['MoM_mean'])), int(np.rint(row['MoM_std']))))
+    print('\hline')
+    print('\hline')
+    print('\end{tabular}')
+    print('\end{center}')
+    print('\end{table}')
