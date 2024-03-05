@@ -317,6 +317,7 @@ def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
     idx = resdf['prior'] == prior
     sela = resdf[idx]
 
+    # save SMoM in csv file+latex output
     idxa = sela[varx] == 11
     print(sela.columns)
     selb = sela[idxa]
@@ -326,7 +327,9 @@ def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
     selb = selb.sort_values(by=['MoM_mean'])
     selb[['dbName', 'MoM_mean', 'MoM_std']].to_csv(
         'smom_final.csv', index=False)
+
     print_latex(selb)
+
     if dbNorm != '':
         sela = normalize(sela, dbNorm, dataCol, vary, timescale=varx)
 
@@ -354,6 +357,28 @@ def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
 
 
 def normalize(sela, dbNorm, dataCol, vary, timescale='year'):
+    """
+
+
+    Parameters
+    ----------
+    sela : pandas df
+        Data to process.
+    dbNorm : str
+        OS to use as norm.
+    dataCol : str
+        OS name col.
+    vary : str
+        var of interest.
+    timescale : str, optional
+        Time scale (season/year). The default is 'year'.
+
+    Returns
+    -------
+    selm : pandas df
+        Output data.
+
+    """
 
     selb = sela[[timescale, dataCol, '{}_mean'.format(
         vary), '{}_std'.format(vary)]]
@@ -373,6 +398,19 @@ def normalize(sela, dbNorm, dataCol, vary, timescale='year'):
 
 
 def print_latex(res):
+    """
+    Function to print result ready for latex
+
+    Parameters
+    ----------
+    res : pandad df
+        Data to process.
+
+    Returns
+    -------
+    None.
+
+    """
 
     print('\\begin{table}[!htbp]')
     print('\\begin{center}')
