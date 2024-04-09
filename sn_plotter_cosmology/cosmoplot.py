@@ -205,7 +205,10 @@ def cosmo_plot(df,
     if ax is None:
         fig, ax = plt.subplots(figsize=(12, 8))
 
-    ax.errorbar(df[varx], df[vary], yerr=df[vary_std],
+    yerr = None
+    if vary_std != '':
+        yerr = df[vary_std]
+    ax.errorbar(df[varx], df[vary], yerr=yerr,
                 ls=ls, marker=marker, color=color,
                 label=leg, markersize=msize, mfc='None')
 
@@ -344,7 +347,7 @@ def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
             leg = '{}{}'.format(leg_prefix, leg)
         leg = row['dbNamePlot']
         cosmo_plot(sel, varx=varx, legx=legx, vary=vary,
-                   legy=legy, ax=ax, ls=row['ls'],
+                   legy=legy, vary_std=vary_std, ax=ax, ls=row['ls'],
                    marker=row['marker'], color=row['color'],
                    leg=leg, comment_on_plot=comment_on_plot,
                    fill_between=fill_between)

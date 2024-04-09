@@ -1,11 +1,16 @@
 from sn_tools.sn_io import Read_LightCurve, get_meta, load_SN
-from sn_fitter.fit_sn_cosmo import Fit_LC
+# from sn_fitter.fit_sn_cosmo import Fit_LC
 from astropy.table import Table, vstack
+from sn_telmodel.sn_telescope import get_telescope
+import sncosmo
+import matplotlib.pyplot as plt
+import numpy as np
+from random import gauss
 
 
 class VisuLC:
     def __init__(self, metaDir, metaFile,
-                 SNFile='None', SNDir='None'):
+                 SNFile='None', SNDir='None', airmassType='const'):
         """
         Class to visualize (and fit) LCs
 
@@ -17,8 +22,10 @@ class VisuLC:
             location dir of meta data file.
         SNFileInput : str, optional
              SN file. The default is None.
-        SNDirInput : TYPE, optional
-             DESCRIPTION. The default is None.
+        SNDirInput : str, optional
+             SN input dir. The default is None.
+        airmassType: str, optional.
+             airmass type for LC fit. The default is const.
 
         Returns
         -------
@@ -64,10 +71,27 @@ class VisuLC:
         self.metaTot = metaTot
         """
 
+        self.metaTot['z'] = np.round(self.metaTot['z'], 2)
         self.metaTot['SNID', 'z'].pprint_all()
 
+        # grab a telescope
+        tel_dir = 'throughputs'
+        throughputsDir = 'baseline'
+        atmosDir = 'atmos'
+        airmass = 1.2
+        tag = '1.5'
+        aerosol = 'aerosol'
+        telb = '{}_{}'.format(tel_dir, tag)
+        through_dir = '{}/{}'.format(telb, throughputsDir)
+        atmos_dir = '{}/{}'.format(telb, atmosDir)
+        telescope = get_telescope(tel_dir=telb,
+                                  through_dir=through_dir,
+                                  atmos_dir=atmos_dir,
+                                  tag=tag, airmass=airmass, aerosol=aerosol)
+
         # fit instance
-        self.fit = Fit_LC(model='salt3', version='2.0')
+        # self.fit = Fit_LC(model='salt3', version='2.0', telescope=telescope)
+        self.prepare_fit(telescope, airmassType=airmassType)
 
         # getting SN (if any)
         self.SN = Table()
@@ -77,6 +101,56 @@ class VisuLC:
             self.SN = loopStack([path], 'astropyTable')
 
             # print(self.SN.columns, len(self.SN))
+
+    def prepare_fit(self, telescope,
+                    model='salt3', version='2.0',
+                    airmassType='const'):
+        """
+        Method to load tel bandpasses for sncosmo
+
+        Parameters
+        ----------
+        telescope : sn_telescope
+            Telescope.
+        model : str, optional
+            Fitter model. The default is 'salt3'.
+        version : str, optional
+            Fitter version. The default is '2.0'.
+        airmassType: str, optional.
+            airmass type. The default is 'const'
+
+        Returns
+        -------
+        None.
+
+        """
+
+        from astropy import units as u
+        if airmassType != 'const':
+            for airmass in range(10, 31, 1):
+                for band in 'grizy':
+                    name = '{}::{}_{}'.format(telescope.name, band, airmass)
+                    telescope.load_atmosphere(airmass/10, 'aerosol')
+                    throughput = telescope.lsst_atmos_aerosol[band]
+                    bandcosmo = sncosmo.Bandpass(
+                        throughput.wavelen,
+                        throughput.sb, name=name,
+                        wave_unit=u.nm)
+                    sncosmo.registry.register(bandcosmo, force=True)
+
+        else:
+            for band in 'grizy':
+                name = '{}::{}'.format(telescope.name, band)
+                telescope.load_atmosphere(1.2, 'aerosol')
+                throughput = telescope.lsst_atmos_aerosol[band]
+                bandcosmo = sncosmo.Bandpass(
+                    throughput.wavelen,
+                    throughput.sb, name=name,
+                    wave_unit=u.nm)
+                sncosmo.registry.register(bandcosmo, force=True)
+
+        source = sncosmo.get_source(model, version)
+        self.model = sncosmo.Model(source=source)
 
     def plot(self, lcpath):
         """
@@ -105,11 +179,68 @@ class VisuLC:
 
         lc = lcs.get_table(lcpath)
 
-        # trying to fit here
-        outfit = self.fit(lc)
+        print('stretch and color', lc.meta['x1'], lc.meta['color'])
 
-        printInfo = len(self.SN) > 0
-        self.plot_SN(lcpath, lc, printInfo)
+        # trying to fit here
+        # outfit = self.fit(lc)
+
+        # print('fit', outfit)
+
+        # printInfo = len(self.SN) > 0
+        # self.plot_SN(lcpath, lc, printInfo)
+
+        sigma_z = 1.e-5
+        z = lc.meta['z']
+        lc['z'] = z+gauss(0, sigma_z*(1+z))
+        print('lll', lc.meta['z'])
+        del lc['filter']
+
+        result, fitted_model = self.fitIt(lc)
+
+        """
+        lc = lc.to_pandas()
+        lc['band'] = lc['band'].str.split('_').str.get(0)
+
+        lc = Table.from_pandas(lc)
+        print('kkk', lc['z'])
+        """
+        if fitted_model is not None:
+            sncosmo.plot_lc(lc,
+                            model=fitted_model,
+                            errors=result.errors,
+                            xfigsize=8, pulls=False)
+        else:
+            sncosmo.plot_lc(lc, xfigsize=9)
+
+        plt.show(block=False)
+
+    def fitIt(self, lc):
+        """
+        Method to fit a light curve
+
+        Parameters
+        ----------
+        lc : astropy table
+            LC to fit.
+
+        Returns
+        -------
+        result : array
+            fit results.
+        fitted_model : array
+            fitted model.
+
+        """
+
+        result = None
+        fitted_model = None
+        try:
+            result, fitted_model = sncosmo.fit_lc(lc, self.model,
+                                                  ['t0', 'x0', 'x1', 'c'])
+        except (RuntimeError, TypeError, NameError) as err:
+            print('fit crashed')
+
+        return result, fitted_model
 
     def plot_SN(self, lcpath, lc, printInfo=False):
         """
