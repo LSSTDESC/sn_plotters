@@ -40,6 +40,8 @@ class VisuLC:
         self.lcs = {}
         self.metaTot = meta.get_all_data()
 
+        print('passed here')
+
         """
         meta = Read_LightCurve(file_name=metaFileInput, inputDir=metaDirInput)
 
@@ -153,6 +155,13 @@ class VisuLC:
         self.model = sncosmo.Model(source=source)
 
     def plot(self, lcpath):
+
+        if lcpath == 'NSN':
+            print('NSN', len(self.metaTot))
+        else:
+            self.plot_lc(lcpath)
+
+    def plot_lc(self, lcpath):
         """
         Method to plot+fit LC corresponding to lcpath
 
