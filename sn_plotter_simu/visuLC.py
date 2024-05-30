@@ -211,7 +211,10 @@ class VisuLC:
         if self.remove_sat:
             idx &= lc['sat'] == 0
         lc = lc[idx]
-        # print(lc[['band', 'night', 'flux', 'zp', 'zpsys', 'fluxerr']])
+
+        if 'sat' in lc.columns:
+            print(lc[['band', 'night', 'flux', 'zp',
+                      'zpsys', 'fluxerr', 'seeingFwhmEff', 'sat']])
 
         # trying to fit here
         # outfit = self.fit(lc)
@@ -244,6 +247,7 @@ class VisuLC:
             sncosmo.plot_lc(lc,
                             model=fitted_model,
                             errors=result.errors,
+                            zp=25.,
                             xfigsize=8, pulls=False, figtextsize=1.5)
         else:
             sncosmo.plot_lc(lc, xfigsize=9)
