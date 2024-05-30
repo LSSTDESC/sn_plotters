@@ -10,7 +10,8 @@ from random import gauss
 
 class VisuLC:
     def __init__(self, metaDir, metaFile,
-                 SNFile='None', SNDir='None', airmassType='const'):
+                 SNFile='None', SNDir='None',
+                 airmassType='const', tag_tel='1.9', remove_sat=0):
         """
         Class to visualize (and fit) LCs
 
@@ -26,6 +27,10 @@ class VisuLC:
              SN input dir. The default is None.
         airmassType: str, optional.
              airmass type for LC fit. The default is const.
+        tag_tel: str, opt
+          tag for telescope version. The default is 1.9
+        remove_sat: int, opt
+          To remove LC saturated points when fitting.
 
         Returns
         -------
@@ -81,19 +86,18 @@ class VisuLC:
         throughputsDir = 'baseline'
         atmosDir = 'atmos'
         airmass = 1.2
-        tag = '1.5'
         aerosol = 'aerosol'
-        telb = '{}_{}'.format(tel_dir, tag)
+        telb = '{}_{}'.format(tel_dir, tag_tel)
         through_dir = '{}/{}'.format(telb, throughputsDir)
         atmos_dir = '{}/{}'.format(telb, atmosDir)
         telescope = get_telescope(tel_dir=telb,
                                   through_dir=through_dir,
                                   atmos_dir=atmos_dir,
-                                  tag=tag, airmass=airmass, aerosol=aerosol)
+                                  tag=tag_tel, airmass=airmass, aerosol=aerosol)
 
         # fit instance
         # self.fit = Fit_LC(model='salt3', version='2.0', telescope=telescope)
-        self.prepare_fit(telescope, airmassType=airmassType)
+        self.prepare_fit(telescope, model='salt3', airmassType=airmassType)
 
         # getting SN (if any)
         self.SN = Table()
@@ -102,10 +106,11 @@ class VisuLC:
             path = '{}/{}'.format(SNDir, SNFile)
             self.SN = loopStack([path], 'astropyTable')
 
-            # print(self.SN.columns, len(self.SN))
+        self.remove_sat = remove_sat
+        # print(self.SN.columns, len(self.SN))
 
     def prepare_fit(self, telescope,
-                    model='salt3', version='2.0',
+                    model='salt2-extended', version='2.0',
                     airmassType='const'):
         """
         Method to load tel bandpasses for sncosmo
@@ -130,9 +135,9 @@ class VisuLC:
         from astropy import units as u
         if airmassType != 'const':
             for airmass in range(10, 31, 1):
+                telescope.load_atmosphere(airmass/10, 'aerosol')
                 for band in 'grizy':
                     name = '{}::{}_{}'.format(telescope.name, band, airmass)
-                    telescope.load_atmosphere(airmass/10, 'aerosol')
                     throughput = telescope.lsst_atmos_aerosol[band]
                     bandcosmo = sncosmo.Bandpass(
                         throughput.wavelen,
@@ -141,9 +146,9 @@ class VisuLC:
                     sncosmo.registry.register(bandcosmo, force=True)
 
         else:
+            telescope.load_atmosphere(1.2, 'aerosol')
             for band in 'grizy':
                 name = '{}::{}'.format(telescope.name, band)
-                telescope.load_atmosphere(1.2, 'aerosol')
                 throughput = telescope.lsst_atmos_aerosol[band]
                 bandcosmo = sncosmo.Bandpass(
                     throughput.wavelen,
@@ -152,7 +157,19 @@ class VisuLC:
                 sncosmo.registry.register(bandcosmo, force=True)
 
         source = sncosmo.get_source(model, version)
-        self.model = sncosmo.Model(source=source)
+
+        """
+        if model == 'salt3':
+            source._wave[0] = 1700.
+            source._wave[-1] = 24990.
+        """
+        print('model version', model, version)
+        # get the dust
+        dustmap = sncosmo.OD94Dust()
+        self.model = sncosmo.Model(source=source,
+                                   effects=[dustmap, dustmap],
+                                   effect_names=['host', 'mw'],
+                                   effect_frames=['rest', 'obs'])
 
     def plot(self, lcpath):
 
@@ -179,7 +196,7 @@ class VisuLC:
         idx = self.metaTot['SNID'] == lcpath
 
         metadata = self.metaTot[idx]
-        print(metadata)
+        # print(metadata)
         # get lc
         lcDir = metadata['lc_dir'].value[0]
         lcName = metadata['lc_fileName'].value[0]
@@ -188,7 +205,13 @@ class VisuLC:
 
         lc = lcs.get_table(lcpath)
 
-        print('stretch and color', lc.meta['x1'], lc.meta['color'])
+        # print('stretch and color', lc.meta['x1'], lc.meta['color'])
+        idx = lc['fluxerr'] > 0.
+        idx &= lc['flux'] >= 0.
+        if self.remove_sat:
+            idx &= lc['sat'] == 0
+        lc = lc[idx]
+        # print(lc[['band', 'night', 'flux', 'zp', 'zpsys', 'fluxerr']])
 
         # trying to fit here
         # outfit = self.fit(lc)
@@ -200,11 +223,15 @@ class VisuLC:
 
         sigma_z = 1.e-5
         z = lc.meta['z']
-        lc['z'] = z+gauss(0, sigma_z*(1+z))
-        print('lll', lc.meta['z'])
+        zmeas = z+gauss(0, sigma_z*(1+z))
+
         del lc['filter']
+        self.model.set(z=lc.meta['z'])
 
         result, fitted_model = self.fitIt(lc)
+        # print(result)
+        # print(fitted_model)
+        # fitted_model = None
 
         """
         lc = lc.to_pandas()
@@ -217,7 +244,7 @@ class VisuLC:
             sncosmo.plot_lc(lc,
                             model=fitted_model,
                             errors=result.errors,
-                            xfigsize=8, pulls=False)
+                            xfigsize=8, pulls=False, figtextsize=1.5)
         else:
             sncosmo.plot_lc(lc, xfigsize=9)
 
@@ -244,8 +271,16 @@ class VisuLC:
         result = None
         fitted_model = None
         try:
-            result, fitted_model = sncosmo.fit_lc(lc, self.model,
-                                                  ['t0', 'x0', 'x1', 'c'])
+            bounds = {'x1': (-3.0, 3.0), 'c': (-0.3, 0.3)}
+            self.model.set(mwebv=lc.meta['ebvofMW'])
+            # self.model.set(mwebv=0.)
+            # print(self.model)
+            result, fitted_model = sncosmo.fit_lc(lc,
+                                                  self.model,
+                                                  vparam_names=[
+                                                      't0', 'x0', 'x1', 'c'],
+                                                  bounds=bounds,
+                                                  minsnr=1.)
         except (RuntimeError, TypeError, NameError) as err:
             print('fit crashed')
 
@@ -386,7 +421,8 @@ class SNToLC:
         """
 
         # fit instance
-        self.fit = Fit_LC(model='salt3', version='2.0', outType='dict_res')
+        self.fit = Fit_LC(model='salt2-extended',
+                          version='2.0', outType='dict_res')
 
         # load SN
         SN = load_SN(SNDir, SNFile)
