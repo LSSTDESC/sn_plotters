@@ -356,7 +356,7 @@ def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
     ax.legend(loc='upper center',
               bbox_to_anchor=(1.20, 0.7),
               ncol=1, fontsize=15, frameon=False)
-    ax.text(8, 50, comment_on_plot, color='blue', fontsize=15)
+    ax.text(5, 40, comment_on_plot, color='blue', fontsize=15)
     # ax.grid()
 
 
