@@ -184,7 +184,7 @@ def load_DataFrame(dbDir_WFD, OS_WFD, runType='spectroz',
         wfd_seas['dbName'] = OS_WFD
         wfd = pd.concat((wfd, wfd_seas))
 
-    print(len(wfd))
+    print('nsn tot', len(wfd))
 
     # add a year column here
     # df_y = add_year(wfd, LSSTStart)
