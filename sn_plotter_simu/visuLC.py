@@ -78,7 +78,7 @@ class VisuLC:
         self.metaTot = metaTot
         """
 
-        self.metaTot['z'] = np.round(self.metaTot['z'], 2)
+        self.metaTot['z'] = np.round(self.metaTot['z'], 4)
         self.metaTot['SNID', 'z'].pprint_all()
 
         # grab a telescope
@@ -208,6 +208,7 @@ class VisuLC:
         # print('stretch and color', lc.meta['x1'], lc.meta['color'])
         idx = lc['fluxerr'] > 0.
         idx &= lc['flux'] >= 0.
+        idx &= lc['snr_m5'] >= 1.
         if self.remove_sat:
             idx &= lc['sat'] == 0
         lc = lc[idx]
