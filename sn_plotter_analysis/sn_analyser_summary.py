@@ -134,23 +134,23 @@ def plot_summary(fileName, conf_df, timescale='year', lasttime=10):
     sel = data[idx]
 
     fig, ax = plt.subplots(figsize=(15, 9))
-    fig.subplots_adjust(bottom=0.25)
+    fig.subplots_adjust(bottom=0.20)
     ttit = 'ref: {} \n'.format(refdb)
     ttit += 'year {}'.format(lasttime)
-    fig.suptitle(ttit)
+    fig.suptitle(ttit, color='b')
     sel = sel.sort_values(by=['delta_nsn_cosmo'], ascending=False)
     pref = '_v3.4_10yrs'
     sel['dbName'] = sel['dbName'].str.split(pref).str[0]
     pref = 'v3.4_10yrs'
     sel['dbName'] = sel['dbName'].str.split(pref).str[0]
     ax.plot(sel['dbName'], sel['delta_nsn_cosmo'], color='k',
-            linestyle='dotted', marker='o', mfc='NONE', ms=10)
+            linestyle='dotted', marker='o', mfc='red', ms=7, lw=2)
 
     ax.grid(visible=True)
     ylab = '$\\frac{\\Delta N_{SN}}{N_{SN}}$'
     ax.set_ylabel(r'{}'.format(ylab), fontsize=30)
 
-    plt.setp(ax.get_xticklabels(), rotation=45,
+    plt.setp(ax.get_xticklabels(), rotation=30,
              ha="right", rotation_mode="anchor", fontsize=12)
 
 
@@ -189,7 +189,7 @@ def plot_summary_year(fileName, conf_df, timescale='year', cumul=False):
         data['nsn_cosmo']-data['nsn_cosmo_ref'])/data['nsn_cosmo_ref']
     fig, ax = plt.subplots(figsize=(15, 9))
     fig.subplots_adjust(right=0.75)
-    fig.suptitle('ref: {}'.format(refdb))
+    fig.suptitle('ref: {}'.format(refdb), color='b')
     dbNames = data['dbName'].unique().tolist()
     dbNames = sorted(dbNames)
     dbNames.remove(refdb)
