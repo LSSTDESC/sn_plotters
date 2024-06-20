@@ -223,8 +223,8 @@ def cosmo_plot(df,
                         dfb[vary_minus], color='yellow')
 
     ax.grid()
-    ax.set_xlabel(legx)
-    ax.set_ylabel(legy)
+    ax.set_xlabel(legx, fontsize=25)
+    ax.set_ylabel(legy, fontsize=25)
 
 
 def cosmo_four(resdf, timescale='year'):
@@ -312,10 +312,10 @@ def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
 
     """
 
-    fig, ax = plt.subplots(figsize=(14, 8))
+    fig, ax = plt.subplots(figsize=(18, 8))
     fig.subplots_adjust(right=0.75)
 
-    fig.suptitle(figtitle)
+    fig.suptitle(figtitle, color='b')
 
     idx = resdf['prior'] == prior
     sela = resdf[idx]
@@ -328,15 +328,19 @@ def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
     print(selb[['dbName', 'MoM_mean', 'MoM_std']])
 
     selb = selb.sort_values(by=['MoM_mean'])
-    selb[['dbName', 'MoM_mean', 'MoM_std']].to_csv(
+    selb[['dbName', 'MoM_mean', 'MoM_std', 'year']].to_csv(
         'smom_final.csv', index=False)
 
     print_latex(selb)
 
     if dbNorm != '':
-        sela = normalize(sela, dbNorm, dataCol, vary, timescale=varx)
+        sela = normalize(sela, dbNorm, dataCol, vary, vary_std, timescale=varx)
+        idx = sela['dbName_DD'] == dbNorm
+        sela = sela[~idx]
 
     for i, row in config.iterrows():
+        if row[configCol] == dbNorm:
+            continue
         idx = sela[dataCol] == row[configCol]
         sel = sela[idx]
         leg = row[configCol]
@@ -360,7 +364,41 @@ def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
     # ax.grid()
 
 
-def normalize(sela, dbNorm, dataCol, vary, timescale='year'):
+def plot_allOS_survey(res_csv='smom_final.csv', dbNorm='baseline_v3.4_10yrs',
+                      dataCol='dbName', varx='year', vary='MoM_mean',
+                      vary_std='MoM_std'):
+
+    # get the data
+    data = pd.read_csv(res_csv)
+
+    sela = data
+    if dbNorm != '':
+        sela = normalize(sela, dbNorm, dataCol, vary, vary_std, timescale=varx)
+        idx = sela['dbName'] == dbNorm
+        sela = sela[~idx]
+
+    fig, ax = plt.subplots(figsize=(18, 8))
+    fig.subplots_adjust(bottom=0.20)
+    ttit = 'ref: {} \n'.format(dbNorm)
+    ttit += 'year {}'.format(11)
+    fig.suptitle(ttit, color='b')
+    sela = sela.sort_values(by=['MoM_mean'], ascending=False)
+    pref = '_v3.4_10yrs'
+    sela['dbName'] = sela['dbName'].str.split(pref).str[0]
+    pref = 'v3.4_10yrs'
+    sela['dbName'] = sela['dbName'].str.split(pref).str[0]
+    ax.plot(sela['dbName'], sela['MoM_mean'], color='k',
+            linestyle='dotted', marker='o', mfc='r', ms=7, lw=2)
+
+    plt.setp(ax.get_xticklabels(), rotation=30,
+             ha="right", rotation_mode="anchor", fontsize=12)
+
+    legy = '$\\frac{\\Delta SMoM}{SMoM}$ [%]'
+    ax.grid(visible=True)
+    ax.set_ylabel(r'{}'.format(legy), fontsize=25)
+
+
+def normalize(sela, dbNorm, dataCol, vary, vary_std, timescale='year'):
     """
 
 
@@ -384,20 +422,23 @@ def normalize(sela, dbNorm, dataCol, vary, timescale='year'):
 
     """
 
-    selb = sela[[timescale, dataCol, '{}_mean'.format(
-        vary), '{}_std'.format(vary)]]
+    vvm = '{}'.format(vary)
+    vvr = '{}'.format(vary_std)
+    ccols = [timescale, dataCol, vvm, vvr]
+    print('ccols', ccols)
+    selb = sela[ccols]
 
     ido = selb[dataCol] == dbNorm
     selnorm = selb[ido]
 
     selm = selb.merge(selnorm, left_on=[timescale], right_on=[timescale])
 
-    vvm = '{}_mean'.format(vary)
-    vvr = '{}_std'.format(vary)
-    selm[vvm] = selm['{}_x'.format(vvm)]/selm['{}_y'.format(vvm)]
+    selm[vvm] = 100.*(selm['{}_x'.format(vvm)]-selm['{}_y'.format(vvm)]
+                      )/selm['{}_x'.format(vvm)]
     selm[vvr] = 0.
     selm[dataCol] = selm['{}_x'.format(dataCol)]
 
+    print('allo', selm.columns)
     return selm
 
 
