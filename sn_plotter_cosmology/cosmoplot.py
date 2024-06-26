@@ -210,7 +210,7 @@ def cosmo_plot(df,
         yerr = df[vary_std]
     ax.errorbar(df[varx], df[vary], yerr=yerr,
                 ls=ls, marker=marker, color=color,
-                label=leg, markersize=msize, mfc='None')
+                label=leg, markersize=msize, mfc='None', lw=3)
 
     if fill_between:
         dfb = pd.DataFrame(df)
@@ -313,7 +313,7 @@ def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
     """
 
     fig, ax = plt.subplots(figsize=(18, 8))
-    fig.subplots_adjust(right=0.75)
+    fig.subplots_adjust(right=0.71)
 
     fig.suptitle(figtitle, color='b')
 
@@ -338,6 +338,7 @@ def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
         idx = sela['dbName_DD'] == dbNorm
         sela = sela[~idx]
 
+    config = config.sort_values(by=['dbName'])
     for i, row in config.iterrows():
         if row[configCol] == dbNorm:
             continue
@@ -358,9 +359,9 @@ def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
 
     ax.grid(visible=True)
     ax.legend(loc='upper center',
-              bbox_to_anchor=(1.20, 0.7),
-              ncol=1, fontsize=15, frameon=False)
-    ax.text(5, 40, comment_on_plot, color='blue', fontsize=15)
+              bbox_to_anchor=(1.25, 0.7),
+              ncol=1, fontsize=18, frameon=False)
+    ax.text(5, 40, comment_on_plot, color='blue', fontsize=18)
     # ax.grid()
 
 
@@ -380,7 +381,7 @@ def plot_allOS_survey(res_csv='smom_final.csv', dbNorm='baseline_v3.4_10yrs',
     fig, ax = plt.subplots(figsize=(18, 8))
     fig.subplots_adjust(bottom=0.20)
     ttit = 'ref: {} \n'.format(dbNorm)
-    ttit += 'year {}'.format(11)
+    ttit += '10 years'
     fig.suptitle(ttit, color='b')
     sela = sela.sort_values(by=['MoM_mean'], ascending=False)
     pref = '_v3.4_10yrs'
@@ -388,7 +389,7 @@ def plot_allOS_survey(res_csv='smom_final.csv', dbNorm='baseline_v3.4_10yrs',
     pref = 'v3.4_10yrs'
     sela['dbName'] = sela['dbName'].str.split(pref).str[0]
     ax.plot(sela['dbName'], sela['MoM_mean'], color='k',
-            linestyle='dotted', marker='o', mfc='r', ms=7, lw=2)
+            linestyle='dotted', marker='o', mfc='r', ms=7, lw=3)
 
     plt.setp(ax.get_xticklabels(), rotation=30,
              ha="right", rotation_mode="anchor", fontsize=12)

@@ -144,7 +144,7 @@ def plot_summary(fileName, conf_df, timescale='year', lasttime=10):
     pref = 'v3.4_10yrs'
     sel['dbName'] = sel['dbName'].str.split(pref).str[0]
     ax.plot(sel['dbName'], sel['delta_nsn_cosmo'], color='k',
-            linestyle='dotted', marker='o', mfc='red', ms=7, lw=2)
+            linestyle='dotted', marker='o', mfc='red', ms=7, lw=3)
 
     ax.grid(visible=True)
     ylab = '$\\frac{\\Delta N_{SN}}{N_{SN}}$'
@@ -187,8 +187,8 @@ def plot_summary_year(fileName, conf_df, timescale='year', cumul=False):
 
     data['delta_nsn_cosmo'] = (
         data['nsn_cosmo']-data['nsn_cosmo_ref'])/data['nsn_cosmo_ref']
-    fig, ax = plt.subplots(figsize=(15, 9))
-    fig.subplots_adjust(right=0.75)
+    fig, ax = plt.subplots(figsize=(18, 8))
+    fig.subplots_adjust(right=0.71)
     fig.suptitle('ref: {}'.format(refdb), color='b')
     dbNames = data['dbName'].unique().tolist()
     dbNames = sorted(dbNames)
@@ -208,12 +208,13 @@ def plot_summary_year(fileName, conf_df, timescale='year', cumul=False):
         if dbNameb[-1] == '_':
             dbNameb = dbNameb[:-1]
         ax.plot(sel[timescale], sel['delta_nsn_cosmo'],
-                linestyle=ls, color=color, marker=marker, label=dbNameb, mfc='None')
+                linestyle=ls, color=color,
+                marker=marker, label=dbNameb, mfc='None', lw=3)
 
     ax.grid(visible=True)
     ax.legend(loc='upper center',
-              bbox_to_anchor=(1.20, 0.7),
-              ncol=1, fontsize=12, frameon=False)
+              bbox_to_anchor=(1.25, 0.7),
+              ncol=1, fontsize=18, frameon=False)
     ax.set_xlabel(r'year', fontweight='bold')
     ylab = '$\\frac{\\Delta N_{SN}}{N_{SN}}$'
     if cumul:
