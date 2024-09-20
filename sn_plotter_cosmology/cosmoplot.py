@@ -322,10 +322,9 @@ def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
 
     # save SMoM in csv file+latex output
     idxa = sela[varx] == 11
-    print(sela.columns)
-    selb = sela[idxa]
 
-    print(selb[['dbName', 'MoM_mean', 'MoM_std']])
+    selb = sela[idxa]
+    # print(selb[['dbName', 'MoM_mean', 'MoM_std']])
 
     selb = selb.sort_values(by=['MoM_mean'])
     selb[['dbName', 'MoM_mean', 'MoM_std', 'year']].to_csv(
