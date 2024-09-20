@@ -306,6 +306,7 @@ def get_nsn_wfd(conf_df, dataType, dbDir_WFD, runType,
                                varcut=[0.04, 0.12],
                                outvar=['nsn_cosmo', 'nsn_cosmo_sigmamu'])).reset_index()
         """
+        # cut on sigma_C here
         tt = sel.groupby([timescale_file]).apply(
             lambda x: get_stat(x, norm_factor,
                                var=['sigma_c'],
@@ -314,5 +315,7 @@ def get_nsn_wfd(conf_df, dataType, dbDir_WFD, runType,
 
         tt['dbName'] = OS_WFD
         wfd = pd.concat((wfd, tt))
+        del wfda
+        del sel
 
     return wfd
