@@ -10,6 +10,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 from astropy.time import Time
+from sn_tools.sn_obs import season
 
 plt.rcParams["axes.labelsize"] = "large"
 plt.rcParams["axes.linewidth"] = 2.0
@@ -69,7 +70,7 @@ def add_info(df):
     for tt in targets:
         idx = obs['target'] == tt
         sel = obs[idx]
-        sel_seas = periods(sel, period_gap=20, colName='mjd')
+        sel_seas = season(sel, season_gap=20, mjdCol='mjd')
         if res is None:
             res = sel_seas
         else:
@@ -214,6 +215,19 @@ def fb(x):
 
 
 def plot_season_length(res_season):
+    """
+    Function to plot season length vs obs time/Nvisits
+
+    Parameters
+    ----------
+    res_season : pandas df
+        Data to plot.
+
+    Returns
+    -------
+    None.
+
+    """
 
     fig, ax = plt.subplots()
     # axb = ax.twiny()
