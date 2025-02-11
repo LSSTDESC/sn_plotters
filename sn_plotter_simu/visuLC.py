@@ -1,7 +1,7 @@
 from sn_tools.sn_io import Read_LightCurve, get_meta, load_SN
 # from sn_fitter.fit_sn_cosmo import Fit_LC
 from astropy.table import Table, vstack
-from sn_telmodel.sn_telescope import get_telescope
+from sn_telmodel.sn_throughputs import get_telescope
 import sncosmo
 import matplotlib.pyplot as plt
 import numpy as np
@@ -11,7 +11,12 @@ from random import gauss
 class VisuLC:
     def __init__(self, metaDir, metaFile,
                  SNFile='None', SNDir='None',
-                 airmassType='const', tag_tel='1.9', remove_sat=0):
+                 airmassType='const', tag_tel='1.9',
+                 airmass=1.2,
+                 aerosol=0.0,
+                 pwv=4.0,
+                 oz=400,
+                 remove_sat=0):
         """
         Class to visualize (and fit) LCs
 
@@ -85,19 +90,23 @@ class VisuLC:
         tel_dir = 'throughputs'
         throughputsDir = 'baseline'
         atmosDir = 'atmos'
-        airmass = 1.2
-        aerosol = 'aerosol'
+
         telb = '{}_{}'.format(tel_dir, tag_tel)
         through_dir = '{}/{}'.format(telb, throughputsDir)
         atmos_dir = '{}/{}'.format(telb, atmosDir)
         telescope = get_telescope(tel_dir=telb,
                                   through_dir=through_dir,
                                   atmos_dir=atmos_dir,
-                                  tag=tag_tel, airmass=airmass, aerosol=aerosol)
+                                  tag=tag_tel, airmass=airmass,
+                                  aerosol=aerosol, pwv=pwv, oz=oz)
 
         # fit instance
         # self.fit = Fit_LC(model='salt3', version='2.0', telescope=telescope)
-        self.prepare_fit(telescope, model='salt3', airmassType=airmassType)
+        self.prepare_fit(telescope, model='salt3', airmassType=airmassType,
+                         airmass=airmass,
+                         aerosol=aerosol,
+                         pwv=pwv,
+                         oz=oz)
 
         # getting SN (if any)
         self.SN = Table()
@@ -111,7 +120,10 @@ class VisuLC:
 
     def prepare_fit(self, telescope,
                     model='salt2-extended', version='2.0',
-                    airmassType='const'):
+                    airmassType='const', airmass=1.2,
+                    aerosol=0.0,
+                    pwv=4.0,
+                    oz=400):
         """
         Method to load tel bandpasses for sncosmo
 
@@ -132,29 +144,10 @@ class VisuLC:
 
         """
 
-        from astropy import units as u
-        if airmassType != 'const':
-            for airmass in range(10, 31, 1):
-                telescope.load_atmosphere(airmass/10, 'aerosol')
-                for band in 'grizy':
-                    name = '{}::{}_{}'.format(telescope.name, band, airmass)
-                    throughput = telescope.lsst_atmos_aerosol[band]
-                    bandcosmo = sncosmo.Bandpass(
-                        throughput.wavelen,
-                        throughput.sb, name=name,
-                        wave_unit=u.nm)
-                    sncosmo.registry.register(bandcosmo, force=True)
-
-        else:
-            telescope.load_atmosphere(1.2, 'aerosol')
-            for band in 'grizy':
-                name = '{}::{}'.format(telescope.name, band)
-                throughput = telescope.lsst_atmos_aerosol[band]
-                bandcosmo = sncosmo.Bandpass(
-                    throughput.wavelen,
-                    throughput.sb, name=name,
-                    wave_unit=u.nm)
-                sncosmo.registry.register(bandcosmo, force=True)
+        self.register_bands(telescope, airmass=airmass,
+                            aerosol=aerosol,
+                            pwv=pwv,
+                            oz=oz)
 
         source = sncosmo.get_source(model, version)
 
@@ -170,6 +163,46 @@ class VisuLC:
                                    effects=[dustmap, dustmap],
                                    effect_names=['host', 'mw'],
                                    effect_frames=['rest', 'obs'])
+
+    def register_bands(self, telescope, airmass=1.2,
+                       aerosol=0.0,
+                       pwv=4.0,
+                       oz=400):
+        """
+        Method to register bands in sncosmo
+
+        Returns
+        -------
+        None.
+
+        """
+        from sn_tools.sn_utils import register_bands_sncosmo
+        import pandas as pd
+        airmass = [airmass]
+        pwvs = [pwv]
+        ozs = [oz]
+        aerosols = [aerosol]
+
+        # values in pandas df
+        cols = ['airmass', 'pwv', 'ozone', 'aerosol']
+        vals = [airmass, pwvs, ozs, aerosols]
+        df = pd.DataFrame.from_dict(dict(zip(cols, vals)))
+
+        """
+        print(df_dict)
+
+        df = df_dict['airmass']
+        for col in cols[1:]:
+            df = df.merge(df_dict[col], how='cross')
+        """
+        for i, row in df.iterrows():
+            airmass = row['airmass']
+            aerosol = row['aerosol']
+            pwv = row['pwv']
+            ozone = row['ozone']
+            register_bands_sncosmo(sncosmo,
+                                   telescope,
+                                   airmass, aerosol, pwv, ozone)
 
     def plot(self, lcpath):
 
