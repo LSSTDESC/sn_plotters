@@ -6,10 +6,11 @@ import sncosmo
 import matplotlib.pyplot as plt
 import numpy as np
 from random import gauss
+import glob
 
 
 class VisuLC:
-    def __init__(self, metaDir, metaFile,
+    def __init__(self, metaDir, metaFile, prodID='None',
                  SNFile='None', SNDir='None',
                  airmassType='const', tag_tel='1.9',
                  airmass=1.2,
@@ -43,13 +44,18 @@ class VisuLC:
 
         """
 
-        meta = Read_LightCurve(file_name=metaFile, inputDir=metaDir)
+        meta = get_meta(prodID, metaFile, metaDir)
 
+        print('meta', meta)
+
+        """
         paths = meta.get_path()
 
         self.lcs = {}
         self.metaTot = meta.get_all_data()
+        """
 
+        self.metaTot = meta
         print('passed here')
 
         """
