@@ -268,7 +268,7 @@ def plot_DDF_nsn(data, norm_factor, config, nside, sigma_mu=1.e6,
     data = data[idx]
 
     mypl = Plot_nsn_vs(data, norm_factor, nside)
-    # mypl.plot_nsn_mollview()
+    mypl.plot_nsn_mollview()
     """
     # mypl.plot_nsn_versus_two(xvar='z', xleg='z', logy=True,
     #                         cumul=True, xlim=[0.01, 1.1])
@@ -655,3 +655,64 @@ def plot_effi(ax, selb, xvar, yvar, yvar_cut,
     ax.plot([xmin, xmax], [0.95]*2, ls='dashed', color='r')
     ttext = '0.95'
     ax.text(0.3, 0.92, ttext, color='r', fontsize=10)
+
+
+def plotMollview(data, varName, leg, addleg, op, xmin, xmax,
+                 nside=128, saveName=''):
+    """
+    Function to display results as a Mollweid map
+
+    Parameters
+    ---------------
+    data: pandas df
+      data to consider
+    varName: str
+      name of the variable to display
+    leg: str
+      legend of the plot
+    op: operator
+      operator to apply to the pixelize data(median, sum, ...)
+    xmin: float
+      min value for the display
+    xmax: float
+     max value for the display
+    nside: int, optional
+        nside parameter for healpix. The default is 128
+    saveName:str, optional.
+       output name for the jpeg. The default is ''
+
+    """
+    import healpy as hp
+    npix = hp.nside2npix(nside)
+
+    fig = plt.figure(figsize=(8, 6))
+
+    hpxmap = np.zeros(npix, dtype=float)
+    hpxmap = np.full(hpxmap.shape, 0.)
+    hpxmap[data['healpixID'].astype(
+        int)] += data[varName]
+
+    print(np.where(hpxmap < 0.01))
+
+    norm = plt.cm.colors.Normalize(xmin, xmax)
+    cmap = plt.cm.jet
+    cmap.set_under('w')
+    resleg = op(data[varName])
+    if 'nsn' in varName:
+        resleg = int(resleg)
+    else:
+        resleg = np.round(resleg, 2)
+    title = '{}: {}'.format(leg, resleg)
+    if addleg != '':
+        title = '{} - {}'.format(addleg, title)
+
+    hp.mollview(hpxmap, fig=fig, min=xmin, max=xmax, cmap=cmap,
+                title=title, nest=True, norm=norm)
+    hp.graticule()
+
+    # save plot here
+    name = leg.replace(' - ', '_')
+    name = name.replace(' ', '_')
+
+    if saveName != '':
+        plt.savefig('Plots_pixels/{}.png'.format(saveName))
