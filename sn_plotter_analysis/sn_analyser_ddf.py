@@ -8,7 +8,7 @@ Created on Wed Feb 12 16:50:25 2025
 import numpy as np
 import pandas as pd
 from sn_analysis import plt
-from sn_analysis.sn_calc_plot import bin_it, bin_it_mean
+from sn_analysis.sn_calc_plot import bin_it, bin_it_mean, bin_it_effi
 
 
 def plot_nsn(ax, selb, xvar, yvar, yvar_cut,
@@ -104,7 +104,7 @@ def get_val(var):
     return var
 
 
-def plot_survey_features(data, norm_factor, config, nside, timescale, timeslots):
+def plot_survey_features(data, field, dbName, norm_factor, config, nside, timescale, timeslots):
     """
     Function to plot survey features related to sn
 
@@ -127,21 +127,19 @@ def plot_survey_features(data, norm_factor, config, nside, timescale, timeslots)
 
     """
 
-    field = 'COSMOS'
-    dbName = 'baseline_v3.4_10yrs'
+    # field = 'COSMOS'
+    # dbName = 'baseline_v3.4_10yrs'
     # dbName = 'roll_uniform_early_half_mjdp67_v3.4_10yrs'
     # dbName = 'DDF_DESC_0.80_WZ_0.07'
 
     plot_sn_features(data, field, dbName, timescale, timeslots,
-                     yvar='sigma_mu', ylabel='$\sigma_{\mu}}$ [mag]',
+                     yvar='sigma_mu', ylabel='$\\sigma_{\mu}$ [mag]',
                      type_plot='sigma_mu', smoothIt=False)
     plot_sn_features(data, field, dbName, timescale, timeslots,
                      yvar='NSN', ylabel='$N_{SN}$', type_plot='nsn',
                      smoothIt=True, norm_factor=norm_factor)
 
     plot_sn_features(data, field, dbName, timescale, timeslots, smoothIt=True)
-
-    plt.show()
 
     """
     df = get_zmax_field(data, field, dbName, timescale, zmin=0.7, sigmaC=1.e6)
@@ -585,3 +583,75 @@ class Plot_nsn_vs:
         plotMollview(sums, var, legvar, addleg, np.sum,
                      xmin=xmin, xmax=xmax,
                      nside=self.nside, saveName=saveName)
+
+
+def plot_effi(ax, selb, xvar, yvar, yvar_cut,
+              smoothIt, marks, listy, timescale, timeslot, norm_factor):
+    """
+    Function to plot effi vs z
+
+    Parameters
+    ----------
+    ax : matplotlib axis
+        plot axis.
+    selb : pandas df
+        Data to plot.
+    xvar : str
+        x-axis var.
+    yvar : str
+        y-axis var.
+    yvar_cut : float
+        y var selection cut.
+    smoothIt : bool
+        To smooth (spline) displayed curves.
+    marks : dict
+        Markers used for the plot.
+    listy : dict
+        linestyle used for the plot.
+    timescale : str
+        time scale to use (season/year).
+    timeslot : int
+        time slot for display.
+    norm_factor : int
+        Normalization factor.
+
+    Returns
+    -------
+    None.
+
+    """
+
+    df = bin_it_effi(selb, xvar=xvar, yvar=yvar, yvar_cut=yvar_cut,
+                     bins=np.arange(0.01, 1.12, 0.05))
+
+    print(df)
+    # ax.errorbar(df['z'], df['sigma_mu'], yerr=df['sigma_mu_std'])
+
+    if smoothIt:
+        from scipy.interpolate import make_interp_spline
+        xnew = np.linspace(
+            np.min(df[xvar]), np.max(df[xvar]), 100)
+        spl = make_interp_spline(
+            df[xvar], df['effi'], k=3)  # type: BSpline
+        spl_smooth = spl(xnew)
+
+        ax.plot(xnew, spl_smooth, color='k',
+                marker=marks[timeslot], ls=listy[timeslot],
+                mfc='None', ms=10, markevery=5,
+                label='{} {}'.format(timescale, timeslot))
+
+    else:
+        ax.plot(df[xvar], df['effi'], color='k',
+                marker=marks[timeslot], ls=listy[timeslot],
+                mfc='None', ms=10, markevery=5,
+                label='{} {}'.format(timescale, timeslot))
+    xmin = 0.2
+    xmax = 1.08
+    ymin = 0.0
+    ymax = None
+    ax.set_xlim([xmin, xmax])
+    ax.set_ylim([ymin, ymax])
+    print(df)
+    ax.plot([xmin, xmax], [0.95]*2, ls='dashed', color='r')
+    ttext = '0.95'
+    ax.text(0.3, 0.92, ttext, color='r', fontsize=10)

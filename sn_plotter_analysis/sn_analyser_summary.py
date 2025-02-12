@@ -319,3 +319,56 @@ def get_nsn_wfd(conf_df, dataType, dbDir_WFD, runType,
         del sel
 
     return wfd
+
+
+def process_DDF(conf_df, dataType, dbDir, runType,
+                timescale, timeslots,
+                norm_factor, nside=128, name='dbName_DD'):
+    """
+    Function to process the ddf files
+
+    Parameters
+    ----------
+    conf_df : pandas df
+        config file.
+    dataType : str
+        data type (WFD/DDF).
+    dbDir : str
+        location dir of the files.
+    runType : str
+        runtype (spectroz/photz).
+    timescale : str
+        time scale (year/season).
+    timeslots : str
+        time slots to analyze.
+    norm_factor : float
+        normalization factor.
+    nside : int, optional
+        nside internal parameter. The default is 128.
+    name : str, optional
+        col name of th OS. The default is 'dbName_DD'.
+
+    Returns
+    -------
+    ddf: pandas df
+      ddf data.
+
+    """
+
+    # load DDF
+    OS_DDFs = conf_df[name].unique()
+
+    ddf = pd.DataFrame()
+    from_to_load = 'from sn_plotter_analysis.sn_analyser_tools'
+    mod_to_load = '{} import load_{}'.format(from_to_load, dataType)
+    exec(mod_to_load)
+    for OS_DDF in OS_DDFs:
+        idx = conf_df[name] == OS_DDF
+        fieldType = 'DDF'
+        tt = 'load_{}(\'{}\',\'{}\',\'{}\',\'{}\',{},\'{}\')'.format(
+            dataType, dbDir, OS_DDF, runType,
+            timescale, timeslots, fieldType)
+        ddfa = eval(tt)
+        ddf = pd.concat((ddf, ddfa))
+
+    return ddf
