@@ -484,10 +484,10 @@ def plot_field(df, xvars=['season', 'season'],
 
     ax[0].grid()
     ax[1].grid()
-    plt.show()
+    # plt.show()
 
 
-def plot_filter_alloc(flat, family, field):
+def plot_filter_alloc(flat, family, field, season=1):
     """
     Function to plot filter allocation
 
@@ -499,6 +499,8 @@ def plot_filter_alloc(flat, family, field):
         Name of the family to consider.
     field : atr
         Name of the field to plot.
+    season: int
+        season number. The default is 1.
 
     Returns
     -------
@@ -509,12 +511,13 @@ def plot_filter_alloc(flat, family, field):
     leg = ['Median obs. night frac']
     idx = flat['family'] == family
     idx &= flat['field'] == field
-    idx &= flat['filter_frac'] > 0.05
+    idx &= flat['filter_frac'] > 0.0
+    idx &= flat['season'] == season
     # idx &= np.abs(flat['season']-1) < 1.e-5
     sel = flat[idx]
 
     print('ici sel', len(sel))
-    tit = '{} - {}'.format(family, field)
+    tit = '{} - {} - season {}'.format(family, field, season)
     plot_series(sel, title=tit, varx='filter_alloc', what=toplot, leg=leg)
 
 
@@ -628,7 +631,7 @@ def plot_pixels(data, yvar='nsn',
         # rebin to have a "better" plot
         import pandas as pd
         bins = np.linspace(0.1, 2.5, 15)
-        #bins = np.arange(0.1, 2.22, 0.22)
+        # bins = np.arange(0.1, 2.22, 0.22)
         group = data.groupby(pd.cut(data.dist, bins))
         print(group)
         plot_centers = (bins[:-1] + bins[1:])/2
