@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 filtercolors = dict(zip('ugrizy', ['b', 'c', 'g', 'y', 'r', 'm']))
 plt.rcParams['xtick.labelsize'] = 20
 plt.rcParams['ytick.labelsize'] = 20
-plt.rcParams['axes.labelsize'] = 20
+plt.rcParams['axes.labelsize'] = 18
+plt.rcParams['axes.labelweight'] = 'bold'
 plt.rcParams['figure.titlesize'] = 20
 plt.rcParams['figure.titleweight'] = 'bold'
 plt.rcParams['legend.fontsize'] = 20

@@ -176,7 +176,7 @@ def plot_hist_OS(data, by='family', what='cadence'):
 def plot_series(df, title='',
                 varx='family',
                 what=['time_budget', 'field'],
-                leg=['Time budget [%]', 'DD Field']):
+                leg=['DD budget [%]', 'DD Field']):
     """
     Function to plot a serie of figures
 
@@ -206,8 +206,8 @@ def plot_series(df, title='',
 def plot_series_fields(df, title='',
                        varx='family',
                        what=['time_budget_field', 'time_budget_rel'],
-                       leg=['Field Time budget [%]',
-                            'Relative Field Time budget [%]']):
+                       leg=['DD budget [%]',
+                            'Relative DD budget [%]']):
     """
     Function to plot a serie of plots per field
 
@@ -438,7 +438,7 @@ def plot_indiv(data, dbName, fig=None, ax=None,
 def plot_field(df, xvars=['season', 'season'],
                xlab=['Season', 'Season'],
                yvars=['season_length', 'cadence_mean'],
-               ylab=['Season length [days]', 'Mean Cadence [days]'], title=''):
+               ylab=['Season length [day]', 'Cadence [day]'], title=''):
     """
     function to plot parameters corresponding to a field  - one plot per db
 
@@ -464,7 +464,7 @@ def plot_field(df, xvars=['season', 'season'],
     None.
 
     """
-    fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(14, 8))
+    fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(14, 9))
     fig.suptitle(title)
     fig.subplots_adjust(hspace=0.02, right=0.75)
 
