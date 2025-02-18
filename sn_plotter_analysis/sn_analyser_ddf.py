@@ -48,7 +48,7 @@ def plot_nsn(ax, selb, xvar, yvar, yvar_cut,
     """
 
     df = bin_it(selb, xvar=xvar, norm_factor=norm_factor,
-                bins=np.arange(0.01, 1.12, 0.05))
+                bins=np.arange(0.01, 1.12, 0.1))
     # ax.errorbar(df['z'], df['sigma_mu'], yerr=df['sigma_mu_std'])
     if smoothIt:
         from scipy.interpolate import make_interp_spline
@@ -238,7 +238,7 @@ def plot_sn_features(data, field, dbName, timescale, timeslots,
 
 
 def plot_DDF_nsn(data, norm_factor, config, nside, sigma_mu=1.e6,
-                 timescale='year', yleg=''):
+                 timescale='year', yleg_add=''):
     """
 
 
@@ -267,8 +267,8 @@ def plot_DDF_nsn(data, norm_factor, config, nside, sigma_mu=1.e6,
 
     data = data[idx]
 
-    mypl = Plot_nsn_vs(data, norm_factor, nside)
-    mypl.plot_nsn_mollview()
+    # mypl = Plot_nsn_vs(data, norm_factor, nside)
+    # mypl.plot_nsn_mollview()
     """
     # mypl.plot_nsn_versus_two(xvar='z', xleg='z', logy=True,
     #                         cumul=True, xlim=[0.01, 1.1])
@@ -281,21 +281,25 @@ def plot_DDF_nsn(data, norm_factor, config, nside, sigma_mu=1.e6,
         timescale, 'dbName', 'field'])
     sumt = get_sums_nsn(data, norm_factor, nside, cols=[timescale, 'dbName'])
 
+    sumb = get_sums_nsn(data, norm_factor, nside, cols=['dbName'])
+
+    print(sumb)
     # plot_field(sums, mypl, config, xvar=timescale,
     #           xleg=timescale, cumul=True)
     # plot_field(sums, mypl, xvar=timescale, xleg=timescale,
     #           yvar='pixArea', yleg='Observed Area [deg$^{2}$]')
 
     # total number of SN per season/OS
-    plot_field(sumt, mypl, config, xvar=timescale, xleg=timescale,
+    yleg = '$N_{SN}$'+yleg_add
+    plot_field(sumt, config, xvar=timescale, xleg=timescale,
                cumul=True, yleg=yleg)
 
-    # plot_field(sumt, mypl, xvar=timescale, xleg=timescale,
-    #           yvar='pixArea', yleg='Observed Area [deg$^{2}$]')
+    plot_field(sumt, config, xvar=timescale, xleg=timescale,
+               yvar='pixArea', yleg='Observed Area [deg$^{2}$]')
     # plt.show()
 
 
-def plot_field(data, mypl, config, xvar='season', xleg='season',
+def plot_field(data, config, xvar='season', xleg='season',
                yvar='nsn', yleg='$N_{SN}$', cumul=False, norm='', logy=False):
     """
     Function to plot a set of fields results
@@ -303,9 +307,7 @@ def plot_field(data, mypl, config, xvar='season', xleg='season',
     Parameters
     ----------
     data : array
-        Data to ptocess.
-    mypl : class instance
-        Plot_nsn_vs instance.
+        Data to process.
     config: pandas df
       config for plots
     xvar : str, optional
@@ -346,12 +348,12 @@ def plot_field(data, mypl, config, xvar='season', xleg='season',
             ls = conf['ls'].to_list()[0]
             color = conf['color'].to_list()[0]
             marker = conf['marker'].to_list()[0]
-            mypl.plot_versus(selb, xvar, xleg,
-                             yvar, yleg,
-                             figTitle=field, label=dbName,
-                             fig=fig, ax=ax, xlim=None, cumul=cumul,
-                             ls=ls, color=color,
-                             marker=marker)
+            plot_versus(selb, xvar, xleg,
+                        yvar, yleg,
+                        figTitle=field, label=dbName,
+                        fig=fig, ax=ax, xlim=None, cumul=cumul,
+                        ls=ls, color=color,
+                        marker=marker)
 
         ax.legend()
         # ax.grid()
@@ -398,7 +400,7 @@ def plot_sigma_mu(ax, selb, xvar, yvar, yvar_cut,
     """
 
     df = bin_it_mean(selb, xvar=xvar, yvar=yvar,
-                     bins=np.arange(0.01, 1.12, 0.02))
+                     bins=np.arange(0.01, 1.12, 0.07))
     # ax.errorbar(df['z'], df['sigma_mu'], yerr=df['sigma_mu_std'])
     ax.plot(df[xvar], df[yvar], color='k', marker=marks[timeslot],
             ls=listy[timeslot], mfc='None', ms=10, markevery=5,
@@ -540,6 +542,7 @@ class Plot_nsn_vs:
         self.Mollview_sum(self.data, addleg='{}'.format(
             dbName), saveName=saveName)
 
+        """
         for year in years:
             idx = self.data[what] == year
             sel = self.data[idx]
@@ -547,7 +550,7 @@ class Plot_nsn_vs:
             saveName = '{}_moll_{}'.format(dbName, year)
             self.Mollview_sum(sel, addleg='{} \n {} {}'.format(dbName, what, int(year)),
                               saveName=saveName)
-
+        """
         # plt.show()
 
     def Mollview_sum(self, data, var='nsn',
@@ -622,7 +625,7 @@ def plot_effi(ax, selb, xvar, yvar, yvar_cut,
     """
 
     df = bin_it_effi(selb, xvar=xvar, yvar=yvar, yvar_cut=yvar_cut,
-                     bins=np.arange(0.01, 1.12, 0.05))
+                     bins=np.arange(0.01, 1.12, 0.1))
 
     print(df)
     # ax.errorbar(df['z'], df['sigma_mu'], yerr=df['sigma_mu_std'])
@@ -716,3 +719,41 @@ def plotMollview(data, varName, leg, addleg, op, xmin, xmax,
 
     if saveName != '':
         plt.savefig('Plots_pixels/{}.png'.format(saveName))
+
+
+def plot_nsn_new(data, norm_factor, config, nside,
+                 sigma_mu=0.12, timescale='year'):
+
+    # total number of sn per OS/field/timescale
+
+    suma = get_sums_nsn(data, norm_factor, nside, cols=[
+        timescale, 'dbName', 'field'])
+
+    # total number of sn per OS/timescale
+    sumb = get_sums_nsn(data, norm_factor, nside, cols=[timescale, 'dbName'])
+
+    # total number of sn per OS/timescale
+    sumc = get_sums_nsn(data, norm_factor, nside, cols=['dbName'])
+
+    print(sumc)
+
+
+def plot_versus(data, xvar='season', xleg='season',
+                yvar='nsn', yleg='$N_{SN}$', fig=None, ax=None,
+                figTitle='', label=None, xlim=[1, 10],
+                ls='solid', cumul=False, color='k', marker='o'):
+
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(14, 9))
+
+    fig.suptitle(figTitle)
+
+    data = data.sort_values(by=[xvar])
+    datab = data[yvar]
+    if cumul:
+        datab = np.cumsum(datab)
+    ax.plot(data[xvar], datab, label=label,
+            linestyle=ls, marker=marker, color=color, mfc='None', lw=3)
+    ax.grid()
+    if xlim is not None:
+        ax.set_xlim(xlim)
