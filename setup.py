@@ -16,7 +16,7 @@ setup(
     packages=['sn_plotter_simu', 'sn_plotter_fitlc',
               'sn_plotter_metrics', 'sn_plotter_analysis',
               'sn_plotter_cosmology', 'sn_plotter_scheduler',
-              'sn_plotter_flux_pixels'],
+              'sn_plotter_flux_pixels', 'sn_plotter_os_info'],
     python_requires='>=3.5',
     zip_safe=False
 )
