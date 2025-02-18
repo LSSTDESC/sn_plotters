@@ -30,9 +30,9 @@ def analyze_simu_exp(data):
     for vv in ['nvisits', 'u', 'g', 'r', 'i', 'z', 'y']:
         data['diff_{}'.format(vv)] = data['{}_exp'.format(vv)] - data[vv]
 
-    print(data)
+    print(data.columns)
 
-    res_stat = data.groupby(['target_name', 'season']).apply(
+    res_stat = data.groupby(['target_name', 'season', 'DD_type']).apply(
         lambda x: stat_simu_exp(x)).reset_index()
 
     print(res_stat)
@@ -72,16 +72,34 @@ def stat_simu_exp(grp):
     return rr
 
 
-def plot_stat(data):
+def plot_stat(data, prefix='DD:'):
 
     fields = data['target_name'].unique()
-    for vval in ['perfect', 'missing', 'excess']:
+    categ = ['perfect', 'missing', 'excess']
+    value = ['=', '<', '>']
+    fields = ['COSMOS', 'XMM_LSS', 'ELAISS1', 'ECDFS', 'EDFS_a', 'EDFS_b']
+    fields = list(map(lambda x: prefix + x, fields))
+    colors = ['r', 'b', 'k', 'orange', 'm', 'g']
+    marks = ['o', 's', '*', '^', 'v', '>']
+    dict_col = dict(zip(fields, colors))
+    dict_mark = dict(zip(fields, marks))
+    dict_ls = dict(zip(['UD', 'DF'], ['solid', 'dashed']))
+
+    for i, vval in enumerate(categ):
         fig, ax = plt.subplots(figsize=(14, 8))
         for field in fields:
             idx = data['target_name'] == field
             sel = data[idx]
-            ax.plot(sel['season'], sel['nvisits_{}'.format(vval)])
+            dd_type = sel['DD_type'].unique()[0]
+            ax.plot(sel['season'], sel['nvisits_{}'.format(vval)],
+                    color=dict_col[field], marker=dict_mark[field],
+                    linestyle=dict_ls[dd_type],
+                    mfc='None', ms=10, label=field.split(prefix)[-1])
 
         ax.grid(visible=True)
-
+        ax.set_xlabel(r'season')
+        ax.set_ylabel(
+            r'$\frac{N_{visits}^{exp}}{N_{visits}^{simu}}$'+value[i]+'1')
+        ax.legend(bbox_to_anchor=(1.01, 1.10),
+                  ncol=6, fontsize=15, frameon=False)
     plt.show()
