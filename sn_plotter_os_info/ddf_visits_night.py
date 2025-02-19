@@ -29,8 +29,53 @@ def analyze_simu_exp(data):
 
     for vv in ['nvisits', 'u', 'g', 'r', 'i', 'z', 'y']:
         data['diff_{}'.format(vv)] = data['{}_exp'.format(vv)] - data[vv]
+        data['ratio_{}'.format(vv)] = data['{}_exp'.format(vv)] / data[vv]
 
-    print(data.columns)
+    print(data['ratio_u'])
+    data = data.replace([np.inf, -np.inf], 0)
+    print(data['ratio_u'])
+
+    # plot stat results
+    # ana_plot_stat(data)
+
+    # analysis of cases when thee number of visits exceeds expectation
+    plot_stat_visits_no_exp(data)
+
+
+def plot_stat_visits_no_exp(data):
+
+    idx = data['diff_nvisits'] < 0.
+    sel = data[idx]
+
+    print(sel)
+
+    fig, ax = plt.subplots()
+
+    ax.hist(sel['ratio_nvisits'], histtype='step', bins=20)
+
+    for b in 'ugrizy':
+        fig, ax = plt.subplots()
+        fig.suptitle('{}-band'.format(b))
+        vvar = 'ratio_{}'.format(b)
+        ax.hist(sel[vvar], histtype='step', bins=20)
+
+    plt.show()
+
+
+def ana_plot_stat(data):
+    """
+    Function to make some stat and to make plots
+
+    Parameters
+    ----------
+    data : pandas df
+        Data to process.
+
+    Returns
+    -------
+    None.
+
+    """
 
     res_stat = data.groupby(['target_name', 'season', 'DD_type']).apply(
         lambda x: stat_simu_exp(x)).reset_index()
@@ -73,6 +118,21 @@ def stat_simu_exp(grp):
 
 
 def plot_stat(data, prefix='DD:'):
+    """
+    Function to plot stat results
+
+    Parameters
+    ----------
+    data : pandas df
+        Data to process.
+    prefix : str, optional
+        prefix for DD fieldnames. The default is 'DD:'.
+
+    Returns
+    -------
+    None.
+
+    """
 
     fields = data['target_name'].unique()
     categ = ['perfect', 'missing', 'excess']
