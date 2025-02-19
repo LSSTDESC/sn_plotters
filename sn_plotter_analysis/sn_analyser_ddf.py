@@ -237,35 +237,37 @@ def plot_sn_features(data, field, dbName, timescale, timeslots,
               ncol=1, fontsize=15, frameon=False)
 
 
-def plot_DDF_nsn(data, norm_factor, config, nside, sigma_mu=1.e6,
-                 timescale='year', yleg_add=''):
+def plot_DDF_nsn(data, norm_factor, config, nside,
+                 timescale='year', yleg_add='', cumul=False,
+                 plots=['nsn_field_OS', 'nsn_OS', 'pix_area']):
     """
 
 
     Parameters
     ----------
     data : pandas df
-        Data to process.
+        Data to plot.
     norm_factor : float
-        Normalization factor
-    config: pandas df
-      config for plots.
+        norm factor.
+    config : pandas df
+        config for plots.
     nside : int
-        Healpix nside parameter.
-    sigma_mu: float, optional.
-     sigma_mu selection cut. The default is 1.e6
-    timescale: str, opt
-    Time scale for the plot. The default is 'year'
+        nside healpix parameter.
+    timescale : str, optional
+        time scale for plots. The default is 'year'.
+    yleg_add : str, optional
+        additionnal y-axis legend. The default is ''.
+    cumul : bool, optional
+        to display cumulative nsn. The default is False.
+    plots : list(str), optional
+        List of plots to display. 
+        The default is ['nsn_field_OS', 'nsn_OS', 'pixarea'].
 
     Returns
     -------
     None.
 
     """
-
-    idx = data['sigma_mu'] <= sigma_mu
-
-    data = data[idx]
 
     # mypl = Plot_nsn_vs(data, norm_factor, nside)
     # mypl.plot_nsn_mollview()
@@ -290,12 +292,23 @@ def plot_DDF_nsn(data, norm_factor, config, nside, sigma_mu=1.e6,
     #           yvar='pixArea', yleg='Observed Area [deg$^{2}$]')
 
     # total number of SN per season/OS
-    yleg = '$N_{SN}$'+yleg_add
-    plot_field(sumt, config, xvar=timescale, xleg=timescale,
-               cumul=True, yleg=yleg)
+    yleg = '$N_{SN}$'
+    if cumul:
+        yleg = '$\Sigma N_{SN}$'
+    yleg += yleg_add
 
-    plot_field(sumt, config, xvar=timescale, xleg=timescale,
-               yvar='pixArea', yleg='Observed Area [deg$^{2}$]')
+    if 'nsn_field_OS' in plots:
+        plot_field(sums, config, xvar=timescale, xleg=timescale,
+                   cumul=False, yleg=yleg)
+
+    # total number of SN per season/OS
+    if 'nsn_os' in plots:
+        plot_field(sumt, config, xvar=timescale, xleg=timescale,
+                   cumul=cumul, yleg=yleg)
+
+    if 'pix_area' in plots:
+        plot_field(sumt, config, xvar=timescale, xleg=timescale,
+                   yvar='pixArea', yleg='Observed Area [deg$^{2}$]')
     # plt.show()
 
 
