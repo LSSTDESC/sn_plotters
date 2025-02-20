@@ -8,6 +8,7 @@ Created on Tue Feb 18 10:01:53 2025
 import numpy as np
 from . import plt
 import pandas as pd
+from sn_analysis.sn_calc_plot import bin_it
 
 
 def analyze_simu_exp(data):
@@ -39,17 +40,94 @@ def analyze_simu_exp(data):
     # ana_plot_stat(data)
 
     # analysis of cases when thee number of visits exceeds expectation
-    plot_stat_visits_no_exp(data)
+    plot_stat_visits_vs_exp(data)
+
+    # plot obs time vs night
+    # plot_obs_time_night(data)
 
 
-def plot_stat_visits_no_exp(data):
+def plot_obs_time_night(data):
+    """
+    Function to plot obs time and nddf per night of observation
+
+    Parameters
+    ----------
+    data : pandas df
+        Data to process.
+
+    Returns
+    -------
+    None.
+
+    """
+
+    fig, ax = plt.subplots(nrows=2, figsize=(12, 8))
+    fig.subplots_adjust(hspace=0)
+    print(data.columns)
+    fig.suptitle(data['dbName'].unique()[0])
+    obs_time = data.groupby(['night']).apply(
+        lambda x: pd.DataFrame(
+            {'obs_time [h]': [x['nvisits'].sum()*30./3600.],
+             'nddf': [len(x['target_name'].unique())]
+             })).reset_index()
+
+    ax[0].plot(obs_time['night'], obs_time['nddf'], 'k.')
+
+    ax[0].set_xticklabels([])
+    ax[0].set_ylabel(r'N$_{DDF}$')
+
+    ax[1].plot(obs_time['night'], obs_time['obs_time [h]'], 'k.')
+    print(obs_time)
+
+    ax[1].set_xlabel(r'night')
+    ax[1].set_ylabel(r'DDF obs. time [h]')
+
+    night_max = obs_time['night'].max()
+    tdays = np.arange(1, night_max, 365.)
+
+    colors = ['blue', 'orange', 'green', 'crimson', 'lightsalmon',
+              'grey', 'yellow', 'magenta', 'purple', 'cyan']
+    print(len(tdays))
+
+    for i in range(2):
+        ax[i].grid(visible=True)
+        ax[i].set_xlim([0, night_max])
+        ax[i].set_ylim([0, None])
+        # ax[i].axvspan(1, 365, facecolor='red', alpha=0.25)
+        for j in range(len(tdays)):
+            ax[i].axvspan(tdays[j], tdays[j]+365.,
+                          facecolor=colors[j], alpha=0.25)
+
+    plt.show()
+
+
+def plot_stat_visits_vs_exp(data):
 
     idx = data['diff_nvisits'] < 0.
+    idx &= data['target_name'] == 'DD:COSMOS'
     sel = data[idx]
 
     print(sel)
 
-    fig, ax = plt.subplots()
+    dd = {}
+    for b in 'ugrizy':
+        rb = bin_it(sel, 'ratio_{}'.format(b), bins=np.arange(
+            0, 1.1, 0.1), norm_factor=1, outvar='frac')
+        rb['frac'] /= rb['frac'].sum()
+        dd[b] = rb
+
+    fig, ax = plt.subplots(figsize=(12, 8))
+    fig.suptitle(sel['dbName'].unique()[0])
+
+    for key, vals in dd.items():
+        ax.plot(vals['ratio_{}'.format(key)], 100.*vals['frac'])
+
+    ax.grid(visible=True)
+    ax.set_ylabel(r'Fraction of night [%]')
+    ax.set_xlabel(r'$\frac{N_{visits}^{exp}}{N_{visits}^{obs}}$')
+    ax.set_xlim([0, None])
+    ax.set_ylim([0, None])
+    plt.show()
 
     ax.hist(sel['ratio_nvisits'], histtype='step', bins=20)
 
