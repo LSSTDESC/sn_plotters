@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from random import gauss
 import glob
+import numpy.lib.recfunctions as rf
 
 
 class VisuLC:
@@ -537,3 +538,78 @@ class SNToLC:
             outname = '{}/SN_{}.png'.format(outdir, io)
             fig.savefig(outname)
             plt.close(fig)
+
+
+class VisuNight:
+    def __init__(self, dbDir, dbName, fields, colors, colName):
+        """
+        class to display filter alloc a given night
+
+        Parameters
+        ----------
+        dbDir : str
+            Data location dir.
+        dbName : str
+            OS to process.
+        fields : str
+            List of fields to process.
+        colors : str
+            colors corresponding to fields.
+        colName : str
+            colName to tag fields.
+
+        Returns
+        -------
+        None.
+
+        """
+
+        fName = '{}/{}.npy'.format(dbDir, dbName)
+
+        data = np.load(fName, allow_pickle=True)
+        # select DDFs
+        idx = np.in1d(data[colName], fields.split(','))
+        self.ddf = data[idx]
+
+        self.ddplot = dict(zip(fields.split(','), colors.split(',')))
+        self.colName = colName
+
+    def plot(self, night):
+        """
+        Method to plot a night
+
+        Parameters
+        ----------
+        night : int
+            night number.
+
+        Returns
+        -------
+        None.
+
+        """
+
+        idx = self.ddf['night'] == night
+        sel = self.ddf[idx]
+
+        fig, ax = plt.subplots(figsize=(10, 8))
+        fig.suptitle('night {}'.format(night))
+        fig.subplots_adjust(right=0.80)
+
+        mjd0 = sel['mjd'].min()
+        ttime = (sel['mjd']-mjd0)*24.
+        sel = rf.append_fields(sel, 'time', ttime)
+        for key, vals in self.ddplot.items():
+            idxb = sel[self.colName] == key
+            selb = sel[idxb]
+            if len(selb) > 0:
+                ax.plot(selb['time'], selb['filter'], color=vals,
+                        linestyle='None', marker='o', label=key.split('DD:')[-1])
+
+        ax.set_xlabel(r'obs time [h]')
+        ax.grid(visible=True)
+        # ax.legend(bbox_to_anchor=(1., 0.5),
+        #          ncol=1, fontsize=12, frameon=False)
+        ax.legend(loc='upper left', bbox_to_anchor=(1.0, 0.5),
+                  ncol=1, frameon=False, fontsize=15)
+        plt.show(block=False)

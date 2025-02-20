@@ -9,6 +9,7 @@ import numpy as np
 from . import plt
 import pandas as pd
 from sn_analysis.sn_calc_plot import bin_it
+import operator as op
 
 
 def analyze_simu_exp(data):
@@ -40,7 +41,7 @@ def analyze_simu_exp(data):
     # ana_plot_stat(data)
 
     # analysis of cases when thee number of visits exceeds expectation
-    plot_stat_visits_vs_exp(data)
+    plot_stat_visits_vs_exp(data, op.lt)
 
     # plot obs time vs night
     # plot_obs_time_night(data)
@@ -101,17 +102,31 @@ def plot_obs_time_night(data):
     plt.show()
 
 
-def plot_stat_visits_vs_exp(data):
+def plot_stat_visits_vs_exp(data, ope, selval=0., field='DD:COSMOS'):
+    """
+    Function to plots diff exp/obs per night
 
-    idx = data['diff_nvisits'] < 0.
-    idx &= data['target_name'] == 'DD:COSMOS'
+    Parameters
+    ----------
+    data : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    """
+
+    idx = ope(data['diff_nvisits'], selval)
+    idx &= data['target_name'] == field
     sel = data[idx]
 
     print(sel)
 
     dd = {}
     for b in 'ugrizy':
-        rb = bin_it(sel, 'ratio_{}'.format(b), bins=np.arange(
+        vvar = 'ratio_{}'.format(b)
+        rb = bin_it(sel, vvar, bins=np.arange(
             0, 1.1, 0.1), norm_factor=1, outvar='frac')
         rb['frac'] /= rb['frac'].sum()
         dd[b] = rb
@@ -127,8 +142,10 @@ def plot_stat_visits_vs_exp(data):
     ax.set_xlabel(r'$\frac{N_{visits}^{exp}}{N_{visits}^{obs}}$')
     ax.set_xlim([0, None])
     ax.set_ylim([0, None])
+
     plt.show()
 
+    """
     ax.hist(sel['ratio_nvisits'], histtype='step', bins=20)
 
     for b in 'ugrizy':
@@ -138,6 +155,40 @@ def plot_stat_visits_vs_exp(data):
         ax.hist(sel[vvar], histtype='step', bins=20)
 
     plt.show()
+    """
+
+
+def get_nights(data, colName, selval, bands='grizy'):
+    """
+    getting nights corresponding to specific filter alloc configs
+
+    Parameters
+    ----------
+    data : pandas df
+        Data to process.
+    colName : str
+        colName to use.
+    selval : float
+        selection values.
+    bands : str, optional
+        bands to consider. The default is 'grizy'.
+
+    Returns
+    -------
+    None.
+
+    """
+
+    idx = True
+
+    for b in bands:
+        idx &= np.abs(data['{}{}'.format(colName, b)]-selval) < 0.01
+
+    sel = data[idx]
+
+    nights = np.unique(sel['night'])
+
+    return nights
 
 
 def ana_plot_stat(data):
@@ -151,7 +202,8 @@ def ana_plot_stat(data):
 
     Returns
     -------
-    None.
+    nights: list(int)
+      list of corresponding nights
 
     """
 
