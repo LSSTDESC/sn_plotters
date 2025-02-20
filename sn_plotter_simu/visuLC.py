@@ -158,11 +158,10 @@ class VisuLC:
 
         source = sncosmo.get_source(model, version)
 
-        """
         if model == 'salt3':
             source._wave[0] = 1700.
             source._wave[-1] = 24990.
-        """
+
         print('model version', model, version)
         # get the dust
         dustmap = sncosmo.OD94Dust()
