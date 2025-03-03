@@ -299,7 +299,7 @@ def plot_DDF_nsn(data, norm_factor, config, nside,
 
     if 'nsn_field_OS' in plots:
         plot_field(sums, config, xvar=timescale, xleg=timescale,
-                   cumul=False, yleg=yleg)
+                   cumul=cumul, yleg=yleg)
 
     # total number of SN per season/OS
     if 'nsn_os' in plots:
