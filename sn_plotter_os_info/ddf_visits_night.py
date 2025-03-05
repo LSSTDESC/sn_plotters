@@ -38,13 +38,15 @@ def analyze_simu_exp(data):
     print(data['ratio_u'])
 
     # plot stat results
-    # ana_plot_stat(data)
+    ana_plot_stat(data)
 
     # analysis of cases when thee number of visits exceeds expectation
     plot_stat_visits_vs_exp(data, op.lt)
 
     # plot obs time vs night
-    # plot_obs_time_night(data)
+    plot_obs_time_night(data)
+
+    plt.show()
 
 
 def plot_obs_time_night(data):
@@ -72,12 +74,12 @@ def plot_obs_time_night(data):
              'nddf': [len(x['target_name'].unique())]
              })).reset_index()
 
-    ax[0].plot(obs_time['night'], obs_time['nddf'], 'k.')
+    ax[0].plot(obs_time['night'], obs_time['nddf'], 'k.', ms=5)
 
     ax[0].set_xticklabels([])
     ax[0].set_ylabel(r'N$_{DDF}$')
 
-    ax[1].plot(obs_time['night'], obs_time['obs_time [h]'], 'k.')
+    ax[1].plot(obs_time['night'], obs_time['obs_time [h]'], 'k.', ms=5)
     print(obs_time)
 
     ax[1].set_xlabel(r'night')
@@ -98,8 +100,6 @@ def plot_obs_time_night(data):
         for j in range(len(tdays)):
             ax[i].axvspan(tdays[j], tdays[j]+365.,
                           facecolor=colors[j], alpha=0.25)
-
-    plt.show()
 
 
 def plot_stat_visits_vs_exp(data, ope, selval=0., field='DD:COSMOS'):
@@ -138,12 +138,12 @@ def plot_stat_visits_vs_exp(data, ope, selval=0., field='DD:COSMOS'):
         ax.plot(vals['ratio_{}'.format(key)], 100.*vals['frac'])
 
     ax.grid(visible=True)
-    ax.set_ylabel(r'Fraction of night [%]')
+    # ax.set_ylabel(r'Fraction of nights [%]')
+    laby = r'N$_{nights}$ [%]'
+    ax.set_ylabel(laby)
     ax.set_xlabel(r'$\frac{N_{visits}^{exp}}{N_{visits}^{obs}}$')
     ax.set_xlim([0, None])
     ax.set_ylim([0, None])
-
-    plt.show()
 
     """
     ax.hist(sel['ratio_nvisits'], histtype='step', bins=20)
@@ -277,6 +277,9 @@ def plot_stat(data, prefix='DD:'):
 
     for i, vval in enumerate(categ):
         fig, ax = plt.subplots(figsize=(14, 8))
+        figtit = r'$\frac{N_{visits}^{exp}}{N_{visits}^{simu}}$'+value[i]+'1'
+        fig.suptitle(figtit)
+        fig.subplots_adjust(right=0.85)
         for field in fields:
             idx = data['target_name'] == field
             sel = data[idx]
@@ -288,8 +291,12 @@ def plot_stat(data, prefix='DD:'):
 
         ax.grid(visible=True)
         ax.set_xlabel(r'season')
+        """
         ax.set_ylabel(
             r'$\frac{N_{visits}^{exp}}{N_{visits}^{simu}}$'+value[i]+'1')
-        ax.legend(bbox_to_anchor=(1.01, 1.10),
-                  ncol=6, fontsize=15, frameon=False)
-    plt.show()
+        
+        """
+        laby = r'N$_{nights}$ [%]'
+        ax.set_ylabel(laby)
+        ax.legend(bbox_to_anchor=(0.99, 0.7),
+                  ncol=1, fontsize=15, frameon=False)
