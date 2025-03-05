@@ -6,7 +6,7 @@ Created on Tue Feb 18 10:01:53 2025
 @author: philippe.gris@clermont.in2p3.fr
 """
 import numpy as np
-from . import plt
+from . import plt, filtercolors, filtermarkers
 import pandas as pd
 from sn_analysis.sn_calc_plot import bin_it
 import operator as op
@@ -41,7 +41,7 @@ def analyze_simu_exp(data):
     ana_plot_stat(data)
 
     # analysis of cases when thee number of visits exceeds expectation
-    plot_stat_visits_vs_exp(data, op.lt)
+    plot_stat_visits_vs_exp(data, op.lt, '<')
 
     # plot obs time vs night
     plot_obs_time_night(data)
@@ -102,7 +102,7 @@ def plot_obs_time_night(data):
                           facecolor=colors[j], alpha=0.25)
 
 
-def plot_stat_visits_vs_exp(data, ope, selval=0., field='DD:COSMOS'):
+def plot_stat_visits_vs_exp(data, ope, opevalue, selval=0., field='DD:COSMOS'):
     """
     Function to plots diff exp/obs per night
 
@@ -131,11 +131,17 @@ def plot_stat_visits_vs_exp(data, ope, selval=0., field='DD:COSMOS'):
         rb['frac'] /= rb['frac'].sum()
         dd[b] = rb
 
-    fig, ax = plt.subplots(figsize=(12, 8))
-    fig.suptitle(sel['dbName'].unique()[0])
+    fig, ax = plt.subplots(figsize=(8, 12))
+    figtit = sel['dbName'].unique()[0]
+    figtit += ' - $\\frac{N_{visits}^{exp}}{N_{visits}^{simu}}$'+opevalue+'1'
+
+    fig.suptitle(figtit)
 
     for key, vals in dd.items():
-        ax.plot(vals['ratio_{}'.format(key)], 100.*vals['frac'])
+        ax.plot(vals['ratio_{}'.format(key)], 100.*vals['frac'],
+                label=key,
+                color=filtercolors[key],
+                marker=filtermarkers[key], mfc='None')
 
     ax.grid(visible=True)
     # ax.set_ylabel(r'Fraction of nights [%]')
@@ -145,6 +151,7 @@ def plot_stat_visits_vs_exp(data, ope, selval=0., field='DD:COSMOS'):
     ax.set_xlim([0, None])
     ax.set_ylim([0, None])
 
+    ax.legend()
     """
     ax.hist(sel['ratio_nvisits'], histtype='step', bins=20)
 
