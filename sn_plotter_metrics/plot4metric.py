@@ -646,7 +646,7 @@ def plot_pixels(data, yvar='nsn',
         dd = pd.DataFrame(plot_centers, columns=[distval])
         dd[yvar] = plot_values.to_list()
         dd = dd.dropna()
-        print(dd)
+
         # print(test)
         if smoothIt:
             from sn_analysis.sn_tools import get_spline
@@ -703,9 +703,6 @@ def plotMollview(nside, fig, data, varName, leg, op, xmin, xmax):
     hpxmap = np.full(hpxmap.shape, 0.)
     hpxmap[data['healpixID'].astype(
         int).to_list()] += data[varName].values
-
-    idx = hpxmap > 0.
-    print('allo   fff', hpxmap[idx])
 
     norm = plt.cm.colors.Normalize(xmin, xmax)
     cmap = plt.cm.jet
@@ -774,7 +771,6 @@ def plotMollview_seasons(nside, data, dbName,
         xmax = np.max(sels[yvar])
         tit = dbName + ' - season {}'.format(season)
         tit += '\n {}'.format(yleg)
-        print('allo', xmin, xmax)
         plotMollview(nside, fig, sels, yvar, tit, op, xmin, xmax)
 
 
