@@ -251,7 +251,7 @@ def plot_series_fields(df, title='',
                   frameon=False, loc='upper center')
         ax.grid()
 
-    plt.show()
+    # plt.show()
 
 
 def plot_series_median(df, title='',
