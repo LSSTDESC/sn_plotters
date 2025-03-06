@@ -156,7 +156,7 @@ class Infos:
 
         if fam not in self.families:
             self.families.append(fam)
-        #print('infos', fam, len(self.markers), self.families.index(fam))
+        # print('infos', fam, len(self.markers), self.families.index(fam))
         imark = self.families.index(fam)
         print(self.simu.type, self.simu.dir, dbName, fam,
               self.colors[self.ip], self.markers[self.families.index(fam)])
@@ -435,7 +435,7 @@ class MetricValues:
             return metricValues
 
 
-def get_dist(data, pixRA_mean=-1, pixDec_mean=-1):
+def get_dist(datam, pixRA_mean=-1, pixDec_mean=-1):
     """
     Function to estimate the distance dist = sqrt((deltaRA*cos(Dec))**2+deltaDec**2)
 
@@ -449,6 +449,7 @@ def get_dist(data, pixRA_mean=-1, pixDec_mean=-1):
     pandas df with dist col
 
     """
+    data = pd.DataFrame(datam)
     if pixRA_mean == -1:
         pixRA_mean = np.mean(data['pixRA'])
         pixDec_mean = np.mean(data['pixDec'])
@@ -456,6 +457,18 @@ def get_dist(data, pixRA_mean=-1, pixDec_mean=-1):
                            + (data['pixDec']-pixDec_mean)**2)
     data['pixRA_mean'] = pixRA_mean
     data['pixDec_mean'] = pixDec_mean
+
+    data = data.sort_values(by='dist')
+    closest = data[:1]
+
+    pixRA_center = closest['pixRA'].mean()
+    pixDec_center = closest['pixDec'].mean()
+
+    data['dist_center'] = np.sqrt(((data['pixRA']-pixRA_center)*np.cos(np.deg2rad(data['pixDec'])))**2
+                                  + (data['pixDec']-pixDec_center)**2)
+
+    data['pixRA_center'] = pixRA_center
+    data['pixDec_center'] = pixDec_center
 
     return data
 

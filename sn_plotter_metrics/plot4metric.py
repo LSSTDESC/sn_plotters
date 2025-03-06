@@ -580,7 +580,8 @@ def plot_cumsum(selb, title='', xvar='zcomp', xleg='$z_{complete}$',
 def plot_pixels(data, yvar='nsn',
                 yleg='$N_{SN}^{z\leq z_{complete}}$',
                 fig=None, ax=None, figtitle='', marker='s', color='k',
-                mfc='None', showIt=True, rebin=True, label='', ls='solid'):
+                mfc='None', showIt=True, rebin=True, smoothIt=True, label='',
+                ls='solid', ms=15, markevery=5, distval='dist_center'):
     """
     Function to plot metric pixel values vs distance to the cluster center
 
@@ -610,6 +611,12 @@ def plot_pixels(data, yvar='nsn',
         To perform a rebining of the plot. The default is True.
     label : str, optional
         Legend for the plot. The default is ''.
+    ls: str, optional
+      linestyle for the plot. The default is solid.
+    ms: float, optional.
+      marker size for the plot. The default is 15.
+    markevery: int, optional.
+      Frequency of markers on the plot. The default is 5.
 
     Returns
     -------
@@ -622,24 +629,36 @@ def plot_pixels(data, yvar='nsn',
 
     from sn_plotter_metrics.utils import get_dist
     df_dist = get_dist(data)
-    df_dist = df_dist.sort_values(by=['dist'])
+    df_dist = df_dist.sort_values(by=[distval])
     if not rebin:
-        plot_centers = df_dist['dist']
+        plot_centers = df_dist[distval]
         plot_values = df_dist[yvar]
 
     if rebin:
         # rebin to have a "better" plot
         import pandas as pd
-        bins = np.linspace(0.1, 2.5, 15)
+        xmin, xmax = df_dist[distval].min(), df_dist[distval].max()
+        bins = np.linspace(xmin-1.e-6, xmax, 12)
         # bins = np.arange(0.1, 2.22, 0.22)
-        group = data.groupby(pd.cut(data.dist, bins))
-        print(group)
+        group = df_dist.groupby(pd.cut(df_dist[distval], bins))
         plot_centers = (bins[:-1] + bins[1:])/2
         plot_values = group[yvar].mean()
+        dd = pd.DataFrame(plot_centers, columns=[distval])
+        dd[yvar] = plot_values.to_list()
+        dd = dd.dropna()
+        print(dd)
+        # print(test)
+        if smoothIt:
+            from sn_analysis.sn_tools import get_spline
+            plot_centers, plot_values = get_spline(dd, distval, yvar)
+            dd = pd.DataFrame(plot_centers, columns=[distval])
+            dd[yvar] = plot_values.tolist()
 
-    ax.plot(plot_centers, plot_values, marker=marker,
-            color=color, mfc=mfc, label=label, ls=ls)
-    ax.tick_params(axis='y', colors=color)
+    ax.plot(dd[distval], dd[yvar], marker=marker,
+            color=color, mfc=mfc, label=label, ls=ls, ms=ms,
+            markevery=markevery)
+    # markevery=markevery)
+    # ax.tick_params(axis='y', colors=color)
     ax.set_xlabel('dist [deg]')
     ax.set_ylabel(yleg)
     ax.grid()
