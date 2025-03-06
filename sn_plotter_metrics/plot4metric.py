@@ -699,23 +699,35 @@ def plotMollview(nside, fig, data, varName, leg, op, xmin, xmax):
     import healpy as hp
     npix = hp.nside2npix(nside)
 
-    hpxmap = np.zeros(npix, dtype=np.float)
+    hpxmap = np.zeros(npix, dtype=float)
     hpxmap = np.full(hpxmap.shape, 0.)
     hpxmap[data['healpixID'].astype(
-        int)] += data[varName]
+        int).to_list()] += data[varName].values
+
+    idx = hpxmap > 0.
+    print('allo   fff', hpxmap[idx])
 
     norm = plt.cm.colors.Normalize(xmin, xmax)
     cmap = plt.cm.jet
     cmap.set_under('w')
-    resleg = op(data[varName])
+    """
+    if op is not None:
+        resleg = op(data[varName])
+    else:
+        resleg = data[varName]
+
     if 'nsn' in varName:
         resleg = int(resleg)
+        title = '{}: {}'.format(leg, resleg)
     else:
         resleg = np.round(resleg, 2)
-    title = '{}: {}'.format(leg, resleg)
+        title = leg
+    """
+    title = leg
 
     hp.mollview(hpxmap, fig=fig, min=xmin, max=xmax, cmap=cmap,
                 title=title, nest=True, norm=norm)
+
     hp.graticule()
 
     # save plot here
@@ -762,6 +774,7 @@ def plotMollview_seasons(nside, data, dbName,
         xmax = np.max(sels[yvar])
         tit = dbName + ' - season {}'.format(season)
         tit += '\n {}'.format(yleg)
+        print('allo', xmin, xmax)
         plotMollview(nside, fig, sels, yvar, tit, op, xmin, xmax)
 
 
