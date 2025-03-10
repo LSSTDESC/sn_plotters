@@ -5,7 +5,7 @@ Created on Tue Jan 28 09:33:06 2025
 
 @author: philippe.gris@clermont.in2p3.fr
 """
-import matplotlib.pyplot as plt
+from . import plt
 import pandas as pd
 import numpy as np
 from datetime import datetime
@@ -85,7 +85,7 @@ def add_info(df):
     return df
 
 
-def plot(df):
+def plot(df, fields=['COSMOS']):
     """
     Function to plot observing time vs time
 
@@ -93,6 +93,8 @@ def plot(df):
     ----------
     df : pandas df
         Data to process.
+    fields: list(str)
+        List of fields to display.
 
     Returns
     -------
@@ -103,8 +105,9 @@ def plot(df):
     mjd_min = df['mjd'].min()
     ymax = df['nvisits'].max()+10
 
-    fig, ax = plt.subplots(figsize=(14, 8))
-    for tt in ['EDFS_a']:
+    for tt in fields:
+        fig, ax = plt.subplots(figsize=(14, 8))
+        fig.suptitle(tt)
         idx = df['target'] == tt
         sel = pd.DataFrame(df[idx])
         """
@@ -135,8 +138,6 @@ def plot(df):
     ax.grid(visible=True)
     ax.set_xlabel(r'Time [year]')
     ax.set_ylabel(r'$N_{visits}$')
-
-    plt.show()
 
 
 def ana_season(sel_df):
