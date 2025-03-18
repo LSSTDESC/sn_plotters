@@ -323,7 +323,7 @@ def get_nsn_wfd(conf_df, dataType, dbDir_WFD, runType,
 
 def process_DDF(conf_df, dataType, dbDir, runType,
                 timescale, timeslots,
-                norm_factor, nside=128, name='dbName_DD'):
+                norm_factor, nside=128, name='dbName'):
     """
     Function to process the ddf files
 

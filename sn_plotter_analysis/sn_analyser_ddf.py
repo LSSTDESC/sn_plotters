@@ -751,6 +751,34 @@ def plot_nsn_new(data, norm_factor, config, nside,
     print(sumc)
 
 
+def get_nsn(data, norm_factor, nside, cols=['year', 'dbName', 'field']):
+    """
+     Function to get the number of sn and observed area
+
+     Parameters
+     ----------
+     data : pandas df
+         Data to process.
+     norm_factor : float
+         normalization factor.
+     nside : int
+         nside healpix parameter.
+     cols : list(str), optional
+         List of columns to estimate nsn. The default is ['year','dbName','field'].
+
+     Returns
+     -------
+     pandas df
+         result.
+     """
+
+    # total number of sn per OS/field/timescale
+
+    sum = get_sums_nsn(data, norm_factor, nside, cols=cols)
+
+    return sum
+
+
 def plot_versus(data, xvar='season', xleg='season',
                 yvar='nsn', yleg='$N_{SN}$', fig=None, ax=None,
                 figTitle='', label=None, xlim=[1, 10],
