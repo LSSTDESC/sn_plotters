@@ -149,7 +149,8 @@ def load_OS_df(dbDir, dbName, runType, timescale_file='year',
 
 
 def load_DataFrame(dbDir_WFD, OS_WFD, runType='spectroz',
-                   timescale_file='year', timeslots=[1], fieldType='WFD'):
+                   timescale_file='year', timeslots=[1], fieldType='WFD',
+                   norm_factor=10):
     """
     Function to load data if pandas df
 
@@ -181,10 +182,12 @@ def load_DataFrame(dbDir_WFD, OS_WFD, runType='spectroz',
         wfd_seas = load_OS_df(dbDir_WFD, OS_WFD, runType=runType,
                               timescale_file=timescale_file,
                               timeslot=seas, fieldType=fieldType)
-        wfd_seas['dbName'] = OS_WFD
+        wfd_seas = wfd_seas.groupby(['healpixID', timescale_file]).apply(
+            lambda x: get_stat(x, norm_factor)).reset_index()
         wfd = pd.concat((wfd, wfd_seas))
+        del wfd_seas
 
-    print('nsn tot', len(wfd))
+    print('nsn tot', wfd['nsn'].sum())
 
     # add a year column here
     # df_y = add_year(wfd, LSSTStart)
