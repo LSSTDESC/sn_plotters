@@ -355,8 +355,11 @@ def plot_density_wfd(datam, timescale, timeslots, nside, conf_df,
     ylabel = 'N$_{SN}$/deg$^{2}$'
     if varp == 'nsn_cosmo':
         ylabel = 'N$_{SN}^{cosmo}$/deg$^{2}$'
-    fig, ax = plt.subplots(figsize=(12, 8))
-    figb, axb = plt.subplots(figsize=(12, 8))
+    fig, ax = plt.subplots(figsize=(14, 8))
+    fig.subplots_adjust(right=0.75)
+    figb, axb = plt.subplots(figsize=(14, 8))
+    figb.subplots_adjust(right=0.75)
+
     for dbName in dbNames:
         idx = data['dbName'] == dbName
         sel = data[idx]
@@ -378,19 +381,26 @@ def plot_density_wfd(datam, timescale, timeslots, nside, conf_df,
                                     marker=marker, label='')
 
         plot_density_os_summary(df, vara, '', fig=fig, ax=ax,
-                                ylabel=ylabel, figtit=dbName,
-                                ls=ls, color=color, marker=marker, label='')
+                                ylabel=ylabel, figtit='',
+                                ls=ls, color=color, marker=marker, label=dbName)
         plot_density_os_summary(df, '{}_area'.format(varp), '',
                                 fig=figb, ax=axb, ylabel='area [deg$^2$]',
-                                figtit=dbName, ls=ls, color=color,
-                                marker=marker, label='')
+                                figtit='', ls=ls, color=color,
+                                marker=marker, label=dbName)
 
     ax.grid(visible=True)
     ax.set_xlabel(r'Dec [deg]')
     ax.set_ylabel(r'{}'.format(ylabel))
+    ax.legend(loc='upper center',
+              bbox_to_anchor=(1.2, 0.7),
+              ncol=1, fontsize=15, frameon=False)
+
     axb.grid(visible=True)
     axb.set_xlabel(r'Dec [deg]')
     axb.set_ylabel(r'area [deg$^2$]')
+    axb.legend(loc='upper center',
+               bbox_to_anchor=(1.2, 0.7),
+               ncol=1, fontsize=15, frameon=False)
 
 
 def plot_density_wfd_season(datam, timescale, timeslots, nside, conf_df,
