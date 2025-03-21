@@ -368,7 +368,9 @@ def process_DDF(conf_df, dataType, dbDir, runType,
         tt = 'load_{}(\'{}\',\'{}\',\'{}\',\'{}\',{},\'{}\')'.format(
             dataType, dbDir, OS_DDF, runType,
             timescale, timeslots, fieldType)
+        print('here', tt)
         ddfa = eval(tt)
+        ddfa['dbName'] = OS_DDF
         ddf = pd.concat((ddf, ddfa))
 
     return ddf
