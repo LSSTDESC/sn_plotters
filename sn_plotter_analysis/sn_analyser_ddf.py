@@ -782,7 +782,48 @@ def get_nsn(data, norm_factor, nside, cols=['year', 'dbName', 'field']):
 def plot_versus(data, xvar='season', xleg='season',
                 yvar='nsn', yleg='$N_{SN}$', fig=None, ax=None,
                 figTitle='', label=None, xlim=[1, 10],
-                ls='solid', cumul=False, color='k', marker='o'):
+                ls='solid', cumul=False, color='k', marker='o', yerrvar='None'):
+    """
+    plot yvar vs xvar
+
+    Parameters
+    ----------
+    data : pandas df
+        Data to plot.
+    xvar : str, optional
+        x-axis variable. The default is 'season'.
+    xleg : str, optional
+        x-axis label. The default is 'season'.
+    yvar : str, optional
+        y-axis variable. The default is 'nsn'.
+    yleg : str, optional
+        y-axis label. The default is '$N_{SN}$'.
+    fig : matplotlib figure, optional
+        plot figure. The default is None.
+    ax : matplotlib axis, optional
+        plot axis. The default is None.
+    figTitle : str, optional
+        figure title. The default is ''.
+    label : str, optional
+        plot label. The default is None.
+    xlim : list[xmin,xmax], optional
+        axis limits. The default is [1, 10].
+    ls : str, optional
+        line style. The default is 'solid'.
+    cumul : bool, optional
+        to plot the cumulative. The default is False.
+    color : str, optional
+        plot color. The default is 'k'.
+    marker : str, optional
+        plot marker. The default is 'o'.
+    yerrvar: str, optional.
+        var to use for error bars. The default is 'None'.
+
+    Returns
+    -------
+    None.
+
+    """
 
     if ax is None:
         fig, ax = plt.subplots(figsize=(14, 9))
@@ -793,8 +834,13 @@ def plot_versus(data, xvar='season', xleg='season',
     datab = data[yvar]
     if cumul:
         datab = np.cumsum(datab)
-    ax.plot(data[xvar], datab, label=label,
-            linestyle=ls, marker=marker, color=color, mfc='None', lw=3)
+    yerr = 'None'
+    if yerrvar != 'None':
+        yerr = data[yerrvar]
+
+    ax.errorbar(data[xvar], datab, yerr=yerr, label=label,
+                linestyle=ls, marker=marker, color=color, mfc='None', lw=3)
+
     ax.grid()
     if xlim is not None:
         ax.set_xlim(xlim)
