@@ -251,7 +251,8 @@ def plot_summary_wfd(wfda, conf_df, timescale='season',
         ax.text(5, 0.22e6, '200k SNe Ia', color='dimgrey', fontsize=12)
 
 
-def plot_mollview_wfd(data, timescale, timeslots, nside, varp='nsn', outDir='.'):
+def plot_mollview_wfd(data, timescale, timeslots, nside,
+                      varp='nsn', outDir='.', for_ffmpeg=False):
     """
     Function to make Mollweid plots for nsn in the WFD survey
 
@@ -269,6 +270,9 @@ def plot_mollview_wfd(data, timescale, timeslots, nside, varp='nsn', outDir='.')
         var to plot. The default is 'nsn'.
     outDir : str, optional
         output directory to save the plot. The default is '.'.
+    for_ffmpeg: bool, optional
+       Few modifs to have figures to be used to make a movie. 
+       The default is False.
 
     Returns
     -------
@@ -287,13 +291,13 @@ def plot_mollview_wfd(data, timescale, timeslots, nside, varp='nsn', outDir='.')
         xmax = sel[varp].max()
         nsn = int(np.sum(sel[varp]))
         figtit = '{} \n'.format(dbName)
-        figtitb = figtit + varleg
-        figtitb += '{}'.format(nsn)
+        figtitm = figtit + varleg
+        figtitm += '{}'.format(nsn)
         outDirName = '{}/{}'.format(outDir, dbName)
         checkDir(outDirName)
-        saveName = 'nsn.png'
-        plotMollview(sel, varp, figtitb, xmin, xmax, nside=nside,
-                     outDir=outDirName, saveName=saveName)
+        saveNamea = 'nsn_year_all.png'
+        plotMollview(sel, varp, figtitm, xmin, xmax, nside=nside,
+                     outDir=outDirName, saveName=saveNamea)
         # season by season
         for timesl in timeslots:
             idxb = sel[timescale] == timesl
@@ -303,10 +307,27 @@ def plot_mollview_wfd(data, timescale, timeslots, nside, varp='nsn', outDir='.')
             nsn = int(np.sum(selb[varp]))
             figtitb = figtit + '{} {} '.format(timescale, timesl)
             figtitb += varleg+'{}'.format(nsn)
-            saveName = 'nsn_{}_{}.png'.format(timescale, timesl)
+            saveName = f'nsn_{timescale}_{timesl:03d}.png'
             plotMollview(selb, varp, figtitb,
                          xmin, xmax, nside=nside,
                          outDir=outDirName, saveName=saveName)
+        # this is to order figures for ffmpeg
+        if for_ffmpeg:
+            import os
+            isl = np.max(timeslots)
+            isl += 1
+            saveNameb = f'nsn_{timescale}_{isl:03d}.png'
+            cmd = 'scp {}/{} {}/{}'.format(outDirName,
+                                           saveNamea, outDirName, saveNameb)
+            os.system(cmd)
+            cmd = 'rm {}/{}'.format(outDirName, saveNamea)
+            os.system(cmd)
+            # copy this last figure (to mave a movie: ffmeg bug)
+            isl += 1
+            saveNamec = f'nsn_{timescale}_{isl:03d}.png'
+            cmd = 'scp {}/{} {}/{}'.format(outDirName,
+                                           saveNameb, outDirName, saveNamec)
+            os.system(cmd)
 
 
 def plot_density_wfd(datam, timescale, timeslots, nside, conf_df,
