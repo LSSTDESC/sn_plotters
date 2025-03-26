@@ -3,7 +3,7 @@ import operator
 from sn_tools.sn_io import checkDir
 from . import plt
 import numpy as np
-from sn_analysis.sn_calc_plot import select
+from sn_analysis.sn_selection import select
 
 
 def plot_NSN(df, xvar='z', xlabel='z', yvar='N', ylabel='NSN',
@@ -236,7 +236,7 @@ def plot_effi(effival, xvar='z', leg='', fig=None, ax=None):
     if fig is None:
         fig, ax = plt.subplots(figsize=(10, 8))
 
-    #effival = effi(resa, resb, xvar=xvar, bins=bins)
+    # effival = effi(resa, resb, xvar=xvar, bins=bins)
 
     x = effival[xvar]
     y = effival['effi']
