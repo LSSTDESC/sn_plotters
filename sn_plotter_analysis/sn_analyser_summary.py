@@ -374,3 +374,47 @@ def process_DDF(conf_df, dataType, dbDir, runType,
         ddf = pd.concat((ddf, ddfa))
 
     return ddf
+
+
+def load_data(dbDir, dbName, dataType, runType,
+              timescale, timeslots, fieldType):
+    """
+    Function to load the data
+
+    Parameters
+    ----------
+    dbDir : str
+        data dir.
+    dbName : str
+        OS to load.
+    dataType : str
+        Data type.
+    runType : str
+        run type.
+    timescale : str
+        time scale (year/season).
+    timeslots : list(int)
+        time slots.
+    fieldType : str
+        field type.
+
+    Returns
+    -------
+    ddfa : pandas df
+        Loaded data.
+
+    """
+
+    from_to_load = 'from sn_plotter_analysis.sn_analyser_tools'
+    mod_to_load = '{} import load_{}'.format(from_to_load, dataType)
+    exec(mod_to_load)
+
+    fieldType = 'DDF'
+    tt = 'load_{}(\'{}\',\'{}\',\'{}\',\'{}\',{},\'{}\')'.format(
+        dataType, dbDir, dbName, runType,
+        timescale, timeslots, fieldType)
+
+    ddfa = eval(tt)
+    ddfa['dbName'] = dbName
+
+    return ddfa
