@@ -821,3 +821,60 @@ def get_data(data, xvar='cadence',
         plot_std = group[yvar].std()
 
     return plot_centers, plot_values, plot_std
+
+
+def multiplot_dist(sel, yvar='cadence',
+                   yleg='cadence [day]',
+                   timescale='season'):
+    """
+    Function to plot yvar vs distance to the cluster center
+
+    Parameters
+    ----------
+    sel : pandas df
+        Data to process.
+    yvar : str, optional
+        y-axis variable. The default is 'cadence'.
+    yleg : str, optional
+        y-axis label. The default is 'cadence [day]'.
+    timescale: str, optional.
+       Timescale for the plot. The default is 'season'.
+
+    Returns
+    -------
+    None.
+
+    """
+
+    fields = sel['field'].unique()
+    dbName = sel['dbName'].unique()[0]
+
+    bands = 'ugrizy'
+    seasons = range(1, 11, 1)
+    colors = ['r', 'b', 'k', 'g', 'orange']*2
+    lstyles = ['solid']*5+['dashed']*5
+    mstyles = ['o', 's', 'P', 'D', 'x']*5
+    cols = dict(zip(seasons, colors))
+    lstys = dict(zip(seasons, lstyles))
+    marks = dict(zip(seasons, mstyles))
+    for field in fields:
+        idx = sel['field'] == field
+        selb = sel[idx]
+        seasons = selb[timescale].unique()
+        fig, ax = plt.subplots(figsize=(12, 8))
+        fig.subplots_adjust(right=0.80)
+        figtitle = f'{dbName} - {field}'
+        fig.suptitle(figtitle)
+        for seas in range(1, 11):
+            idxb = selb[timescale] == seas
+            selc = selb[idxb]
+            plot_pixels(selc, yvar=yvar,
+                        yleg=yleg, fig=fig, ax=ax, showIt=False,
+                        color=cols[seas], ls=lstys[seas], marker=marks[seas],
+                        label=f'{timescale} {seas}', ms=12, markevery=10,
+                        rebin=True, smoothIt=True, distval='dist')
+
+        ax.grid(visible='True')
+        ax.legend(bbox_to_anchor=(0.99, 0.8),
+                  ncol=1, frameon=False, fontsize=15)
+        # ax.set_xlim([0, None])
