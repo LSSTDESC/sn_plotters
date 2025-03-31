@@ -41,7 +41,7 @@ def plot_nsn_year_all(nsn, config,
 
     """
 
-    fig, ax = plt.subplots(figsize=(12, 8))
+    fig, ax = plt.subplots(figsize=(15, 8))
     fig.subplots_adjust(right=0.78)
     fig.suptitle(figtit)
 
@@ -60,7 +60,7 @@ def plot_nsn_year_all(nsn, config,
         mark = selconf['marker'].values[0]
         name = selconf['dbName_plot'].values[0]
         ax.plot(sel[xvar], toplot, color=color,
-                marker=mark, linestyle=ls, label=name, mfc='None', lw=3, ms=10)
+                marker=mark, linestyle=ls, label=name, mfc='None', lw=2, ms=10)
 
     ax.grid(visible=True)
     ax.set_xlabel(r'{}'.format(xlab))
