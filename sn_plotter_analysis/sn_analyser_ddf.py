@@ -48,7 +48,7 @@ def plot_nsn(ax, selb, xvar, yvar, yvar_cut,
     """
 
     df = bin_it(selb, xvar=xvar, norm_factor=norm_factor,
-                bins=np.arange(0.01, 1.12, 0.1))
+                bins=np.arange(0.01, 1.24, 0.08))
     # ax.errorbar(df['z'], df['sigma_mu'], yerr=df['sigma_mu_std'])
     if smoothIt:
         from scipy.interpolate import make_interp_spline
@@ -70,7 +70,7 @@ def plot_nsn(ax, selb, xvar, yvar, yvar_cut,
                 label='{} {}'.format(timescale, timeslot))
 
     xmin = 0.2
-    xmax = 1.08
+    xmax = 1.1
     ymin = 0.0
     ymax = None
     ax.set_xlim([xmin, xmax])
@@ -104,7 +104,8 @@ def get_val(var):
     return var
 
 
-def plot_survey_features(data, field, dbName, norm_factor, config, nside, timescale, timeslots):
+def plot_survey_features(data, field, dbName, norm_factor,
+                         nside, timescale, timeslots):
     """
     Function to plot survey features related to sn
 
@@ -114,12 +115,12 @@ def plot_survey_features(data, field, dbName, norm_factor, config, nside, timesc
         Data to process.
     norm_factor : int
         normalization factor.
-    config : dict
-        config params.
     nside : int
         nside param (healpix).
     timescale : str
         time scale to use (season/year).
+    timeslots: list(int)
+        List of time slots to plot.
 
     Returns
     -------
@@ -135,6 +136,7 @@ def plot_survey_features(data, field, dbName, norm_factor, config, nside, timesc
     plot_sn_features(data, field, dbName, timescale, timeslots,
                      yvar='sigma_mu', ylabel='$\\sigma_{\mu}$ [mag]',
                      type_plot='sigma_mu', smoothIt=False)
+
     plot_sn_features(data, field, dbName, timescale, timeslots,
                      yvar='NSN', ylabel='$N_{SN}$', type_plot='nsn',
                      smoothIt=True, norm_factor=norm_factor)
@@ -152,9 +154,9 @@ def plot_survey_features(data, field, dbName, norm_factor, config, nside, timesc
 
 
 def plot_sn_features(data, field, dbName, timescale, timeslots,
-                     xvar='z', xlabel='$z$', yvar='sigma_mu',
-                     ylabel='$frac^{N_{SN}}_{\sigma_{\mu} \leq \sigma_{int}}$',
-                     yvar_cut=0.12, type_plot='effi', smoothIt=False,
+                     xvar='z', xlabel='$z$', yvar='sigmaC',
+                     ylabel='$frac^{N_{SN}}_{\sigma_C \leq 0.04}$',
+                     yvar_cut=0.04, type_plot='effi', smoothIt=False,
                      norm_factor=1):
     """
     Function to plot sn features from survey
@@ -214,7 +216,10 @@ def plot_sn_features(data, field, dbName, timescale, timeslots,
         idxb = sel[timescale] == timeslot
         selb = sel[idxb]
 
-        eval('plot_{}(ax, selb, xvar, yvar, yvar_cut, smoothIt,marks, listy, timescale, timeslot, norm_factor)'.format(type_plot))
+        tp = 'plot_{}(ax, selb, xvar, yvar, yvar_cut,smoothIt,\
+            marks, listy, timescale, timeslot,norm_factor)'.format(type_plot)
+        print('go man', tp)
+        eval(tp)
 
         """
         if type_plot == 'sigma_mu':
@@ -260,7 +265,7 @@ def plot_DDF_nsn(data, norm_factor, config, nside,
     cumul : bool, optional
         to display cumulative nsn. The default is False.
     plots : list(str), optional
-        List of plots to display. 
+        List of plots to display.
         The default is ['nsn_field_OS', 'nsn_OS', 'pixarea'].
 
     Returns
@@ -413,15 +418,15 @@ def plot_sigma_mu(ax, selb, xvar, yvar, yvar_cut,
     """
 
     df = bin_it_mean(selb, xvar=xvar, yvar=yvar,
-                     bins=np.arange(0.01, 1.12, 0.07))
+                     bins=np.arange(0.0, 1.24, 0.08))
     # ax.errorbar(df['z'], df['sigma_mu'], yerr=df['sigma_mu_std'])
     ax.plot(df[xvar], df[yvar], color='k', marker=marks[timeslot],
-            ls=listy[timeslot], mfc='None', ms=10, markevery=5,
+            ls=listy[timeslot], mfc='None', ms=10, markevery=3,
             label='{} {}'.format(timescale, timeslot))
     xmin = 0.2
     xmax = 1.08
     ymin = 0.0
-    ymax = 0.6
+    ymax = 0.3
     ax.set_xlim([xmin, xmax])
     ax.set_ylim([ymin, ymax])
     ax.plot([xmin, xmax], [0.12]*2, ls='dashed', color='r')
@@ -609,7 +614,7 @@ def plot_effi(ax, selb, xvar, yvar, yvar_cut,
     Parameters
     ----------
     ax : matplotlib axis
-        plot axis.
+        plot axis
     selb : pandas df
         Data to plot.
     xvar : str
@@ -638,17 +643,30 @@ def plot_effi(ax, selb, xvar, yvar, yvar_cut,
     """
 
     df = bin_it_effi(selb, xvar=xvar, yvar=yvar, yvar_cut=yvar_cut,
-                     bins=np.arange(0.01, 1.12, 0.1))
+                     bins=np.arange(0.0, 1.24, 0.08))
 
     print(df)
     # ax.errorbar(df['z'], df['sigma_mu'], yerr=df['sigma_mu_std'])
-
+    xnew = np.linspace(np.min(df[xvar]), np.max(df[xvar]), 100)
+    from scipy.interpolate import interp1d
     if smoothIt:
         from scipy.interpolate import make_interp_spline
-        xnew = np.linspace(
-            np.min(df[xvar]), np.max(df[xvar]), 100)
+        from scipy.interpolate import make_smoothing_spline
+        from scipy.interpolate import PchipInterpolator
+
+        """
         spl = make_interp_spline(
-            df[xvar], df['effi'], k=3)  # type: BSpline
+            df[xvar], df['effi'], k=2)  # type: BSpline
+        """
+
+        spl = make_smoothing_spline(
+            df[xvar],
+            df['effi'])
+
+        spl = PchipInterpolator(
+            df[xvar],
+            df['effi'])
+
         spl_smooth = spl(xnew)
 
         ax.plot(xnew, spl_smooth, color='k',
@@ -661,16 +679,22 @@ def plot_effi(ax, selb, xvar, yvar, yvar_cut,
                 marker=marks[timeslot], ls=listy[timeslot],
                 mfc='None', ms=10, markevery=5,
                 label='{} {}'.format(timescale, timeslot))
+        spl = interp1d(df[xvar], df['effi'], bounds_error=False, fill_value=0.)
+        spl_smooth = spl(xnew)
     xmin = 0.2
-    xmax = 1.08
+    xmax = 1.1
     ymin = 0.0
     ymax = None
     ax.set_xlim([xmin, xmax])
     ax.set_ylim([ymin, ymax])
-    print(df)
-    ax.plot([xmin, xmax], [0.95]*2, ls='dashed', color='r')
-    ttext = '0.95'
-    ax.text(0.3, 0.92, ttext, color='r', fontsize=10)
+
+    for refval in [0.90, 0.80]:
+        refvalb = np.round(refval, 2)
+        ax.plot([xmin, xmax], [refval]*2, ls='dashed', color='r')
+        ttext = '{}%'.format(int(100*refval))
+        ax.text(0.3, refval-0.05, ttext, color='r', fontsize=15)
+        bb = interp1d(spl_smooth, xnew, bounds_error=False, fill_value=0.)
+        print('z', refval, bb(refval))
 
 
 def plotMollview(data, varName, leg, addleg, op, xmin, xmax,
