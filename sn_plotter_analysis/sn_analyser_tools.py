@@ -175,6 +175,7 @@ def load_DataFrame(dbDir_WFD, OS_WFD, runType='spectroz',
         Loaded data.
 
     """
+    # import time
 
     wfd = pd.DataFrame()
     print('processing', OS_WFD)
@@ -183,8 +184,20 @@ def load_DataFrame(dbDir_WFD, OS_WFD, runType='spectroz',
                               timescale_file=timescale_file,
                               timeslot=seas, fieldType=fieldType)
         if fieldType == 'WFD':
+            # time_ref = time.time()
+
+            """
             wfd_seas = wfd_seas.groupby(['healpixID', timescale_file, 'field']).apply(
                 lambda x: get_stat(x, norm_factor)).reset_index()
+            """
+            params = {}
+            params['data'] = wfd_seas
+            params['norm_factor'] = norm_factor
+            params['timescale'] = timescale_file
+            hpixes = wfd_seas['healpixID'].unique()
+            wfd_seas = multiproc(hpixes, params, process_WFD_multi, nproc=8)
+
+            # print('done', time.time()-time_ref)
         wfd = pd.concat((wfd, wfd_seas))
         del wfd_seas
 
@@ -197,6 +210,28 @@ def load_DataFrame(dbDir_WFD, OS_WFD, runType='spectroz',
     # df_y = add_year(wfd, LSSTStart)
 
     return wfd
+
+
+def process_WFD_multi(hpixes, params, j, output_q=None):
+
+    data = params['data']
+    norm_factor = params['norm_factor']
+    timescale = params['timescale']
+
+    idx = data['healpixID'].isin(hpixes)
+
+    sel = data[idx]
+
+    wfd_seas = sel.groupby(['healpixID', timescale, 'field']).apply(
+        lambda x: get_stat(x, norm_factor)).reset_index()
+
+    del sel
+    del data
+
+    if output_q is not None:
+        return output_q.put({j: wfd_seas})
+    else:
+        return wfd_seas
 
 
 def add_year(wfd, LSSTStart):
