@@ -213,6 +213,26 @@ def load_DataFrame(dbDir_WFD, OS_WFD, runType='spectroz',
 
 
 def process_WFD_multi(hpixes, params, j, output_q=None):
+    """
+    multiprocessing for WFD seasons
+
+    Parameters
+    ----------
+    hpixes : list(int)
+        List of healpixID to process.
+    params : dict
+        parameter dict.
+    j : int
+        internal tag for multiprocessing.
+    output_q : multiprocessing queue, optional
+        Where to put the results. The default is None.
+
+    Returns
+    -------
+    pandas df
+        processed data.
+
+    """
 
     data = params['data']
     norm_factor = params['norm_factor']
