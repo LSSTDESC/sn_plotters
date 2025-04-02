@@ -180,6 +180,47 @@ def process_WFD(conf_df, dataType, dbDir_WFD, runType,
         del wfda
 
 
+def process_WFD_singledb(dbName, dataType, dbDir_WFD, runType,
+                         timescale_file, timeslots, norm_factor, fName):
+    """
+    Function to process WFD data
+
+    Parameters
+    ----------
+    conf_df : pandas df
+        config file.
+    dataType : str
+        Data type.
+    dbDir_WFD : str
+        Data dir.
+    runType : str
+        Run type.
+    timescale_file : str
+        Time scale (year/season)
+    timeslots : list(int)
+        Time slots
+
+    Returns
+    -------
+    wfd : pandas df
+        Output data.
+
+    """
+
+    # fig, ax = plt.subplots(figsize=(14, 8))
+    from_to_load = 'from sn_plotter_analysis.sn_analyser_tools'
+    mod_to_load = '{} import load_{}'.format(from_to_load, dataType)
+    exec(mod_to_load)
+
+    tt = 'load_{}(\'{}\',\'{}\',\'{}\',\'{}\',{},norm_factor={})'.format(
+        dataType, dbDir_WFD, dbName, runType,
+        timescale_file, timeslots, norm_factor)
+    wfda = eval(tt)
+    wfda['dbName'] = dbName
+    wfda.to_hdf(fName, key='nsn_WFD')
+    del wfda
+
+
 def plot_summary_wfd(wfda, conf_df, timescale='season',
                      cumul=False):
     """
@@ -202,15 +243,15 @@ def plot_summary_wfd(wfda, conf_df, timescale='season',
 
     """
 
-    wfd = wfda.groupby(['dbName', timescale])[
-        'nsn', 'nsn_cosmo'].sum().reset_index()
+    wfd = wfda.groupby(['dbName', timescale])[[
+        'nsn', 'nsn_cosmo']].sum().reset_index()
 
     fig, ax = plt.subplots(figsize=(18, 8))
     fig.subplots_adjust(right=0.75)
     for dbName in wfd['dbName'].unique():
         idx = wfd['dbName'] == dbName
         sel = wfd[idx]
-        idc = conf_df['dbName_WFD'] == dbName
+        idc = conf_df['dbName'] == dbName
         selp = conf_df[idc]
         ls = selp['ls'].values[0]
         marker = selp['marker'].values[0]
@@ -384,7 +425,7 @@ def plot_density_wfd(datam, timescale, timeslots, nside, conf_df,
     for dbName in dbNames:
         idx = data['dbName'] == dbName
         sel = data[idx]
-        idc = conf_df['dbName_WFD'] == dbName
+        idc = conf_df['dbName'] == dbName
         selp = conf_df[idc]
         ls = selp['ls'].values[0]
         marker = selp['marker'].values[0]
@@ -483,7 +524,7 @@ def plot_density_wfd_season(datam, timescale, timeslots, nside, conf_df,
     for dbName in dbNames:
         idx = data['dbName'] == dbName
         sel = data[idx]
-        idc = conf_df['dbName_WFD'] == dbName
+        idc = conf_df['dbName'] == dbName
         selp = conf_df[idc]
 
         fig, ax = plt.subplots(figsize=(12, 8))
