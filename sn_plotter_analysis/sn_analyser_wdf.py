@@ -131,8 +131,7 @@ def plotMollview(data, varName, figtit, xmin, xmax,
 
     if saveName != '':
         plt.savefig('{}/{}'.format(outDir, saveName))
-
-    plt.close()
+        plt.close()
 
 
 def process_WFD(conf_df, dataType, dbDir_WFD, runType,
