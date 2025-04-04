@@ -9,7 +9,7 @@ from sn_plotter_metrics import plt
 import numpy as np
 
 
-def plot_vs_OS(data, varx='family',
+def plot_vs_OS(data, varx='dbName_plot',
                vary='time_budget',
                legy='Time Budget [%]',
                title='', fig=None, ax=None,
@@ -174,7 +174,7 @@ def plot_hist_OS(data, by='family', what='cadence'):
 
 
 def plot_series(df, title='',
-                varx='family',
+                varx='dbName_plot',
                 what=['time_budget', 'field'],
                 leg=['DD budget [%]', 'DD Field']):
     """
@@ -204,7 +204,7 @@ def plot_series(df, title='',
 
 
 def plot_series_fields(df, title='',
-                       varx='family',
+                       varx='dbName_plot',
                        what=['time_budget_field', 'time_budget_rel'],
                        leg=['DD budget [%]',
                             'Relative DD budget [%]']):
@@ -255,7 +255,7 @@ def plot_series_fields(df, title='',
 
 
 def plot_series_median(df, title='',
-                       varx='family',
+                       varx='dbName_plot',
                        what=['time_budget', 'field'],
                        leg=['Time budget [%]', 'DD Field']):
     """
@@ -376,7 +376,7 @@ def plot_indiv(data, dbName, fig=None, ax=None,
                xlab=['Season', 'Season'],
                yvars=['season_length', 'cadence_mean'],
                ylab=['Season length [days]', 'Mean Cadence [days]'],
-               label='', color='k', marker='.', mfc='k'):
+               label='', color='k', marker='.', ls='solid', mfc='k'):
     """
     function to plot parameters corresponding to a field.
 
@@ -406,6 +406,8 @@ def plot_indiv(data, dbName, fig=None, ax=None,
         color of the plot. The default is 'k'.
     marker : str, optional
         marker. The default is '.'.
+    ls: str, optional
+       linestyle for the plot. The default is solid.
     mfc : str, optional
         marker font color. The default is 'k'.
 
@@ -426,7 +428,7 @@ def plot_indiv(data, dbName, fig=None, ax=None,
 
     for io, vv in enumerate(xvars):
         ax[io].plot(data[vv], data[yvars[io]], label=label,
-                    marker=marker, mfc=mfc, color=color)
+                    marker=marker, mfc=mfc, color=color, linestyle=ls)
         ax[io].set_ylabel(ylab[io])
         if io == 0:
             ax[io].get_xaxis().set_ticklabels([])
@@ -471,16 +473,17 @@ def plot_field(df, xvars=['season', 'season'],
     for dbName in df['dbName'].unique():
         idx = df['dbName'] == dbName
         sel = df[idx]
-        family = sel['family'].unique()[0]
+        family = sel['dbName_plot'].unique()[0]
         marker = sel['marker'].unique()[0]
         color = sel['color'].unique()[0]
+        ls = sel['ls'].unique()[0]
         plot_indiv(sel, dbName, fig=fig, ax=ax, xvars=xvars, xlab=xlab,
                    yvars=yvars, ylab=ylab,
-                   label=family, marker=marker, color=color, mfc='None')
+                   label=family, marker=marker, color=color, ls=ls, mfc='None')
         ax[0].grid()
         ax[1].grid()
 
-    ax[0].legend(bbox_to_anchor=(1., 1.), ncol=1, frameon=False)
+    ax[0].legend(bbox_to_anchor=(1., 0.5), ncol=1, frameon=False, fontsize=15)
 
     ax[0].grid()
     ax[1].grid()
@@ -509,7 +512,7 @@ def plot_filter_alloc(flat, family, field, season=1):
     """
     toplot = ['filter_frac']
     leg = ['Median obs. night frac']
-    idx = flat['family'] == family
+    idx = flat['dbName_plot'] == family
     idx &= flat['field'] == field
     idx &= flat['filter_frac'] > 0.0
     idx &= flat['season'] == season
