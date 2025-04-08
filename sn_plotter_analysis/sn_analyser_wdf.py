@@ -81,7 +81,6 @@ def plot_versus(df, xvar='year', xlabel='year',
     if cumul:
         ypl = np.cumsum(ypl)
 
-    print('plotting here', xvar, yvar)
     ax.plot(df[xvar], ypl, ls=ls, marker=marker,
             color=color, label=label, mfc=mfc, markersize=9, lw=2)
 
@@ -255,7 +254,7 @@ def plot_summary_wfd(wfda, conf_df, timescale='season',
         ls = selp['ls'].values[0]
         marker = selp['marker'].values[0]
         color = selp['color'].values[0]
-        dbNameb = dbName
+        dbNameb = selp['dbName_plot'].values[0]
         plot_versus(sel, fig=fig, ax=ax, cumul=cumul,
                     ls=ls, marker=marker, color=color, mfc=color, label=dbNameb)
         labelb = dbNameb+' - '+'$\sigma_{\mu}\leq \sigma_{int}$'
@@ -266,6 +265,7 @@ def plot_summary_wfd(wfda, conf_df, timescale='season',
                     mfc='None', label='')
 
     ax.grid()
+    ax.set_ylim([0, None])
     ax.set_xlim([0.95, 10.05])
     ax.set_xlabel(timescale, fontweight='bold')
     legy = '$N_{SN}$'
@@ -281,14 +281,16 @@ def plot_summary_wfd(wfda, conf_df, timescale='season',
     if cumul:
         xmin, xmax = ax.get_xlim()
 
+        color = 'dimgrey'
+        color = 'darkorange'
         nsn = 1.e6
         ax.plot([xmin, xmax], [nsn, nsn],
-                color='dimgrey', lw=2, linestyle='solid')
-        ax.text(5, 1.02e6, '1 million SNe Ia', color='dimgrey', fontsize=12)
+                color=color, lw=2, linestyle='solid')
+        ax.text(5, 0.95e6, '1 million SNe Ia', color=color, fontsize=12)
         nsn = 200000
         ax.plot([xmin, xmax], [nsn, nsn],
-                color='dimgrey', lw=2, linestyle='solid')
-        ax.text(5, 0.22e6, '200k SNe Ia', color='dimgrey', fontsize=12)
+                color=color, lw=2, linestyle='solid')
+        ax.text(5, 0.22e6, '200k SNe Ia', color=color, fontsize=12)
 
 
 def plot_mollview_wfd(data, timescale, timeslots, nside,
