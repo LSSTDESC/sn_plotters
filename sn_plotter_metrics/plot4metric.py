@@ -881,3 +881,82 @@ def multiplot_dist(sel, yvar='cadence',
         ax.legend(bbox_to_anchor=(0.99, 0.8),
                   ncol=1, frameon=False, fontsize=15)
         # ax.set_xlim([0, None])
+
+
+def plot_per_bin(ax, selb, xvar, yvar,
+                 smoothIt=False,
+                 ls='solid', marker='o', color='k', label='None',
+                 norm_factor=1, bins=np.arange(0.01, 1.24, 0.08),
+                 xmin=0.2, xmax=1.1, ymin=0., ymax=None, sumIt=False):
+    """
+    Function to plot nsn vs z
+
+    Parameters
+    ----------
+    ax : matplotlib axis
+        plot axis.
+    selb : pandas df
+        Data to plot.
+    xvar : str
+        x-axis var.
+    yvar : str
+        y-axis var.
+    smoothIt : bool, optional
+        To smooth (spline) displayed curves. The default is False.
+    ls : str, optional
+        linestyle for the plot. The default is 'solid'.
+    marker : str, optional
+        marker for the plot. The default is 'o'.
+    color : str, optional
+        color for the plot. The default is 'k'.
+    label : str, optional
+        label for the plot. The default is 'None'.
+    norm_factor : float, optional
+        normalization factor. The default is 1.
+    bins : array, optional
+        bins for the display. The default is np.arange(0.01, 1.24, 0.08).
+    xmin : float, optional
+        x-axis min for the display. The default is 0.2.
+    xmax : float, optional
+        x-axis max for the display. The default is 1.1.
+    ymin : float, optional
+        y-axis min for the display. The default is 0..
+    ymax : float, optional
+        y-axis max for the display. The default is None.
+    sumIt: bool, optional
+        for cumsum plot. The default is False.
+
+    Returns
+    -------
+    None.
+
+    """
+    from sn_analysis.sn_calc_plot import bin_it
+    df = bin_it(selb, xvar=xvar, norm_factor=norm_factor,
+                bins=bins, outvar=yvar)
+    print('allo', df)
+    # ax.errorbar(df['z'], df['sigma_mu'], yerr=df['sigma_mu_std'])
+    tp = df[yvar]
+    if sumIt:
+        tp = np.cumsum(tp)/np.sum(tp)
+    if smoothIt:
+        from scipy.interpolate import make_interp_spline
+        xnew = np.linspace(
+            np.min(df[xvar]), np.max(df[xvar]), 100)
+        spl = make_interp_spline(
+            df[xvar], tp, k=3)  # type: BSpline
+        spl_smooth = spl(xnew)
+
+        ax.plot(xnew, spl_smooth, color=color,
+                marker=marker, ls=ls,
+                mfc='None', ms=10, markevery=5,
+                label=label)
+
+    else:
+
+        ax.plot(df[xvar], tp, color=color,
+                marker=marker, ls=ls,
+                mfc='None', ms=10, markevery=5,
+                label=label)
+
+    ax.set_xlim([xmin, xmax])
