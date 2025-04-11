@@ -887,7 +887,7 @@ def plot_per_bin(ax, selb, xvar, yvar,
                  smoothIt=False,
                  ls='solid', marker='o', color='k', label='None',
                  norm_factor=1, bins=np.arange(0.01, 1.24, 0.08),
-                 xmin=0.2, xmax=1.1, ymin=0., ymax=None, sumIt=False):
+                 xmin=0.2, xmax=1.1, ymin=0., ymax=None, sumIt=False, norm=False):
     """
     Function to plot nsn vs z
 
@@ -938,7 +938,12 @@ def plot_per_bin(ax, selb, xvar, yvar,
     # ax.errorbar(df['z'], df['sigma_mu'], yerr=df['sigma_mu_std'])
     tp = df[yvar]
     if sumIt:
-        tp = np.cumsum(tp)/np.sum(tp)
+        tpsum = np.sum(tp)
+        tp = np.cumsum(tp)
+
+        if norm:
+            tp /= tpsum
+
     if smoothIt:
         from scipy.interpolate import make_interp_spline
         xnew = np.linspace(
@@ -960,3 +965,4 @@ def plot_per_bin(ax, selb, xvar, yvar,
                 label=label)
 
     ax.set_xlim([xmin, xmax])
+    ax.set_ylim([ymin, ymax])
