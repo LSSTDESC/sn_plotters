@@ -349,7 +349,7 @@ def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
             leg = '_'.join(legs[:-1])
         if leg_prefix != '':
             leg = '{}{}'.format(leg_prefix, leg)
-        leg = row['dbNamePlot']
+        leg = row['dbName_plot']
         cosmo_plot(sel, varx=varx, legx=legx, vary=vary,
                    legy=legy, vary_std=vary_std, ax=ax, ls=row['ls'],
                    marker=row['marker'], color=row['color'],
