@@ -271,11 +271,48 @@ def cosmo_four(resdf, timescale='year'):
                 ax[ix, jx].set_title(prior)
 
 
+def save_data(resdf, prior='prior', varx='year', year_max=6):
+    """
+    Function to save SMom values in csv+latex
+
+    Parameters
+    ----------
+    resdf : pandas df
+        Data to process.
+    prior : str, optional
+        prior or not prior. The default is 'prior'.
+    varx : str, optional
+        Timescale of the data to save. The default is 'year'.
+    year_max : int, optional
+        timeslot max. The default is 6.
+
+    Returns
+    -------
+    None.
+
+    """
+
+    idx = resdf['prior'] == prior
+    sela = resdf[idx]
+
+    # save SMoM in csv file+latex output
+    idxa = sela[varx] == year_max
+
+    selb = sela[idxa]
+    # print(selb[['dbName', 'MoM_mean', 'MoM_std']])
+
+    selb = selb.sort_values(by=['MoM_mean'])
+    selb[['dbName', 'dbName_plot', 'MoM_mean', 'MoM_std', 'year']].to_csv(
+        'smom_final.csv', index=False)
+
+    print_latex(selb)
+
+
 def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
                prior='prior', varx='year', legx='year', vary='MoM', legy='$MoM$',
                vary_std='MoM_std',
                figtitle='with prior', dbNorm=float('0.3'), leg_prefix='',
-               comment_on_plot='', fill_between=False):
+               comment_on_plot='', fill_between=False, year_max=6):
     """
     Function to plot all OS on one single plot
 
@@ -305,6 +342,8 @@ def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
        db for normalization
     fill_between: bool, optional
          to fill +-1 sigma area with yeallo. The default is False.
+    year_max: int, optional
+       last year of the survey. The default is 6.
 
     Returns
     -------
@@ -320,8 +359,9 @@ def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
     idx = resdf['prior'] == prior
     sela = resdf[idx]
 
+    """
     # save SMoM in csv file+latex output
-    idxa = sela[varx] == 11
+    idxa = sela[varx] == year_max
 
     selb = sela[idxa]
     # print(selb[['dbName', 'MoM_mean', 'MoM_std']])
@@ -329,9 +369,9 @@ def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
     selb = selb.sort_values(by=['MoM_mean'])
     selb[['dbName', 'MoM_mean', 'MoM_std', 'year']].to_csv(
         'smom_final.csv', index=False)
-
+    
     print_latex(selb)
-
+    """
     if dbNorm != '':
         sela = normalize(sela, dbNorm, dataCol, vary, vary_std, timescale=varx)
         idx = sela['dbName_DD'] == dbNorm
@@ -360,13 +400,37 @@ def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
     ax.legend(loc='upper center',
               bbox_to_anchor=(1.25, 0.7),
               ncol=1, fontsize=18, frameon=False)
-    ax.text(5, 40, comment_on_plot, color='blue', fontsize=18)
+    ymin, ymax = ax.get_ylim()
+    ax.text(5, 1.2*ymin, comment_on_plot, color='blue', fontsize=18)
     # ax.grid()
 
 
 def plot_allOS_survey(res_csv='smom_final.csv', dbNorm='baseline_v3.4_10yrs',
                       dataCol='dbName', varx='year', vary='MoM_mean',
                       vary_std='MoM_std'):
+    """
+    Function to plot SMoM (relative or absolute) for the full survey
+
+    Parameters
+    ----------
+    res_csv : str, optional
+        SMoM values. The default is 'smom_final.csv'.
+    dbNorm : str, optional
+        Db name for normalization. The default is 'baseline_v3.4_10yrs'.
+    dataCol : str, optional
+        Db name col. The default is 'dbName'.
+    varx : str, optional
+        x-axis var. The default is 'year'.
+    vary : str, optional
+        y-axis var. The default is 'MoM_mean'.
+    vary_std : str, optional
+        y-axis std var. The default is 'MoM_std'.
+
+    Returns
+    -------
+    None.
+
+    """
 
     # get the data
     data = pd.read_csv(res_csv)
@@ -379,21 +443,29 @@ def plot_allOS_survey(res_csv='smom_final.csv', dbNorm='baseline_v3.4_10yrs',
 
     fig, ax = plt.subplots(figsize=(18, 8))
     fig.subplots_adjust(bottom=0.20)
-    ttit = 'ref: {} \n'.format(dbNorm)
-    ttit += '10 years'
+
+    ttit = ''
+    if dbNorm != '':
+        ttit = 'ref: {} \n'.format(dbNorm)
+    ttit += '{} years'.format(int(data[varx].median()))
     fig.suptitle(ttit, color='b')
     sela = sela.sort_values(by=['MoM_mean'], ascending=False)
+    """
     pref = '_v3.4_10yrs'
     sela['dbName'] = sela['dbName'].str.split(pref).str[0]
     pref = 'v3.4_10yrs'
     sela['dbName'] = sela['dbName'].str.split(pref).str[0]
-    ax.plot(sela['dbName'], sela['MoM_mean'], color='k',
+    """
+    ax.plot(sela['dbName_plot'], sela['MoM_mean'], color='k',
             linestyle='dotted', marker='o', mfc='r', ms=7, lw=3)
 
     plt.setp(ax.get_xticklabels(), rotation=30,
              ha="right", rotation_mode="anchor", fontsize=12)
 
-    legy = '$\\frac{\\Delta SMoM}{SMoM}$ [%]'
+    if dbNorm != '':
+        legy = '$\\frac{\\Delta SMoM}{SMoM}$ [%]'
+    else:
+        legy = 'SMoM'
     ax.grid(visible=True)
     ax.set_ylabel(r'{}'.format(legy), fontsize=25)
 
@@ -424,7 +496,7 @@ def normalize(sela, dbNorm, dataCol, vary, vary_std, timescale='year'):
 
     vvm = '{}'.format(vary)
     vvr = '{}'.format(vary_std)
-    ccols = [timescale, dataCol, vvm, vvr]
+    ccols = [timescale, dataCol, vvm, vvr, 'dbName_plot']
     print('ccols', ccols)
     selb = sela[ccols]
 
@@ -437,6 +509,7 @@ def normalize(sela, dbNorm, dataCol, vary, vary_std, timescale='year'):
                       )/selm['{}_x'.format(vvm)]
     selm[vvr] = 0.
     selm[dataCol] = selm['{}_x'.format(dataCol)]
+    selm['dbName_plot'] = selm['dbName_plot_x']
 
     print('allo', selm.columns)
     return selm
