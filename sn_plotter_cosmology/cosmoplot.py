@@ -401,6 +401,7 @@ def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
               bbox_to_anchor=(1.25, 0.7),
               ncol=1, fontsize=18, frameon=False)
     ymin, ymax = ax.get_ylim()
+    ymin = sel[vary].min()
     ax.text(5, 1.2*ymin, comment_on_plot, color='blue', fontsize=18)
     # ax.grid()
 
