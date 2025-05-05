@@ -390,6 +390,7 @@ def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
         if leg_prefix != '':
             leg = '{}{}'.format(leg_prefix, leg)
         leg = row['dbName_plot']
+
         cosmo_plot(sel, varx=varx, legx=legx, vary=vary,
                    legy=legy, vary_std=vary_std, ax=ax, ls=row['ls'],
                    marker=row['marker'], color=row['color'],
@@ -400,9 +401,16 @@ def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
     ax.legend(loc='upper center',
               bbox_to_anchor=(1.25, 0.7),
               ncol=1, fontsize=18, frameon=False)
+    """
     ymin, ymax = ax.get_ylim()
     ymin = sel[vary].min()
-    ax.text(5, 1.2*ymin, comment_on_plot, color='blue', fontsize=18)
+    k = -1.2
+    if 'sigma' in legy:
+        k = -1.9
+
+    print('allo', k)
+    ax.text(5, k*ymin, comment_on_plot, color='blue', fontsize=18)
+    """
     # ax.grid()
 
 
