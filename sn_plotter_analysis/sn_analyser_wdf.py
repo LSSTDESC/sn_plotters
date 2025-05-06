@@ -255,6 +255,7 @@ def plot_summary_wfd(wfda, conf_df, timescale='season',
         marker = selp['marker'].values[0]
         color = selp['color'].values[0]
         dbNameb = selp['dbName_plot'].values[0]
+
         plot_versus(sel, fig=fig, ax=ax, cumul=cumul,
                     ls=ls, marker=marker, color=color, mfc=color, label=dbNameb)
         labelb = dbNameb+' - '+'$\sigma_{\mu}\leq \sigma_{int}$'
@@ -291,6 +292,102 @@ def plot_summary_wfd(wfda, conf_df, timescale='season',
         ax.plot([xmin, xmax], [nsn, nsn],
                 color=color, lw=2, linestyle='solid')
         ax.text(5, 0.22e6, '200k SNe Ia', color=color, fontsize=12)
+
+
+def plot_summary_wfd_norm(wfda, conf_df,
+                          timescale='season',
+                          yvar='nsn_cosmo',
+                          figtit='Cosmology grade WFD sample',
+                          cumul=False, dbNorm='None'):
+    """
+    Method to plot nsn vs year
+
+    Parameters
+    ----------
+    wfd: pandas df
+        Data to process.
+    conf_df: pandas df
+        config for plot.
+    timescale: str, optional
+        Time scale to use(season/year). The default is 'season'.
+    cumul: bool, optional
+        To plot cumulative results. The default is False.
+    dbNorm: str, optional.
+      OS name to normalize the results
+
+    Returns
+    -------
+    None.
+
+    """
+
+    wfd = wfda.groupby(['dbName', timescale])[[
+        'nsn', 'nsn_cosmo']].sum().reset_index()
+
+    if dbNorm != 'None':
+        wfd = normalize(wfd, dbNorm=dbNorm,
+                        dataCol='dbName', ccols=['nsn', 'nsn_cosmo'],
+                        cumul=cumul)
+        print(wfd)
+
+    fig, ax = plt.subplots(figsize=(18, 8))
+    fig.subplots_adjust(right=0.75)
+
+    if dbNorm != 'None':
+        cumul = False
+
+    for dbName in wfd['dbName'].unique():
+        if dbName == dbNorm:
+            continue
+        idx = wfd['dbName'] == dbName
+        sel = wfd[idx]
+        idc = conf_df['dbName'] == dbName
+        selp = conf_df[idc]
+        ls = selp['ls'].values[0]
+        marker = selp['marker'].values[0]
+        color = selp['color'].values[0]
+        dbNameb = selp['dbName_plot'].values[0]
+        plot_versus(sel, yvar=yvar, fig=fig, ax=ax, cumul=cumul,
+                    ls=ls, marker=marker, color=color,
+                    mfc='None', label=dbNameb)
+
+    ax.grid()
+    """
+    ax.set_ylim([0, None])
+    ax.set_xlim([0.95, 10.05])
+    """
+    ax.set_xlim([0.95, 10.05])
+    ax.set_xlabel(timescale, fontweight='bold')
+    legy = '$\\frac{\Delta N_{SN}}{N_{SN}}$ [%]'
+    if dbNorm == 'None':
+        legy = '$N_{SN}$'
+        if cumul:
+            legy = '$\Sigma N_{SN}$'
+        fig.suptitle('{}'.format(figtit))
+    else:
+        fig.suptitle('ref: {} \n {}'.format(dbNorm, figtit))
+    ax.set_ylabel(legy)
+    # 0, 1.15 for multiple OS
+    # ax.legend(loc='upper left', bbox_to_anchor=(
+    #    0.1, 1.1), ncol=3, fontsize=15, frameon=False)
+    ax.legend(loc='upper center',
+              bbox_to_anchor=(1.20, 0.7),
+              ncol=1, fontsize=12, frameon=False)
+    """
+    if cumul:
+        xmin, xmax = ax.get_xlim()
+
+        color = 'dimgrey'
+        color = 'darkorange'
+        nsn = 1.e6
+        ax.plot([xmin, xmax], [nsn, nsn],
+                color=color, lw=2, linestyle='solid')
+        ax.text(5, 0.95e6, '1 million SNe Ia', color=color, fontsize=12)
+        nsn = 200000
+        ax.plot([xmin, xmax], [nsn, nsn],
+                color=color, lw=2, linestyle='solid')
+        ax.text(5, 0.22e6, '200k SNe Ia', color=color, fontsize=12)
+    """
 
 
 def plot_mollview_wfd(data, timescale, timeslots, nside,
@@ -684,3 +781,105 @@ def get_nsn_dec(data, varp='nsn', delta_dec=5., nside=64):
     df[f'{varp}_area'] *= pixSize
 
     return df
+
+
+def normalize(sela, dbNorm, dataCol, ccols, timescale='year', cumul=False):
+    """
+
+
+    Parameters
+    ----------
+    sela : pandas df
+        Data to process.
+    dbNorm : str
+        OS to use as norm.
+    dataCol : str
+        OS name col.
+    vary : str
+        var of interest.
+    timescale : str, optional
+        Time scale (season/year). The default is 'year'.
+    cumul: bool, optional.
+        to estimate cumsum of ccols. The default is False.
+
+    Returns
+    -------
+    selm : pandas df
+        Output data.
+
+    """
+
+    ccols_all = [timescale]+[dataCol]+ccols
+    print('ccols', ccols_all)
+    selb = sela[ccols_all]
+
+    if cumul:
+        selb = selb.groupby(['dbName']).apply(
+            lambda x: cumul_df(x, ccols, timescale)).reset_index()
+
+    ido = selb[dataCol] == dbNorm
+    selnorm = selb[ido]
+
+    selm = selb.merge(selnorm, left_on=[timescale], right_on=[timescale])
+
+    # print(selm[['year', 'dbName_x', 'dbName_y', 'nsn_cosmo_x', 'nsn_cosmo_y']])
+
+    for vvm in ccols:
+        selm[vvm] = 100.*(selm['{}_x'.format(vvm)]-selm['{}_y'.format(vvm)]
+                          )/selm['{}_x'.format(vvm)]
+
+    selm[dataCol] = selm['{}_x'.format(dataCol)]
+
+    """
+    print('allo', selm.columns)
+
+    print(selm[ccols_all])
+    dbNames = selm['dbName'].unique()
+
+    for dbName in dbNames:
+        idx = selm['dbName'] == dbName
+        selc = selm[idx]
+
+        for i, row in selc.iterrows():
+            print(row['year'], row['dbName'], row['nsn_cosmo'])
+    """
+    # print(test)
+    return selm[ccols_all]
+
+
+def cumul_df(grp, ccols, timescale):
+    """
+    Function to estimate cummulative variables
+
+    Parameters
+    ----------
+    grp : pandas df
+        data to process.
+    ccols : list(str)
+        var to cumulate.
+    timescale : str
+        var used for cumulating.
+
+    Returns
+    -------
+    res_df : pandas df
+        output data.
+
+    """
+
+    r = []
+    for timeslot in range(1, 11):
+        ll = range(1, timeslot+1)
+        idx = grp[timescale].isin(ll)
+        sel = grp[idx]
+        tt = [timeslot]
+        for ccol in ccols:
+            res = sel[ccol].sum()
+            tt.append(res)
+        r.append(tt)
+
+    print(r)
+    print(timescale, ccols)
+    res_df = pd.DataFrame(r, columns=[timescale]+ccols)
+
+    return res_df
