@@ -214,7 +214,7 @@ def ana_plot_stat(data):
 
     """
 
-    res_stat = data.groupby(['target_name', 'season', 'DD_type']).apply(
+    res_stat = data.groupby(['target_name', 'season', 'DD_type', 'dbName']).apply(
         lambda x: stat_simu_exp(x)).reset_index()
 
     print(res_stat)
@@ -270,8 +270,9 @@ def plot_stat(data, prefix='DD:'):
     None.
 
     """
-
+    print(data.columns)
     fields = data['target_name'].unique()
+
     categ = ['perfect', 'missing', 'excess']
     value = ['=', '<', '>']
     fields = ['COSMOS', 'XMM_LSS', 'ELAISS1', 'ECDFS', 'EDFS_a', 'EDFS_b']
@@ -284,7 +285,9 @@ def plot_stat(data, prefix='DD:'):
 
     for i, vval in enumerate(categ):
         fig, ax = plt.subplots(figsize=(14, 8))
-        figtit = r'$\frac{N_{visits}^{exp}}{N_{visits}^{simu}}$'+value[i]+'1'
+        figtit = data['dbName'].unique()[0]
+        figtit += r' - $\frac{N_{visits}^{exp}}{N_{visits}^{simu}}$' + \
+            value[i]+'1'
         fig.suptitle(figtit)
         fig.subplots_adjust(right=0.85)
         for field in fields:
