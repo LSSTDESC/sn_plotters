@@ -540,7 +540,7 @@ class SNToLC:
 
 
 class VisuNight:
-    def __init__(self, dbDir, dbName, fields, colors, colName):
+    def __init__(self, dbDir, dbName, fields, colors, markers, colName):
         """
         class to display filter alloc a given night
 
@@ -552,8 +552,10 @@ class VisuNight:
             OS to process.
         fields : str
             List of fields to process.
-        colors : str
+        colors : list(str)
             colors corresponding to fields.
+        markers: list(str)
+            markers corresponding to fields.
         colName : str
             colName to tag fields.
 
@@ -570,8 +572,40 @@ class VisuNight:
         idx = np.in1d(data[colName], fields.split(','))
         self.ddf = data[idx]
 
-        self.ddplot = dict(zip(fields.split(','), colors.split(',')))
+        self.ddplot_colors = dict(zip(fields.split(','), colors.split(',')))
+        self.ddplot_markers = dict(zip(fields.split(','), markers.split(',')))
         self.colName = colName
+        self.dbName = dbName
+
+    def show_stat(self):
+        """
+        Function to estimate some stats
+
+        Returns
+        -------
+        res: numpy array
+            stat array
+
+        """
+
+        nights = np.unique(self.ddf['night'])
+        fields = np.unique(self.ddf['target_name']).tolist()
+
+        rt = []
+        for night in nights:
+            r = [night]
+            idx = self.ddf['night'] == night
+            sela = self.ddf[idx]
+            for field in fields:
+                idxb = sela['target_name'] == field
+                selb = sela[idxb]
+                r += [len(selb)]
+            rt += [r]
+
+        rstat = np.rec.fromrecords(rt, names=['night']+fields)
+
+        # np.sort(rstat, order='night')
+        return rstat
 
     def plot(self, night):
         """
@@ -591,19 +625,28 @@ class VisuNight:
         idx = self.ddf['night'] == night
         sel = self.ddf[idx]
 
-        fig, ax = plt.subplots(figsize=(10, 8))
-        fig.suptitle('night {}'.format(night))
-        fig.subplots_adjust(right=0.80)
+        if len(sel) == 0:
+            print('No observation for this night')
+            return
+
+        fig, ax = plt.subplots(figsize=(15, 8))
+        figtitle = self.dbName
+        figtitle += '\n night {}'.format(night)
+        fig.suptitle(figtitle)
+        fig.subplots_adjust(right=0.75)
 
         mjd0 = sel['mjd'].min()
         ttime = (sel['mjd']-mjd0)*24.
         sel = rf.append_fields(sel, 'time', ttime)
-        for key, vals in self.ddplot.items():
+        for key, vals in self.ddplot_colors.items():
             idxb = sel[self.colName] == key
             selb = sel[idxb]
             if len(selb) > 0:
+                filt = get_filter_alloc(selb)
+                label = key.split('DD:')[-1]+('({})'.format(filt))
                 ax.plot(selb['time'], selb['filter'], color=vals,
-                        linestyle='None', marker='o', label=key.split('DD:')[-1])
+                        linestyle='None', marker=self.ddplot_markers[key],
+                        label=label, mfc='None', markersize=10)
 
         ax.set_xlabel(r'obs time [h]')
         ax.grid(visible=True)
@@ -612,3 +655,15 @@ class VisuNight:
         ax.legend(loc='upper left', bbox_to_anchor=(1.0, 0.5),
                   ncol=1, frameon=False, fontsize=15)
         plt.show(block=False)
+
+
+def get_filter_alloc(data, bands='ugrizy'):
+
+    r = []
+    for b in bands:
+        idx = data['filter'] == b
+        r.append(str(len(data[idx])))
+
+    res = '/'.join(r)
+
+    return res
