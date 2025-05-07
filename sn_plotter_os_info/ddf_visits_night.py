@@ -131,7 +131,8 @@ def plot_stat_visits_vs_exp(data, ope, opevalue, selval=0., field='DD:COSMOS'):
         rb['frac'] /= rb['frac'].sum()
         dd[b] = rb
 
-    fig, ax = plt.subplots(figsize=(8, 12))
+    fig, ax = plt.subplots(figsize=(12, 8))
+    fig.subplots_adjust(hspace=0)
     figtit = sel['dbName'].unique()[0]
     figtit += ' - $\\frac{N_{visits}^{exp}}{N_{visits}^{simu}}$'+opevalue+'1'
 
@@ -152,6 +153,7 @@ def plot_stat_visits_vs_exp(data, ope, opevalue, selval=0., field='DD:COSMOS'):
     ax.set_ylim([0, None])
 
     ax.legend()
+    fig.tight_layout()
     """
     ax.hist(sel['ratio_nvisits'], histtype='step', bins=20)
 
