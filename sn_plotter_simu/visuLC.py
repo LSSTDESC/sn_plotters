@@ -658,6 +658,22 @@ class VisuNight:
 
 
 def get_filter_alloc(data, bands='ugrizy'):
+    """
+    Function to get the filter allocation
+
+    Parameters
+    ----------
+    data : numpy array
+        Data to process.
+    bands : str, optional
+        List of filters to consider. The default is 'ugrizy'.
+
+    Returns
+    -------
+    res : str
+        filter allocation.
+
+    """
 
     r = []
     for b in bands:
