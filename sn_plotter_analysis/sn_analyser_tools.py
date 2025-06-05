@@ -10,6 +10,7 @@ import pandas as pd
 import h5py
 from sn_tools.sn_utils import multiproc
 from astropy.table import Table
+import numpy as np
 
 
 def load_OS_table(dbDir, dbName, runType, season=1, fieldType='DDF'):
@@ -371,3 +372,247 @@ def get_stat(grp, norm_factor, var=['sigma_c'],
         dictout[outvar[i]] = len(sel[idxb])/norm_factor
 
     return pd.DataFrame.from_dict(dictout)
+
+
+class Estimate_NSN:
+    def __init__(self, norm_factor=30,
+                 rate='Hounsell', H0=70., Om=0.3,
+                 minRFphaseQual=-10, maxRFphaseQual=35):
+        """
+        class to estimate nsn + error
+
+        Parameters
+        ----------
+        norm_factor : float, optional
+            Simulation normalization factor. The default is 30.
+        rate : str, optional
+            SN rate production. The default is 'Hounsell'.
+        H0 : float, optional
+            H0 parameter value. The default is 70..
+        Om : float, optional
+            Om parameter value. The default is 0.3.
+        minRFphaseQual : float, optional
+            min Rest-Frame phase quality selection. The default is -10.
+        maxRFphaseQual : float, optional
+            max Rest-Frame phase quality selection. The default is 35.
+
+        Returns
+        -------
+        None
+
+        """
+
+        from sn_tools.sn_rate import SN_Rate
+        self.sn_rate = SN_Rate(rate=rate,
+                               H0=H0,
+                               Om0=Om,
+                               min_rf_phase=minRFphaseQual,
+                               max_rf_phase=maxRFphaseQual)
+        self.norm_factor = norm_factor
+
+    def __call__(self, data):
+        """
+        Method to estimate nsn and err_nsn (using multiproc)
+
+        Parameters
+        ----------
+        data : pandas df
+            Data to process.
+
+        Returns
+        -------
+        res : pandas df
+            output data.
+
+        """
+
+        hpixes = data['healpixID'].unique()
+
+        params = {}
+        params['data'] = data
+
+        from sn_tools.sn_utils import multiproc
+
+        res = multiproc(hpixes, params, self.nsn_multiproc, 8)
+
+        return res
+
+    def nsn_multiproc(self, toproc, params, j=0, output_q=None):
+        """
+        Method to estimate nsn using multiproc
+
+        Parameters
+        ----------
+        toproc : list(int)
+            list of healpixIDs to process.
+        params : dict
+            parameters.
+        j : int, optional
+            Internal tag for multiprocessing. The default is 0.
+        output_q : multiprocessing queue, optional
+            where to put the data. The default is None.
+
+        Returns
+        -------
+        TYPE
+            DESCRIPTION.
+
+        """
+
+        data = params['data']
+
+        idx = data['healpixID'].isin(toproc)
+
+        sel = data[idx]
+        ccols = ['dbName', 'field', 'season', 'healpixID']
+        res = sel.groupby(ccols).apply(
+            lambda x: self.nsn_pixel(x), include_groups=False).reset_index()
+        res['season'] = res['season'].astype(int)
+
+        if output_q is not None:
+            return output_q.put({j: res})
+        else:
+            return res
+
+    def nsn_pixel(self, grp):
+        """
+        Method to estimate nsn per pixel/season/field/dbName
+
+        Parameters
+        ----------
+        grp : pandas df
+            Data to process.
+
+        Returns
+        -------
+        res : pandas df
+            output data.
+
+        """
+
+        # grab season length and survey_area
+        season_length = grp['season_length'].mean()
+        survey_area = grp['survey_area'].mean()
+
+        # observed number of SN
+        nsn_obs = len(grp)
+
+        # get expected number of SN from rate
+        zmin = np.min(grp['z'])
+        zmax = np.max(grp['z'])
+        zz, rate, err_rate, nsn, err_nsn, age_univ = self.sn_rate(
+            zmin=zmin, zmax=zmax,
+            duration=season_length,
+            survey_area=survey_area,
+            account_for_edges=True, dz=0.001)
+
+        if len(nsn) == 0:
+            res = pd.DataFrame()
+        else:
+            nsn_exp = int(np.cumsum(nsn)[-1]*self.norm_factor)
+
+            if nsn_exp < 1:
+                nsn_exp = 1
+            # get the variance (binomial)
+            p = nsn_obs/nsn_exp
+            if p > 1:
+                # to account for statistical fluctuations in the production
+                p = 1
+            var_nsn = nsn_exp*p*(1-p)
+
+            sigma_nsn = np.sqrt(var_nsn)
+
+            nsn_obs = nsn_obs/self.norm_factor
+            err_nsn_obs = sigma_nsn/self.norm_factor
+
+            years = grp['year'].unique()
+            r = []
+            for year in years:
+                idx = grp['year'] == year
+                sel = grp[idx]
+                frac_year = len(sel)/self.norm_factor/nsn_obs
+                r.append((year, nsn_obs*frac_year,
+                         err_nsn_obs*frac_year))
+
+            res = pd.DataFrame(
+                r, columns=['year', 'nsn', 'err_nsn'])
+
+        return res
+
+
+def count_all(data, columns, var=['nsn'], err_var=['err_nsn']):
+    """
+    Function to estimate NSN and err_NSN from groupby (columns)
+
+    Parameters
+    ----------
+    data : pandas df
+        Data to process.
+    columns : list(str)
+        List of groupby columns.
+    var : list(str), optional
+        list of var to sum. The default is 'nsn'.
+    err_var : list(str), optional
+        list of var error to sum. The default is 'err_nsn'.
+    Returns
+    -------
+    tt : pandas df
+        Result.
+
+    """
+
+    tt = data.groupby(columns).apply(lambda x: count(
+        x, var=var, err_var=err_var), include_groups=False).reset_index()
+
+    return tt
+
+
+def count(grp, var, err_var):
+    """
+    Function to estimate sum var, err_var
+
+    Parameters
+    ----------
+    grp : pandas df
+        data to process.
+    var : str
+        var to sum.
+    err_var : str
+        var error to sum.
+    Returns
+    -------
+    res : pandas df
+        Result.
+
+    """
+
+    dd = {}
+    for vv in var:
+        dd[vv] = [grp[vv].sum()]
+    for err_vv in err_var:
+        dd[err_vv] = [np.sqrt(grp[err_vv]**2).sum()]
+
+    res = pd.DataFrame.from_dict(dd)
+
+    return res
+
+
+def clean_level(tt):
+    """
+    Function to clean the level
+
+    Parameters
+    ----------
+    tt : pandas df
+        Data to process.
+
+    Returns
+    -------
+    tt : pandas df
+        cleaned df.
+
+    """
+
+    tt = tt[tt.columns.drop(list(tt.filter(regex='level')))]
+
+    return tt

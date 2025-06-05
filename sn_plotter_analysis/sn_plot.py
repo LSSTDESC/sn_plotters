@@ -12,7 +12,9 @@ from . import plt
 
 def plot_nsn_year_all(nsn, config,
                       xvar='year', xlab='year',
-                      yvar='nsn', ylab='N$_{SN}$', cumul=False, figtit=''):
+                      yvar='nsn', ylab='N$_{SN}$',
+                      yvar_err='',
+                      cumul=False, figtit=''):
     """
     main plot
 
@@ -50,8 +52,13 @@ def plot_nsn_year_all(nsn, config,
         idx = nsn['dbName'] == dbName
         sel = nsn[idx]
         toplot = sel[yvar]
+        yerr = None
+        if yvar_err != '':
+            yerr = sel[yvar_err]
         if cumul:
             toplot = np.cumsum(toplot)
+            if yerr is not None:
+                yerr = np.sqrt(np.cumsum(yerr**2))
         # get config for plot
         idxb = config['dbName'] == dbName
         selconf = config[idxb]
@@ -59,12 +66,16 @@ def plot_nsn_year_all(nsn, config,
         color = selconf['color'].values[0]
         mark = selconf['marker'].values[0]
         name = selconf['dbName_plot'].values[0]
+        """
         ax.plot(sel[xvar], toplot, color=color,
                 marker=mark, linestyle=ls, label=name, mfc='None', lw=2, ms=10)
+        """
+        ax.errorbar(sel[xvar], toplot, yerr=yerr, color=color,
+                    marker=mark, linestyle=ls, label=name, mfc='None', lw=2, ms=10)
 
     ax.grid(visible=True)
     ax.set_xlabel(r'{}'.format(xlab))
     ax.set_ylabel(r'{}'.format(ylab))
-    ax.set_xlim([1, 10])
+    ax.set_xlim([0.9, 10.1])
     ax.legend(loc='center left', bbox_to_anchor=(
         1, 0.5), ncol=1, fontsize=14, frameon=False)

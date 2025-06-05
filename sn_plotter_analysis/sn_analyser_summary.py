@@ -362,6 +362,7 @@ def process_DDF(conf_df, dataType, dbDir, runType,
     from_to_load = 'from sn_plotter_analysis.sn_analyser_tools'
     mod_to_load = '{} import load_{}'.format(from_to_load, dataType)
     exec(mod_to_load)
+
     for OS_DDF in OS_DDFs:
         idx = conf_df[name] == OS_DDF
         fieldType = 'DDF'
