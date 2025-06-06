@@ -616,3 +616,123 @@ def clean_level(tt):
     tt = tt[tt.columns.drop(list(tt.filter(regex='level')))]
 
     return tt
+
+
+def print_nsn_latex(sn_df):
+    """
+    Function to print latex tables of (NSN,err_NSN)
+
+    Parameters
+    ----------
+    sn_df : pandas df
+        Data to process.
+
+    Returns
+    -------
+    None.
+
+    """
+
+    idx = sn_df['year'] <= 10
+    sn_df = sn_df[idx]
+    idxb = sn_df['year'] <= 5
+    sn_df_5 = sn_df[idxb]
+
+    res = get_nsn_pr(sn_df)
+    all_years = get_nsn_pr(sn_df, cols=['dbName'])
+    five_years = get_nsn_pr(sn_df_5, cols=['dbName'])
+
+    # get the list of dbNames
+    dbNames = sorted(res['dbName'].unique().tolist())
+    str_db = '& '.join(dbNames)
+
+    years = res['year'].unique()
+
+    print('\\begin{table}[!htbp]')
+    print('\\begin{center}')
+    print('\caption{mycaption}\label{tab:mylabel}')
+    ccols = ['|c']*len(dbNames)
+    print('\\begin{tabular}{l'+''.join(ccols)+'}')
+    print('\\hline')
+    print('\\hline')
+    linea = ' year & {} \\\\'.format(str_db)
+    print(linea)
+    print('\\hline')
+
+    for year in years:
+        idx = res['year'] == year
+        sel = res[idx]
+        mystr = '{}'.format(int(year))
+        mystr += nsn_dbName(sel, dbNames)
+        mystr += '\\\\'
+
+        print(mystr)
+        if year == 5:
+            print('\\hline')
+            mystr = '1-5'
+            mystr += nsn_dbName(five_years, dbNames)
+            print(mystr)
+            print('\\hline')
+    # 10 years
+    mystr = '1-10'
+    mystr += nsn_dbName(all_years, dbNames)
+    print('\\hline')
+    print(mystr)
+    print('\\hline')
+    print('\end{tabular}')
+    print('\end{center}')
+    print('\end{table}')
+
+
+def nsn_dbName(sel, dbNames):
+    """
+    Function to print (NSN, err_NSN) per year
+
+    Parameters
+    ----------
+    sel : pandas df
+        Data to process.
+    dbNames : list(str)
+        list of OS to consider.
+
+    Returns
+    -------
+    mystr : str
+        output.
+
+    """
+
+    mystr = ''
+    for dbName in dbNames:
+        idxb = sel['dbName'] == dbName
+        selb = sel[idxb]
+        nsn = selb['nsn'].mean()
+        err_nsn = selb['err_nsn'].mean()
+        mystr += ' & {} \pm {}'.format(int(nsn), int(err_nsn))
+
+    return mystr
+
+
+def get_nsn_pr(sn_df, cols=['year', 'dbName']):
+    """
+    Function to grab nsn,err_nsn values
+
+    Parameters
+    ----------
+    sn_df : pandas df
+        Data to process.
+    cols : list(str), optional
+        cols to use to estimate nsn,err_nsn. The default is ['year', 'dbName'].
+
+    Returns
+    -------
+    res : pandas df
+        output resu.
+
+    """
+
+    res = count_all(sn_df, cols, var=['nsn'], err_var=['err_nsn'])
+
+    res[['nsn', 'err_nsn']] = res[['nsn', 'err_nsn']].astype(int)
+
+    return res
