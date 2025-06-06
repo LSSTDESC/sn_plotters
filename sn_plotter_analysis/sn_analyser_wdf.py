@@ -218,7 +218,6 @@ def process_WFD_singledb(dbName, dataType, dbDir_WFD, runType,
 
     # analyze: grab the number of sn+err_nsn
     res = get_nsn_wfd(wfda, norm_factor, nside)
-    print(res)
     res.to_hdf(fName, key='nsn_WFD')
     del wfda
 
