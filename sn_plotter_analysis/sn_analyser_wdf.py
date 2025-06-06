@@ -179,7 +179,7 @@ def process_WFD(conf_df, dataType, dbDir_WFD, runType,
 
 
 def process_WFD_singledb(dbName, dataType, dbDir_WFD, runType,
-                         timescale_file, timeslots, norm_factor, fName):
+                         timescale_file, timeslots, norm_factor, fName, nside=64):
     """
     Function to process WFD data
 
@@ -215,8 +215,56 @@ def process_WFD_singledb(dbName, dataType, dbDir_WFD, runType,
         timescale_file, timeslots, norm_factor)
     wfda = eval(tt)
     wfda['dbName'] = dbName
-    wfda.to_hdf(fName, key='nsn_WFD')
+
+    # analyze: grab the number of sn+err_nsn
+    res = get_nsn_wfd(wfda, norm_factor, nside)
+    print(res)
+    res.to_hdf(fName, key='nsn_WFD')
     del wfda
+
+
+def get_nsn_wfd(data, norm_factor, nside=64):
+    """
+    Function to estimate the number of SNe Ia + errors
+
+    Parameters
+    ----------
+    data : TYPE
+        DESCRIPTION.
+    norm_factor : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    res_fi : TYPE
+        DESCRIPTION.
+
+    """
+    from sn_plotter_analysis.sn_analyser_tools import Estimate_NSN, clean_level
+    nsn = Estimate_NSN(norm_factor=norm_factor)
+
+    # get nsn - no cuts
+    resa = nsn(data)
+    resa = clean_level(resa)
+
+    # get nsn - z >= 0.8
+    idx = data['n_epochs_bef'] >= 5
+    idx &= data['n_epochs_aft'] >= 10
+    idx &= data['n_epochs_m10_p5'] >= 5
+    idx &= data['n_epochs_phase_minus_10'] >= 2
+    idx &= data['sigmaC'] <= 0.04
+    sel = data[idx]
+    resb = nsn(sel)
+    resb = clean_level(resb)
+    resb = resb.rename(columns={'nsn': 'nsn_cosmo',
+                       'err_nsn': 'err_nsn_cosmo'})
+
+    cols = ['dbName', 'field', 'healpixID', 'season', 'year']
+    res_fi = resa.merge(resb, left_on=cols, right_on=cols, suffixes=['', ''])
+
+    res_fi['survey_area'] = pixelSize(nside)
+
+    return res_fi
 
 
 def plot_summary_wfd(wfda, conf_df, timescale='season',

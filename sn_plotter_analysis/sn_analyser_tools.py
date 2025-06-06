@@ -184,13 +184,10 @@ def load_DataFrame(dbDir_WFD, OS_WFD, runType='spectroz',
         wfd_seas = load_OS_df(dbDir_WFD, OS_WFD, runType=runType,
                               timescale_file=timescale_file,
                               timeslot=seas, fieldType=fieldType)
+        """
         if fieldType == 'WFD':
             # time_ref = time.time()
 
-            """
-            wfd_seas = wfd_seas.groupby(['healpixID', timescale_file, 'field']).apply(
-                lambda x: get_stat(x, norm_factor)).reset_index()
-            """
             params = {}
             params['data'] = wfd_seas
             params['norm_factor'] = norm_factor
@@ -199,13 +196,16 @@ def load_DataFrame(dbDir_WFD, OS_WFD, runType='spectroz',
             wfd_seas = multiproc(hpixes, params, process_WFD_multi, nproc=8)
 
             # print('done', time.time()-time_ref)
+        """
         wfd = pd.concat((wfd, wfd_seas))
         del wfd_seas
 
+    """
     if fieldType == 'WFD':
         print('nsn tot', wfd['nsn'].sum())
     else:
-        print('nsn tot', len(wfd))
+    """
+    print('nsn tot', len(wfd))
 
     # add a year column here
     # df_y = add_year(wfd, LSSTStart)
