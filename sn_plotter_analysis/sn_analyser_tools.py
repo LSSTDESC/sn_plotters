@@ -618,7 +618,7 @@ def clean_level(tt):
     return tt
 
 
-def print_nsn_latex(sn_df):
+def print_nsn_latex(sn_df, nsn_var='nsn', err_nsn_var='err_nsn'):
     """
     Function to print latex tables of (NSN,err_NSN)
 
@@ -626,7 +626,10 @@ def print_nsn_latex(sn_df):
     ----------
     sn_df : pandas df
         Data to process.
-
+    nsn_var : TYPE, optional
+        DESCRIPTION. The default is 'nsn'.
+    err_nsn_var : TYPE, optional
+        DESCRIPTION. The default is 'err_nsn'.
     Returns
     -------
     None.
@@ -638,9 +641,11 @@ def print_nsn_latex(sn_df):
     idxb = sn_df['year'] <= 5
     sn_df_5 = sn_df[idxb]
 
-    res = get_nsn_pr(sn_df)
-    all_years = get_nsn_pr(sn_df, cols=['dbName'])
-    five_years = get_nsn_pr(sn_df_5, cols=['dbName'])
+    res = get_nsn_pr(sn_df, nsn_var=nsn_var, err_nsn_var=err_nsn_var)
+    all_years = get_nsn_pr(sn_df, cols=['dbName'],
+                           nsn_var=nsn_var, err_nsn_var=err_nsn_var)
+    five_years = get_nsn_pr(sn_df_5, cols=['dbName'],
+                            nsn_var=nsn_var, err_nsn_var=err_nsn_var)
 
     # get the list of dbNames
     dbNames = sorted(res['dbName'].unique().tolist())
@@ -663,19 +668,24 @@ def print_nsn_latex(sn_df):
         idx = res['year'] == year
         sel = res[idx]
         mystr = '{}'.format(int(year))
-        mystr += nsn_dbName(sel, dbNames)
+        mystr += nsn_dbName(sel, dbNames,
+                            nsn_var=nsn_var,
+                            err_nsn_var=err_nsn_var)
         mystr += '\\\\'
 
         print(mystr)
         if year == 5:
             print('\\hline')
             mystr = '1-5'
-            mystr += nsn_dbName(five_years, dbNames)
+            mystr += nsn_dbName(five_years, dbNames,
+                                nsn_var=nsn_var,
+                                err_nsn_var=err_nsn_var)
             print(mystr)
             print('\\hline')
     # 10 years
     mystr = '1-10'
-    mystr += nsn_dbName(all_years, dbNames)
+    mystr += nsn_dbName(all_years, dbNames, nsn_var=nsn_var,
+                        err_nsn_var=err_nsn_var)
     print('\\hline')
     print(mystr)
     print('\\hline')
@@ -684,7 +694,28 @@ def print_nsn_latex(sn_df):
     print('\end{table}')
 
 
-def nsn_dbName(sel, dbNames):
+def nsn_dbName(sel, dbNames, nsn_var='nsn', err_nsn_var='err_nsn'):
+    """
+
+
+    Parameters
+    ----------
+    sel : TYPE
+        DESCRIPTION.
+    dbNames : TYPE
+        DESCRIPTION.
+    nsn_var : TYPE, optional
+        DESCRIPTION. The default is 'nsn'.
+    err_nsn_var : TYPE, optional
+        DESCRIPTION. The default is 'err_nsn'.
+
+    Returns
+    -------
+    mystr : TYPE
+        DESCRIPTION.
+
+    """
+
     """
     Function to print (NSN, err_NSN) per year
 
@@ -694,6 +725,10 @@ def nsn_dbName(sel, dbNames):
         Data to process.
     dbNames : list(str)
         list of OS to consider.
+    nsn_var : str, optional
+        nsn var name. The default is 'nsn'.
+    err_nsn_var : str, optional
+        err nsn var name. The default is 'err_nsn'.
 
     Returns
     -------
@@ -706,14 +741,15 @@ def nsn_dbName(sel, dbNames):
     for dbName in dbNames:
         idxb = sel['dbName'] == dbName
         selb = sel[idxb]
-        nsn = selb['nsn'].mean()
-        err_nsn = selb['err_nsn'].mean()
+        nsn = selb[nsn_var].mean()
+        err_nsn = np.sqrt(np.sum(selb[err_nsn_var]**2))
         mystr += ' & {} \pm {}'.format(int(nsn), int(err_nsn))
 
     return mystr
 
 
-def get_nsn_pr(sn_df, cols=['year', 'dbName']):
+def get_nsn_pr(sn_df, cols=['year', 'dbName'],
+               nsn_var='nsn', err_nsn_var='err_nsn'):
     """
     Function to grab nsn,err_nsn values
 
@@ -723,7 +759,10 @@ def get_nsn_pr(sn_df, cols=['year', 'dbName']):
         Data to process.
     cols : list(str), optional
         cols to use to estimate nsn,err_nsn. The default is ['year', 'dbName'].
-
+    nsn_var : str, optional
+        nsn var name. The default is 'nsn'.
+    err_nsn_var : str, optional
+        err nsn var name. The default is 'err_nsn'.
     Returns
     -------
     res : pandas df
@@ -731,8 +770,8 @@ def get_nsn_pr(sn_df, cols=['year', 'dbName']):
 
     """
 
-    res = count_all(sn_df, cols, var=['nsn'], err_var=['err_nsn'])
+    res = count_all(sn_df, cols, var=[nsn_var], err_var=[err_nsn_var])
 
-    res[['nsn', 'err_nsn']] = res[['nsn', 'err_nsn']].astype(int)
+    res[[nsn_var, err_nsn_var]] = res[[nsn_var, err_nsn_var]].astype(int)
 
     return res
