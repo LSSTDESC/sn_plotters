@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 from . import plt
 from sn_tools.sn_io import checkDir
+from sn_plotter_analysis.sn_analyser_tools import count_all
 
 
 def pixelSize(nside):
@@ -34,8 +35,10 @@ def pixelSize(nside):
 
 
 def plot_versus(df, xvar='year', xlabel='year',
-                yvar='nsn', ylabel='$N_{SN}$', fig=None, ax=None,
-                label='', ls='solid', marker='o', color='k', cumul=False, mfc='k'):
+                yvar='nsn', ylabel='$N_{SN}$', yvar_err='None',
+                fig=None, ax=None,
+                label='', ls='solid',
+                marker='o', color='k', cumul=False, mfc='k'):
     """
     Function to plot yvar vs xvar
 
@@ -51,6 +54,8 @@ def plot_versus(df, xvar='year', xlabel='year',
         y-axis variable. The default is 'nsn'.
     ylabel : str, optional
         y-axis legend. The default is '$N_{SN}$'.
+    yvar_err: str, opt
+        y-axis variable error. The default is 'None'
     fig : matplotlib figure, optional
         plot figure. The default is None.
     ax : matplotlib axis, optional
@@ -78,11 +83,21 @@ def plot_versus(df, xvar='year', xlabel='year',
         fig, ax = plt.subplots(figsize=(12, 8))
 
     ypl = df[yvar]
+    yerr = None
+
+    if yvar_err != 'None':
+        yerr = df[yvar_err]
     if cumul:
         ypl = np.cumsum(ypl)
+        if yvar_err != 'None':
+            yerr = np.sqrt(np.cumsum(df[yvar_err]**2))
 
+    """
     ax.plot(df[xvar], ypl, ls=ls, marker=marker,
             color=color, label=label, mfc=mfc, markersize=9, lw=2)
+    """
+    ax.errorbar(df[xvar], ypl, yerr=yerr, ls=ls, marker=marker,
+                color=color, label=label, mfc=mfc, markersize=9, lw=2)
 
 
 def plotMollview(data, varName, figtit, xmin, xmax,
@@ -288,8 +303,13 @@ def plot_summary_wfd(wfda, conf_df, timescale='season',
 
     """
 
+    """
     wfd = wfda.groupby(['dbName', timescale])[[
         'nsn', 'nsn_cosmo']].sum().reset_index()
+    """
+
+    wfd = count_all(wfda, ['dbName', timescale], var=['nsn', 'nsn_cosmo'],
+                    err_var=['err_nsn', 'err_nsn_cosmo'])
 
     fig, ax = plt.subplots(figsize=(18, 8))
     fig.subplots_adjust(right=0.75)
@@ -303,12 +323,13 @@ def plot_summary_wfd(wfda, conf_df, timescale='season',
         color = selp['color'].values[0]
         dbNameb = selp['dbName_plot'].values[0]
 
-        plot_versus(sel, fig=fig, ax=ax, cumul=cumul,
+        plot_versus(sel, yvar_err='err_nsn', fig=fig, ax=ax, cumul=cumul,
                     ls=ls, marker=marker, color=color, mfc=color, label=dbNameb)
         labelb = dbNameb+' - '+'$\sigma_{\mu}\leq \sigma_{int}$'
         labelb = dbNameb+' - '+'$\sigma_C \leq 0.04$'
         labelb = dbNameb+' - '+'cosmo'
-        plot_versus(sel, yvar='nsn_cosmo', fig=fig, ax=ax, cumul=cumul,
+        plot_versus(sel, yvar='nsn_cosmo', yvar_err='err_nsn_cosmo',
+                    fig=fig, ax=ax, cumul=cumul,
                     ls='dotted', marker=marker, color=color,
                     mfc='None', label='')
 
@@ -318,7 +339,8 @@ def plot_summary_wfd(wfda, conf_df, timescale='season',
     ax.set_xlabel(timescale, fontweight='bold')
     legy = '$N_{SN}$'
     if cumul:
-        '$\Sigma N_{SN}$'
+        legy = '$\Sigma N_{SN}$'
+
     ax.set_ylabel(legy)
     # 0, 1.15 for multiple OS
     # ax.legend(loc='upper left', bbox_to_anchor=(
@@ -331,10 +353,10 @@ def plot_summary_wfd(wfda, conf_df, timescale='season',
 
         color = 'dimgrey'
         color = 'darkorange'
-        nsn = 1.e6
+        nsn = 0.8e6
         ax.plot([xmin, xmax], [nsn, nsn],
                 color=color, lw=2, linestyle='solid')
-        ax.text(5, 0.95e6, '1 million SNe Ia', color=color, fontsize=12)
+        ax.text(5, 0.77e6, '800k SNe Ia', color=color, fontsize=12)
         nsn = 200000
         ax.plot([xmin, xmax], [nsn, nsn],
                 color=color, lw=2, linestyle='solid')
@@ -344,6 +366,7 @@ def plot_summary_wfd(wfda, conf_df, timescale='season',
 def plot_summary_wfd_norm(wfda, conf_df,
                           timescale='season',
                           yvar='nsn_cosmo',
+                          yvar_err='err_nsn_cosmo',
                           figtit='Cosmology grade WFD sample',
                           cumul=False, dbNorm='None'):
     """
@@ -368,12 +391,14 @@ def plot_summary_wfd_norm(wfda, conf_df,
 
     """
 
-    wfd = wfda.groupby(['dbName', timescale])[[
-        'nsn', 'nsn_cosmo']].sum().reset_index()
+    wfd = count_all(wfda, ['dbName', timescale], var=['nsn_cosmo'],
+                    err_var=['err_nsn_cosmo'])
 
     if dbNorm != 'None':
         wfd = normalize(wfd, dbNorm=dbNorm,
-                        dataCol='dbName', ccols=['nsn', 'nsn_cosmo'],
+                        dataCol='dbName',
+                        ccols=['nsn_cosmo'],
+                        err_ccols=['err_nsn_cosmo'],
                         cumul=cumul)
         print(wfd)
 
@@ -394,7 +419,8 @@ def plot_summary_wfd_norm(wfda, conf_df,
         marker = selp['marker'].values[0]
         color = selp['color'].values[0]
         dbNameb = selp['dbName_plot'].values[0]
-        plot_versus(sel, yvar=yvar, fig=fig, ax=ax, cumul=cumul,
+        plot_versus(sel, yvar=yvar, yvar_err=yvar_err,
+                    fig=fig, ax=ax, cumul=cumul,
                     ls=ls, marker=marker, color=color,
                     mfc='None', label=dbNameb)
 
@@ -830,7 +856,8 @@ def get_nsn_dec(data, varp='nsn', delta_dec=5., nside=64):
     return df
 
 
-def normalize(sela, dbNorm, dataCol, ccols, timescale='year', cumul=False):
+def normalize(sela, dbNorm, dataCol,
+              ccols, err_ccols, timescale='year', cumul=False):
     """
 
 
@@ -856,24 +883,48 @@ def normalize(sela, dbNorm, dataCol, ccols, timescale='year', cumul=False):
 
     """
 
-    ccols_all = [timescale]+[dataCol]+ccols
+    ccols_all = [timescale]+[dataCol]+ccols+err_ccols
     print('ccols', ccols_all)
     selb = sela[ccols_all]
 
     if cumul:
         selb = selb.groupby(['dbName']).apply(
-            lambda x: cumul_df(x, ccols, timescale)).reset_index()
+            lambda x: cumul_df(x, ccols, err_ccols, timescale)).reset_index()
 
     ido = selb[dataCol] == dbNorm
     selnorm = selb[ido]
 
     selm = selb.merge(selnorm, left_on=[timescale], right_on=[timescale])
 
-    # print(selm[['year', 'dbName_x', 'dbName_y', 'nsn_cosmo_x', 'nsn_cosmo_y']])
+    idx = selm['dbName_x'] == dbNorm
 
+    vv = selm[idx]
+
+    for i, row in vv.iterrows():
+        print(row)
+
+    """
+    print('merging')
+    thecols = ['year', 'dbName_x', 'dbName_y',
+               'nsn_x', 'nsn_y', 'err_nsn_x', 'err_nsn_y']
+
+    for i, row in selm.iterrows():
+        print(row[thecols])
+    """
+
+    k = 100.
     for vvm in ccols:
-        selm[vvm] = 100.*(selm['{}_x'.format(vvm)]-selm['{}_y'.format(vvm)]
-                          )/selm['{}_x'.format(vvm)]
+        colx = '{}_x'.format(vvm)
+        coly = '{}_y'.format(vvm)
+        selm[vvm] = k*(selm[colx]-selm[coly])/selm[colx]
+        err_cols_x = 'err_{}_x'.format(vvm)
+        err_cols_y = 'err_{}_y'.format(vvm)
+        err_cols = 'err_{}'.format(vvm)
+        if err_cols_x in selm.columns:
+            err_val = selm[err_cols_y]**2/selm[coly]**2
+            err_val += selm[err_cols_x]**2/selm[colx]**2
+            err_val = np.sqrt(err_val)
+            selm[err_cols] = np.abs(selm[vvm]*err_val)
 
     selm[dataCol] = selm['{}_x'.format(dataCol)]
 
@@ -894,7 +945,7 @@ def normalize(sela, dbNorm, dataCol, ccols, timescale='year', cumul=False):
     return selm[ccols_all]
 
 
-def cumul_df(grp, ccols, timescale):
+def cumul_df(grp, ccols, err_ccols, timescale):
     """
     Function to estimate cummulative variables
 
@@ -904,6 +955,8 @@ def cumul_df(grp, ccols, timescale):
         data to process.
     ccols : list(str)
         var to cumulate.
+    err_ccols: list(str)
+        error_var to cumulate
     timescale : str
         var used for cumulating.
 
@@ -915,6 +968,7 @@ def cumul_df(grp, ccols, timescale):
     """
 
     r = []
+
     for timeslot in range(1, 11):
         ll = range(1, timeslot+1)
         idx = grp[timescale].isin(ll)
@@ -923,10 +977,13 @@ def cumul_df(grp, ccols, timescale):
         for ccol in ccols:
             res = sel[ccol].sum()
             tt.append(res)
+        for err_col in err_ccols:
+            res = np.sqrt(np.sum(sel[ccol]*sel[ccol]))
+            tt.append(res)
         r.append(tt)
 
     print(r)
     print(timescale, ccols)
-    res_df = pd.DataFrame(r, columns=[timescale]+ccols)
+    res_df = pd.DataFrame(r, columns=[timescale]+ccols+err_ccols)
 
     return res_df
