@@ -601,6 +601,7 @@ def plot_density_wfd(datam, timescale, timeslots, nside, conf_df,
         ls = selp['ls'].values[0]
         marker = selp['marker'].values[0]
         color = selp['color'].values[0]
+        dbNameb = selp['dbName_plot'].values[0]
         vara = '{}_density_mean'.format(varp)
         varb = '{}_density_std'.format(varp)
         dfa = sel.groupby(['healpixID', 'pixRA', 'pixDec'])[
@@ -609,17 +610,18 @@ def plot_density_wfd(datam, timescale, timeslots, nside, conf_df,
         if plot_indiv:
             plot_density_os_summary(df, vara, varb,
                                     fig=None, ax=None,
-                                    ylabel=ylabel, figtit=dbName,
+                                    ylabel=ylabel, figtit=dbNameb,
                                     ls=ls, color=color,
                                     marker=marker, label='')
 
         plot_density_os_summary(df, vara, '', fig=fig, ax=ax,
                                 ylabel=ylabel, figtit='',
-                                ls=ls, color=color, marker=marker, label=dbName)
+                                ls=ls, color=color,
+                                marker=marker, label=dbNameb)
         plot_density_os_summary(df, '{}_area'.format(varp), '',
                                 fig=figb, ax=axb, ylabel='area [deg$^2$]',
                                 figtit='', ls=ls, color=color,
-                                marker=marker, label=dbName)
+                                marker=marker, label=dbNameb)
 
     ax.grid(visible=True)
     ax.set_xlabel(r'Dec [deg]')
@@ -668,7 +670,7 @@ def plot_density_wfd_season(datam, timescale, timeslots, nside, conf_df,
 
     idx = datam[varp] > 0.
     data = datam[idx]
-    data[varp] /= norm_factor
+    # data[varp] /= norm_factor
 
     data['healpixID'] = data['healpixID'].astype(int)
     healpixId = data['healpixID'].unique().tolist()
@@ -698,7 +700,7 @@ def plot_density_wfd_season(datam, timescale, timeslots, nside, conf_df,
         idc = conf_df['dbName'] == dbName
         selp = conf_df[idc]
 
-        fig, ax = plt.subplots(figsize=(12, 8))
+        fig, ax = plt.subplots(figsize=(14, 8))
         fig.subplots_adjust(right=0.85)
 
         sel = sel.sort_values(by=[timescale])
@@ -842,7 +844,7 @@ def get_nsn_dec(data, varp='nsn', delta_dec=5., nside=64):
     df = pd.DataFrame(bin_centers, columns=['dec'])
     df['dec'] -= delta_dec/2.
 
-    group = data.groupby(pd.cut(data['pixDec'], decs))
+    group = data.groupby(pd.cut(data['pixDec'], decs), observed=False)
 
     pixSize = pixelSize(nside)
     df[f'{varp}_sum'] = group[varp].sum().to_list()
