@@ -208,6 +208,7 @@ def cosmo_plot(df,
     yerr = None
     if vary_std != '':
         yerr = df[vary_std]
+
     ax.errorbar(df[varx], df[vary], yerr=yerr,
                 ls=ls, marker=marker, color=color,
                 label=leg, markersize=msize, mfc='None', lw=3)
