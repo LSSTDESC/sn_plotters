@@ -1,12 +1,14 @@
 from . import plt
 import pandas as pd
+import numpy as np
 
 
 def plot_summary(data, field='DD:COSMOS',
                  varx='year', labx='year',
                  vary='seq_tot_y', laby='',
                  figtit='DD:COSMOS',
-                 df_config=pd.DataFrame()):
+                 df_config=pd.DataFrame(),
+                 cumsum=False):
     """
     Summary plot
 
@@ -28,6 +30,8 @@ def plot_summary(data, field='DD:COSMOS',
         Figure title. The default is 'DD:COSMOS'.
     df_config : pandas df, optional
         config for the plot. The default is pd.DataFrame().
+    cumsum: bool, optional.
+        to plot cumsum. The default is False.
 
     Returns
     -------
@@ -55,7 +59,11 @@ def plot_summary(data, field='DD:COSMOS',
         color = selp['color'].values[0]
         dbNameb = selp['dbName_plot'].values[0]
 
-        ax.plot(selb[varx], selb[vary],
+        tp = selb[vary]
+        if cumsum:
+            tp = np.cumsum(selb[vary])
+
+        ax.plot(selb[varx], tp,
                 ls=ls, marker=marker, color=color, mfc='None', label=dbNameb)
 
     ax.grid(visible=True)
@@ -69,3 +77,4 @@ def plot_summary(data, field='DD:COSMOS',
               ncol=1, fontsize=12, frameon=False)
 
     # plt.tight_layout()
+    return ax
