@@ -288,7 +288,7 @@ class VisuLC:
                             model=fitted_model,
                             errors=result.errors,
                             zp=25.,
-                            xfigsize=8, pulls=False, figtextsize=1.5)
+                            yfigsize=9, pulls=False, figtextsize=2.0)
         else:
             sncosmo.plot_lc(lc, xfigsize=9)
 
