@@ -8,6 +8,7 @@ import numpy as np
 from random import gauss
 import glob
 import numpy.lib.recfunctions as rf
+from sn_tools.sn_utils import register_bands_sncosmo
 
 
 class VisuLC:
@@ -101,15 +102,15 @@ class VisuLC:
         telb = '{}_{}'.format(tel_dir, tag_tel)
         through_dir = '{}/{}'.format(telb, throughputsDir)
         atmos_dir = '{}/{}'.format(telb, atmosDir)
-        telescope = get_telescope(tel_dir=telb,
-                                  through_dir=through_dir,
-                                  atmos_dir=atmos_dir,
-                                  tag=tag_tel, airmass=airmass,
-                                  aerosol=aerosol, pwv=pwv, oz=oz)
+        self.telescope = get_telescope(tel_dir=telb,
+                                       through_dir=through_dir,
+                                       atmos_dir=atmos_dir,
+                                       tag=tag_tel, airmass=airmass,
+                                       aerosol=aerosol, pwv=pwv, oz=oz)
 
         # fit instance
         # self.fit = Fit_LC(model='salt3', version='2.0', telescope=telescope)
-        self.prepare_fit(telescope, model='salt3', airmassType=airmassType,
+        self.prepare_fit(model='salt3', airmassType=airmassType,
                          airmass=airmass,
                          aerosol=aerosol,
                          pwv=pwv,
@@ -125,7 +126,7 @@ class VisuLC:
         self.remove_sat = remove_sat
         # print(self.SN.columns, len(self.SN))
 
-    def prepare_fit(self, telescope,
+    def prepare_fit(self,
                     model='salt2-extended', version='2.0',
                     airmassType='const', airmass=1.2,
                     aerosol=0.0,
@@ -136,8 +137,6 @@ class VisuLC:
 
         Parameters
         ----------
-        telescope : sn_telescope
-            Telescope.
         model : str, optional
             Fitter model. The default is 'salt3'.
         version : str, optional
@@ -151,11 +150,12 @@ class VisuLC:
 
         """
 
+        """
         self.register_bands(telescope, airmass=airmass,
                             aerosol=aerosol,
                             pwv=pwv,
                             oz=oz)
-
+        """
         source = sncosmo.get_source(model, version)
 
         if model == 'salt3':
@@ -170,6 +170,32 @@ class VisuLC:
                                    effect_names=['host', 'mw'],
                                    effect_frames=['rest', 'obs'])
 
+    def register_bands_on_the_fly(self, data):
+        """
+        Method to register bands on sncosmo
+
+        Parameters
+        ----------
+        data: pandas df
+            data to register
+
+        Returns
+        -------
+        None.
+
+        """
+
+        for i, row in data.iterrows():
+            bandname = row['band_cosmo']
+            band = row['filter']
+            airmass = row['airmass']
+            pwv = row['pwv']
+            ozone = row['ozone']
+            aerosol = row['aerosol']
+            register_bands_sncosmo(sncosmo, self.telescope,
+                                   bandname, band,
+                                   airmass, pwv, ozone, aerosol)
+
     def register_bands(self, telescope, airmass=1.2,
                        aerosol=0.0,
                        pwv=4.0,
@@ -182,7 +208,7 @@ class VisuLC:
         None.
 
         """
-        from sn_tools.sn_utils import register_bands_sncosmo
+
         import pandas as pd
         airmass = [airmass]
         pwvs = [pwv]
@@ -268,8 +294,24 @@ class VisuLC:
         z = lc.meta['z']
         zmeas = z+gauss(0, sigma_z*(1+z))
 
-        del lc['filter']
         self.model.set(z=lc.meta['z'])
+
+        # register bands
+        # for visu: only on value per band
+        lcb = lc.to_pandas()
+
+        lcb = lcb.groupby(['filter'])[['airmass', 'pwv',
+                                      'ozone', 'aerosol']].median().reset_index()
+
+        lcb['band_cosmo'] = self.telescope.site_name+'::'+lcb['filter']
+
+        self.register_bands_on_the_fly(lcb)
+
+        vv = lc['filter'].tolist()
+
+        vv = list(map(lambda x: self.telescope.site_name+'::' + x, vv))
+        lc['band'] = vv
+        del lc['filter']
 
         result, fitted_model = self.fitIt(lc)
         # print(result)
@@ -400,7 +442,7 @@ class VisuLC:
         meta : dict
             metadata.
         ddict : dict, optional
-            what to write (var, round). 
+            what to write (var, round).
             The default is dict(zip(['x1', 'color'], [1, 2])).
 
         Returns
