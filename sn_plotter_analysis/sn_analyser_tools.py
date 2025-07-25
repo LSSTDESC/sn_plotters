@@ -466,7 +466,7 @@ class Estimate_NSN:
         sel = data[idx]
         ccols = ['dbName', 'field', 'season', 'healpixID']
         res = sel.groupby(ccols).apply(
-            lambda x: self.nsn_pixel(x), include_groups=False).reset_index()
+            lambda x: self.nsn_pixel(x)).reset_index()
         res['season'] = res['season'].astype(int)
 
         if output_q is not None:
@@ -562,7 +562,7 @@ def count_all(data, columns, var=['nsn'], err_var=['err_nsn']):
     """
 
     tt = data.groupby(columns).apply(lambda x: count(
-        x, var=var, err_var=err_var), include_groups=False).reset_index()
+        x, var=var, err_var=err_var)).reset_index()
 
     return tt
 
