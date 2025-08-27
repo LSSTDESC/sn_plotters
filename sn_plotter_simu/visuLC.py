@@ -18,7 +18,7 @@ class VisuLC:
                  airmass=1.2,
                  aerosol=0.0,
                  pwv=4.0,
-                 oz=400,
+                 ozone=400,
                  remove_sat=0):
         """
         Class to visualize (and fit) LCs
@@ -106,7 +106,7 @@ class VisuLC:
                                        through_dir=through_dir,
                                        atmos_dir=atmos_dir,
                                        tag=tag_tel, airmass=airmass,
-                                       aerosol=aerosol, pwv=pwv, oz=oz)
+                                       aerosol=aerosol, pwv=pwv, ozone=ozone)
 
         # fit instance
         # self.fit = Fit_LC(model='salt3', version='2.0', telescope=telescope)
@@ -114,7 +114,7 @@ class VisuLC:
                          airmass=airmass,
                          aerosol=aerosol,
                          pwv=pwv,
-                         oz=oz)
+                         ozone=ozone)
 
         # getting SN (if any)
         self.SN = Table()
@@ -131,7 +131,7 @@ class VisuLC:
                     airmassType='const', airmass=1.2,
                     aerosol=0.0,
                     pwv=4.0,
-                    oz=400):
+                    ozone=400):
         """
         Method to load tel bandpasses for sncosmo
 
@@ -199,7 +199,7 @@ class VisuLC:
     def register_bands(self, telescope, airmass=1.2,
                        aerosol=0.0,
                        pwv=4.0,
-                       oz=400):
+                       ozone=400):
         """
         Method to register bands in sncosmo
 
@@ -212,7 +212,7 @@ class VisuLC:
         import pandas as pd
         airmass = [airmass]
         pwvs = [pwv]
-        ozs = [oz]
+        ozs = [ozone]
         aerosols = [aerosol]
 
         # values in pandas df
