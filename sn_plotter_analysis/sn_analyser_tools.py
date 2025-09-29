@@ -497,6 +497,10 @@ class Estimate_NSN:
         # observed number of SN
         nsn_obs = len(grp)
 
+        if nsn_obs < 2:
+            res = pd.DataFrame()
+            return res
+
         # get expected number of SN from rate
         zmin = np.min(grp['z'])
         zmax = np.max(grp['z'])

@@ -288,7 +288,7 @@ def get_nsn_wfd(conf_df, dataType, dbDir_WFD, runType,
     wfd = pd.DataFrame()
     from_to_load = 'from sn_plotter_analysis.sn_analyser_tools'
     mod_to_load = '{} import load_{}'.format(from_to_load, dataType)
-    exec(mod_to_load)
+    exec(mod_to_load, globals())
     for OS_WFD in OS_WFDs:
         idx = conf_df['dbName_WFD'] == OS_WFD
         tt = 'load_{}(\'{}\',\'{}\',\'{}\',\'{}\',{})'.format(
@@ -361,8 +361,8 @@ def process_DDF(conf_df, dataType, dbDir, runType,
     ddf = pd.DataFrame()
     from_to_load = 'from sn_plotter_analysis.sn_analyser_tools'
     mod_to_load = '{} import load_{}'.format(from_to_load, dataType)
-    exec(mod_to_load)
-
+    exec(mod_to_load, globals())
+    # from sn_plotter_analysis.sn_analyser_tools import load_DataFrame
     for OS_DDF in OS_DDFs:
         idx = conf_df[name] == OS_DDF
         fieldType = 'DDF'
@@ -375,6 +375,59 @@ def process_DDF(conf_df, dataType, dbDir, runType,
         ddf = pd.concat((ddf, ddfa))
 
     return ddf
+
+
+def process_DDF_db(dbName, dataType, dbDir, runType,
+                   timescale, timeslots,
+                   norm_factor, nside=128, name='dbName'):
+    """
+    Function to process the ddf files
+
+    Parameters
+    ----------
+    dbName : str
+        db to process.
+    dataType : str
+        data type (WFD/DDF).
+    dbDir : str
+        location dir of the files.
+    runType : str
+        runtype (spectroz/photz).
+    timescale : str
+        time scale (year/season).
+    timeslots : str
+        time slots to analyze.
+    norm_factor : float
+        normalization factor.
+    nside : int, optional
+        nside internal parameter. The default is 128.
+    name : str, optional
+        col name of th OS. The default is 'dbName_DD'.
+
+    Returns
+    -------
+    ddf: pandas df
+      ddf data.
+
+    """
+
+    # load DDF
+
+    ddf = pd.DataFrame()
+    from_to_load = 'from sn_plotter_analysis.sn_analyser_tools'
+    mod_to_load = '{} import load_{}'.format(from_to_load, dataType)
+    exec(mod_to_load, globals())
+    # from sn_plotter_analysis.sn_analyser_tools import load_DataFrame
+
+    fieldType = 'DDF'
+    tt = 'load_{}(\'{}\',\'{}\',\'{}\',\'{}\',{},\'{}\')'.format(
+        dataType, dbDir, dbName, runType,
+        timescale, timeslots, fieldType)
+    print('here', tt)
+    ddfa = eval(tt)
+    ddfa['dbName'] = dbName
+
+    return ddfa
 
 
 def load_data(dbDir, dbName, dataType, runType,
@@ -408,7 +461,7 @@ def load_data(dbDir, dbName, dataType, runType,
 
     from_to_load = 'from sn_plotter_analysis.sn_analyser_tools'
     mod_to_load = '{} import load_{}'.format(from_to_load, dataType)
-    exec(mod_to_load)
+    exec(mod_to_load, globals())
 
     fieldType = 'DDF'
     tt = 'load_{}(\'{}\',\'{}\',\'{}\',\'{}\',{},\'{}\')'.format(
