@@ -50,7 +50,7 @@ def plot_vs_OS(data, varx='dbName_plot',
 
     """
     if ax is None:
-        fig, ax = plt.subplots(figsize=(12, 8))
+        fig, ax = plt.subplots(figsize=(14, 8))
 
     fig.suptitle(title)
     fig.subplots_adjust(bottom=0.20)
