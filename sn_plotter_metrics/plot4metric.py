@@ -643,7 +643,7 @@ def plot_pixels(data, yvar='nsn',
         xmin, xmax = df_dist[distval].min(), df_dist[distval].max()
         bins = np.linspace(xmin-1.e-6, xmax, 12)
         # bins = np.arange(0.1, 2.22, 0.22)
-        group = df_dist.groupby(pd.cut(df_dist[distval], bins))
+        group = df_dist.groupby(pd.cut(df_dist[distval], bins), observed=True)
         plot_centers = (bins[:-1] + bins[1:])/2
         plot_values = group[yvar].mean()
         dd = pd.DataFrame(plot_centers, columns=[distval])
