@@ -181,7 +181,7 @@ def process_WFD(conf_df, dataType, dbDir_WFD, runType,
     # fig, ax = plt.subplots(figsize=(14, 8))
     from_to_load = 'from sn_plotter_analysis.sn_analyser_tools'
     mod_to_load = '{} import load_{}'.format(from_to_load, dataType)
-    exec(mod_to_load)
+    exec(mod_to_load,globals())
     for OS_WFD in OS_WFDs:
         idx = conf_df['dbName_WFD'] == OS_WFD
         tt = 'load_{}(\'{}\',\'{}\',\'{}\',\'{}\',{},norm_factor={})'.format(
@@ -223,7 +223,7 @@ def process_WFD_singledb(dbName, dataType, dbDir_WFD, runType,
     # fig, ax = plt.subplots(figsize=(14, 8))
     from_to_load = 'from sn_plotter_analysis.sn_analyser_tools'
     mod_to_load = '{} import load_{}'.format(from_to_load, dataType)
-    exec(mod_to_load)
+    exec(mod_to_load,globals())
 
     tt = 'load_{}(\'{}\',\'{}\',\'{}\',\'{}\',{},norm_factor={})'.format(
         dataType, dbDir_WFD, dbName, runType,
