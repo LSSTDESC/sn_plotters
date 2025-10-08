@@ -377,7 +377,8 @@ def get_stat(grp, norm_factor, var=['sigma_c'],
 class Estimate_NSN:
     def __init__(self, norm_factor=30,
                  rate='Hounsell', H0=70., Om=0.3,
-                 minRFphaseQual=-10, maxRFphaseQual=35):
+                 minRFphaseQual=-10, maxRFphaseQual=35,
+                 timescale='year'):
         """
         class to estimate nsn + error
 
@@ -395,6 +396,8 @@ class Estimate_NSN:
             min Rest-Frame phase quality selection. The default is -10.
         maxRFphaseQual : float, optional
             max Rest-Frame phase quality selection. The default is 35.
+        timescale: str, optional.
+            timescale (year/season). The default is year.
 
         Returns
         -------
@@ -408,7 +411,9 @@ class Estimate_NSN:
                                Om0=Om,
                                min_rf_phase=minRFphaseQual,
                                max_rf_phase=maxRFphaseQual)
+
         self.norm_factor = norm_factor
+        self.timescale = timescale
 
     def __call__(self, data):
         """
@@ -428,12 +433,20 @@ class Estimate_NSN:
 
         hpixes = data['healpixID'].unique()
 
-        params = {}
-        params['data'] = data
-
         from sn_tools.sn_utils import multiproc
 
-        res = multiproc(hpixes, params, self.nsn_multiproc, 8)
+        res = pd.DataFrame()
+
+        seasons = data[self.timescale].unique()
+
+        for seas in seasons:
+            print('processing', self.timescale, seas)
+            idx = data[self.timescale] == seas
+            sel = pd.DataFrame(data[idx])
+            params = {}
+            params['data'] = sel
+            resa = multiproc(hpixes, params, self.nsn_multiproc, 8)
+            res = pd.concat((res, resa))
 
         return res
 
@@ -464,10 +477,10 @@ class Estimate_NSN:
         idx = data['healpixID'].isin(toproc)
 
         sel = data[idx]
-        ccols = ['dbName', 'field', 'season', 'healpixID']
+        ccols = ['dbName', 'field', 'healpixID']
         res = sel.groupby(ccols).apply(
-            lambda x: self.nsn_pixel(x)).reset_index()
-        res['season'] = res['season'].astype(int)
+            lambda x: self.nsn_pixel(x), include_groups=False).reset_index()
+        res[self.timescale] = res[self.timescale].astype(int)
 
         if output_q is not None:
             return output_q.put({j: res})

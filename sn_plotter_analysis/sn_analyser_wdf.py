@@ -181,7 +181,7 @@ def process_WFD(conf_df, dataType, dbDir_WFD, runType,
     # fig, ax = plt.subplots(figsize=(14, 8))
     from_to_load = 'from sn_plotter_analysis.sn_analyser_tools'
     mod_to_load = '{} import load_{}'.format(from_to_load, dataType)
-    exec(mod_to_load,globals())
+    exec(mod_to_load, globals())
     for OS_WFD in OS_WFDs:
         idx = conf_df['dbName_WFD'] == OS_WFD
         tt = 'load_{}(\'{}\',\'{}\',\'{}\',\'{}\',{},norm_factor={})'.format(
@@ -223,7 +223,7 @@ def process_WFD_singledb(dbName, dataType, dbDir_WFD, runType,
     # fig, ax = plt.subplots(figsize=(14, 8))
     from_to_load = 'from sn_plotter_analysis.sn_analyser_tools'
     mod_to_load = '{} import load_{}'.format(from_to_load, dataType)
-    exec(mod_to_load,globals())
+    exec(mod_to_load, globals())
 
     tt = 'load_{}(\'{}\',\'{}\',\'{}\',\'{}\',{},norm_factor={})'.format(
         dataType, dbDir_WFD, dbName, runType,
@@ -237,7 +237,7 @@ def process_WFD_singledb(dbName, dataType, dbDir_WFD, runType,
     del wfda
 
 
-def get_nsn_wfd(data, norm_factor, nside=64):
+def get_nsn_wfd(data, norm_factor, nside=64, timescale='year'):
     """
     Function to estimate the number of SNe Ia + errors
 
@@ -247,6 +247,10 @@ def get_nsn_wfd(data, norm_factor, nside=64):
         DESCRIPTION.
     norm_factor : TYPE
         DESCRIPTION.
+    nside : int, optional
+        nside healpix parameter. The default is 64.
+    timescale : str, optional
+        timescale for the process (year/season). The default is 'year'.    
 
     Returns
     -------
@@ -273,7 +277,7 @@ def get_nsn_wfd(data, norm_factor, nside=64):
     resb = resb.rename(columns={'nsn': 'nsn_cosmo',
                        'err_nsn': 'err_nsn_cosmo'})
 
-    cols = ['dbName', 'field', 'healpixID', 'season', 'year']
+    cols = ['dbName', 'field', 'healpixID', timescale]
     res_fi = resa.merge(resb, left_on=cols, right_on=cols, suffixes=['', ''])
 
     res_fi['survey_area'] = pixelSize(nside)
