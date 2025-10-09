@@ -377,8 +377,7 @@ def get_stat(grp, norm_factor, var=['sigma_c'],
 class Estimate_NSN:
     def __init__(self, norm_factor=30,
                  rate='Hounsell', H0=70., Om=0.3,
-                 minRFphaseQual=-10, maxRFphaseQual=35,
-                 timescale='year'):
+                 minRFphaseQual=-10, maxRFphaseQual=35):
         """
         class to estimate nsn + error
 
@@ -396,8 +395,6 @@ class Estimate_NSN:
             min Rest-Frame phase quality selection. The default is -10.
         maxRFphaseQual : float, optional
             max Rest-Frame phase quality selection. The default is 35.
-        timescale: str, optional.
-            timescale (year/season). The default is year.
 
         Returns
         -------
@@ -413,7 +410,6 @@ class Estimate_NSN:
                                max_rf_phase=maxRFphaseQual)
 
         self.norm_factor = norm_factor
-        self.timescale = timescale
 
     def __call__(self, data):
         """
@@ -435,6 +431,11 @@ class Estimate_NSN:
 
         from sn_tools.sn_utils import multiproc
 
+        params = {}
+        params['data'] = data
+        res = multiproc(hpixes, params, self.nsn_multiproc, 8)
+
+        """
         res = pd.DataFrame()
 
         seasons = data[self.timescale].unique()
@@ -447,7 +448,7 @@ class Estimate_NSN:
             params['data'] = sel
             resa = multiproc(hpixes, params, self.nsn_multiproc, 8)
             res = pd.concat((res, resa))
-
+        """
         return res
 
     def nsn_multiproc(self, toproc, params, j=0, output_q=None):
@@ -477,10 +478,10 @@ class Estimate_NSN:
         idx = data['healpixID'].isin(toproc)
 
         sel = data[idx]
-        ccols = ['dbName', 'field', 'healpixID']
+        ccols = ['dbName', 'field', 'season', 'healpixID']
         res = sel.groupby(ccols).apply(
             lambda x: self.nsn_pixel(x), include_groups=False).reset_index()
-        res[self.timescale] = res[self.timescale].astype(int)
+        res['season'] = res['season'].astype(int)
 
         if output_q is not None:
             return output_q.put({j: res})

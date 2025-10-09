@@ -237,7 +237,7 @@ def process_WFD_singledb(dbName, dataType, dbDir_WFD, runType,
     del wfda
 
 
-def get_nsn_wfd(data, norm_factor, nside=64, timescale='year'):
+def get_nsn_wfd(data, norm_factor, nside=64):
     """
     Function to estimate the number of SNe Ia + errors
 
@@ -248,9 +248,7 @@ def get_nsn_wfd(data, norm_factor, nside=64, timescale='year'):
     norm_factor : TYPE
         DESCRIPTION.
     nside : int, optional
-        nside healpix parameter. The default is 64.
-    timescale : str, optional
-        timescale for the process (year/season). The default is 'year'.    
+        nside healpix parameter. The default is 64.    
 
     Returns
     -------
@@ -277,7 +275,7 @@ def get_nsn_wfd(data, norm_factor, nside=64, timescale='year'):
     resb = resb.rename(columns={'nsn': 'nsn_cosmo',
                        'err_nsn': 'err_nsn_cosmo'})
 
-    cols = ['dbName', 'field', 'healpixID', timescale]
+    cols = ['dbName', 'field', 'healpixID', 'season', 'year']
     res_fi = resa.merge(resb, left_on=cols, right_on=cols, suffixes=['', ''])
 
     res_fi['survey_area'] = pixelSize(nside)
