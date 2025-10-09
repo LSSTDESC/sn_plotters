@@ -129,7 +129,7 @@ def plotMollview(data, varName, figtit, xmin, xmax,
     fig = plt.figure(figsize=(8, 6))
 
     hpxmap = np.zeros(npix, dtype=float)
-    hpxmap = np.full(hpxmap.shape, 0.)
+    hpxmap = np.full(hpxmap.shape, -1.)
     hpxmap[data['healpixID'].astype(
         int)] += data[varName]
 
@@ -466,7 +466,9 @@ def plot_summary_wfd_norm(wfda, conf_df,
 
 
 def plot_mollview_wfd(data, timescale, timeslots, nside,
-                      varp='nsn', outDir='.', for_ffmpeg=False):
+                      varp='nsn', varleg='N$_{SN}$=',
+                      outDir='.',
+                      for_ffmpeg=False, savepng=False):
     """
     Function to make Mollweid plots for nsn in the WFD survey
 
@@ -482,6 +484,8 @@ def plot_mollview_wfd(data, timescale, timeslots, nside,
         healpix nside parameter.
     varp : str, optional
         var to plot. The default is 'nsn'.
+    varleg : str, optional
+        legend for the plot. The default is 'N$_{SN}$='.
     outDir : str, optional
         output directory to save the plot. The default is '.'.
     for_ffmpeg: bool, optional
@@ -496,7 +500,6 @@ def plot_mollview_wfd(data, timescale, timeslots, nside,
 
     dbNames = data['dbName'].unique()
 
-    varleg = 'N$_{SN}$='
     for dbName in dbNames:
         idx = data['dbName'] == dbName
         sel = data[idx]
@@ -510,6 +513,8 @@ def plot_mollview_wfd(data, timescale, timeslots, nside,
         outDirName = '{}/{}'.format(outDir, dbName)
         checkDir(outDirName)
         saveNamea = 'nsn_year_all.png'
+        if not savepng:
+            saveNamea = ''
         plotMollview(sel, varp, figtitm, xmin, xmax, nside=nside,
                      outDir=outDirName, saveName=saveNamea)
         # season by season
@@ -522,6 +527,8 @@ def plot_mollview_wfd(data, timescale, timeslots, nside,
             figtitb = figtit + '{} {} '.format(timescale, timesl)
             figtitb += varleg+'{}'.format(nsn)
             saveName = f'nsn_{timescale}_{timesl:03d}.png'
+            if not savepng:
+                saveName = ''
             plotMollview(selb, varp, figtitb,
                          xmin, xmax, nside=nside,
                          outDir=outDirName, saveName=saveName)
