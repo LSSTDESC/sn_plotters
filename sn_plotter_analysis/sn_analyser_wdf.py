@@ -133,6 +133,7 @@ def plotMollview(data, varName, figtit, xmin, xmax,
     hpxmap[data['healpixID'].astype(
         int)] += data[varName]
 
+    #hpxmap = change_coord(hpxmap,coord=['E','G'])
     print(np.where(hpxmap < 0.01))
 
     norm = plt.cm.colors.Normalize(xmin, xmax)
@@ -140,14 +141,47 @@ def plotMollview(data, varName, figtit, xmin, xmax,
     cmap.set_under('w')
 
     hp.mollview(hpxmap, fig=fig, min=xmin, max=xmax, cmap=cmap,
-                title=figtit, nest=True, norm=norm)
+                title=figtit, nest=True, norm=norm,coord=['E','G'])
     hp.graticule()
 
     if saveName != '':
         plt.savefig('{}/{}'.format(outDir, saveName))
         plt.close()
 
+def change_coord(m, coord):
+    """ Change coordinates of a HEALPIX map
 
+    Parameters
+    ----------
+    m : map or array of maps
+      map(s) to be rotated
+    coord : sequence of two character
+      First character is the coordinate system of m, second character
+      is the coordinate system of the output map. As in HEALPIX, allowed
+      coordinate systems are 'G' (galactic), 'E' (ecliptic) or 'C' (equatorial)
+
+    Example
+    -------
+    The following rotate m from galactic to equatorial coordinates.
+    Notice that m can contain both temperature and polarization.
+    >>>> change_coord(m, ['G', 'C'])
+    """
+    # Basic HEALPix parameters
+    import healpy as hp
+    npix = m.shape[-1]
+    nside = hp.npix2nside(npix)
+    
+    print('allo',nside)
+    ang = hp.pix2ang(nside, np.arange(npix))
+
+    # Select the coordinate transformation
+    rot = hp.Rotator(coord=reversed(coord))
+
+    # Convert the coordinates
+    new_ang = rot(*ang)
+    new_pix = hp.ang2pix(nside, *new_ang)
+
+    return m[..., new_pix]
 def process_WFD(conf_df, dataType, dbDir_WFD, runType,
                 timescale_file, timeslots, norm_factor, fName):
     """
