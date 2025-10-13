@@ -133,20 +133,26 @@ def plotMollview(data, varName, figtit, xmin, xmax,
     hpxmap[data['healpixID'].astype(
         int)] += data[varName]
 
-    #hpxmap = change_coord(hpxmap,coord=['E','G'])
+    # hpxmap = change_coord(hpxmap,coord=['E','G'])
     print(np.where(hpxmap < 0.01))
 
     norm = plt.cm.colors.Normalize(xmin, xmax)
     cmap = plt.cm.jet
     cmap.set_under('w')
 
+    """
     hp.mollview(hpxmap, fig=fig, min=xmin, max=xmax, cmap=cmap,
                 title=figtit, nest=True, norm=norm,coord=['E','G'])
+    """
+    hp.mollview(hpxmap, fig=fig, min=xmin, max=xmax, cmap=cmap,
+                title=figtit, nest=True, norm=norm)
+
     hp.graticule()
 
     if saveName != '':
         plt.savefig('{}/{}'.format(outDir, saveName))
         plt.close()
+
 
 def change_coord(m, coord):
     """ Change coordinates of a HEALPIX map
@@ -170,8 +176,8 @@ def change_coord(m, coord):
     import healpy as hp
     npix = m.shape[-1]
     nside = hp.npix2nside(npix)
-    
-    print('allo',nside)
+
+    print('allo', nside)
     ang = hp.pix2ang(nside, np.arange(npix))
 
     # Select the coordinate transformation
@@ -182,6 +188,8 @@ def change_coord(m, coord):
     new_pix = hp.ang2pix(nside, *new_ang)
 
     return m[..., new_pix]
+
+
 def process_WFD(conf_df, dataType, dbDir_WFD, runType,
                 timescale_file, timeslots, norm_factor, fName):
     """
