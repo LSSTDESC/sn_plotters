@@ -200,6 +200,7 @@ def plot_series(df, title='',
     """
 
     for i, vv in enumerate(what):
+        df = df.sort_values(by=[vv,varx])
         plot_vs_OS(df, varx=varx, vary=vv, legy=leg[i], title=title)
 
 
