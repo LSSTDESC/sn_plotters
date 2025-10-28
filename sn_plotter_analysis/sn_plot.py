@@ -135,15 +135,15 @@ def get_sum(data, os_ref, timescale, yvar):
     """
 
     idx = data['dbName'] == os_ref
-    df_ref = data[idx]
-    print('ref', os_ref, df_ref)
+    df_ref = pd.DataFrame(data[idx])
 
     tt = data.groupby([timescale]).apply(
         lambda x: get_vals(x, yvar), include_groups=False).reset_index()
 
-    tt = tt.merge(df_ref, left_on=['year'], right_on=[
-                  'year'], suffixes=['', '_ref'])
+    tt = tt.merge(df_ref, left_on=[timescale],
+                  right_on=[timescale])
 
+    print('there man', tt)
     return tt
 
 
@@ -386,3 +386,17 @@ def plot_ddf_year(data, config,
                  yvar_err='err_ratio', ylab=ylab,
                  cumul=False, fields=fields)
     """
+
+
+def get_weather_correction(data, os_ref, xvar='year', yvar='nsn'):
+
+    cols = ['year', 'dbName']
+    datab = count_all(data, cols, var=['nsn'], err_var=['err_nsn'])
+
+    print(datab)
+
+    tt = get_sum(datab, os_ref, xvar, yvar)
+    print(tt.columns)
+    tt['rat1'] = tt['nsn_std']/tt['nsn_mean']
+    tt['rat2'] = tt['err_nsn']/tt['nsn']
+    print(tt[['nsn_mean', 'nsn', 'nsn_std', 'err_nsn', 'rat1', 'rat2']])
