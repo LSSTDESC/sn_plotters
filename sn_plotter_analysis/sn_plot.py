@@ -143,7 +143,6 @@ def get_sum(data, os_ref, timescale, yvar):
     tt = tt.merge(df_ref, left_on=[timescale],
                   right_on=[timescale])
 
-    print('there man', tt)
     return tt
 
 
@@ -165,9 +164,10 @@ def get_vals(grp, yvar):
 
     """
 
+    ll = grp[yvar].to_list()
     mean = grp[yvar].mean()
     std = grp[yvar].std()
-
+    
     rr = [(mean, std)]
     cols = ['{}_mean'.format(yvar), '{}_std'.format(yvar)]
     res = pd.DataFrame(rr, columns=cols)
@@ -388,15 +388,40 @@ def plot_ddf_year(data, config,
     """
 
 
-def get_weather_correction(data, os_ref, xvar='year', yvar='nsn'):
+def get_weather_impact(data, os_ref, xvar='year', yvar='nsn',fields=['COSMOS']):
+    """
+    Function to estimate the impact of the weather on nsn,err_nsn
 
+    Parameters
+    ----------
+    data : pandas df
+        Data to process.
+    os_ref : str
+        ref OS.
+    xvar : str, optional
+        x-axis var. The default is 'year'.
+    yvar : str, optional
+        y-axis var. The default is 'nsn'.
+    fields : list(str), optional
+        List of fields to consider. The default is ['COSMOS'].
+
+    Returns
+    -------
+    None.
+
+    """
+    
+    idx = data['field'].isin(fields)
+    data=data[idx]
+    
     cols = ['year', 'dbName']
+    
     datab = count_all(data, cols, var=['nsn'], err_var=['err_nsn'])
 
-    print(datab)
-
     tt = get_sum(datab, os_ref, xvar, yvar)
-    print(tt.columns)
+    
+    tt['rat'] = tt['nsn_mean']/tt['nsn']
     tt['rat1'] = tt['nsn_std']/tt['nsn_mean']
     tt['rat2'] = tt['err_nsn']/tt['nsn']
-    print(tt[['nsn_mean', 'nsn', 'nsn_std', 'err_nsn', 'rat1', 'rat2']])
+    print('Fields',fields)
+    print(tt[['nsn_mean', 'nsn', 'nsn_std', 'err_nsn', 'rat','rat1', 'rat2']])
