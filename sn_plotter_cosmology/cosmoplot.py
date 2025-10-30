@@ -457,7 +457,7 @@ def plot_allOS_survey(res_csv='smom_final.csv', dbNorm='baseline_v3.4_10yrs',
     ttit = ''
     if dbNorm != '':
         ttit = 'ref: {} \n'.format(dbNorm)
-    ttit += '{} years'.format(int(data[varx].median()))
+    ttit += '{} years'.format(int(data[varx].median())-1)
     fig.suptitle(ttit, color='b')
     sela = sela.sort_values(by=['MoM_mean'], ascending=False)
     """
