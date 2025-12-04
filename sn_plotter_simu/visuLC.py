@@ -9,6 +9,7 @@ from random import gauss
 import glob
 import numpy.lib.recfunctions as rf
 from sn_tools.sn_utils import register_bands_sncosmo
+import pandas as pd
 
 
 class VisuLC:
@@ -19,7 +20,8 @@ class VisuLC:
                  aerosol=0.0,
                  pwv=4.0,
                  ozone=400,
-                 remove_sat=0):
+                 remove_sat=0,
+                 fit_coadd=0):
         """
         Class to visualize (and fit) LCs
 
@@ -39,6 +41,8 @@ class VisuLC:
           tag for telescope version. The default is 1.9
         remove_sat: int, opt
           To remove LC saturated points when fitting.
+        fit_coadd: int, opt.
+          To fit coadded (band/night) LC points.
 
         Returns
         -------
@@ -126,6 +130,8 @@ class VisuLC:
         self.remove_sat = remove_sat
         # print(self.SN.columns, len(self.SN))
 
+        self.fit_coadd = fit_coadd
+
     def prepare_fit(self,
                     model='salt2-extended', version='2.0',
                     airmassType='const', airmass=1.2,
@@ -185,6 +191,7 @@ class VisuLC:
 
         """
 
+        print('band registry')
         for i, row in data.iterrows():
             bandname = row['band_cosmo']
             band = row['filter']
@@ -270,13 +277,47 @@ class VisuLC:
 
         lc = lcs.get_table(lcpath)
 
+        # coadd LC points (band/night) if necessary
+
+        if self.remove_sat:
+            idx = lc['sat'] == 0
+            lc = lc[idx]
+
+        ccols = ['night', 'airmass', 'ozone', 'aerosol', 'mean_wave', 'band',
+                 'pwv', 'zp', 'time', 'band_cosmo', 'zpsys', 'flux', 'fluxerr',
+                 'snr_m5', 'snr', 'filter']
+        print('before')
+        print(lc[['flux', 'fluxerr', 'zp', 'snr_m5', 'snr']])
+
+        if self.fit_coadd:
+            mymeta = lc.meta
+            df = lc[ccols].to_pandas()
+            lc = df.groupby(['filter', 'night']).apply(
+                lambda x: self.coadd_lc(x)).reset_index()
+            lc['band_cosmo'] = self.telescope.site_name+'::' + \
+                lc['filter']+'_' + \
+                lc['airmass'].astype(str)+'_' + \
+                lc['pwv'].astype(str)+'_' + \
+                lc['ozone'].astype(str)+'_' +\
+                lc['aerosol'].astype(str)
+            lc['band'] = lc['band_cosmo']
+            # lc['snr_m5'] = lc['flux']/lc['fluxerr']
+            # lc['snr'] = lc['flux']/lc['fluxerr']
+            lc = Table.from_pandas(lc)
+            lc.meta = mymeta
+
+        print('after')
+        print(lc['flux', 'fluxerr', 'zp', 'snr_m5', 'snr'])
+
         # print('stretch and color', lc.meta['x1'], lc.meta['color'])
         idx = lc['fluxerr'] > 0.
         idx &= lc['flux'] >= 0.
-        idx &= lc['snr_m5'] >= 1.
-        if self.remove_sat:
-            idx &= lc['sat'] == 0
+        idx &= lc['snr'] >= 1.
+
         lc = lc[idx]
+
+        print('after sel')
+        print(lc['flux', 'fluxerr', 'zp'])
 
         if 'sat' in lc.columns:
             print(lc[['band', 'night', 'flux', 'zp',
@@ -300,8 +341,8 @@ class VisuLC:
         # for visu: only on value per band
         lcb = lc.to_pandas()
 
-        lcb = lcb.groupby(['filter'])[['airmass', 'pwv',
-                                      'ozone', 'aerosol']].median().reset_index()
+        lcb = lcb.groupby(['filter', 'night'])[['airmass', 'pwv',
+                                               'ozone', 'aerosol']].median().reset_index()
 
         lcb['band_cosmo'] = self.telescope.site_name+'::'+lcb['filter']
 
@@ -313,6 +354,7 @@ class VisuLC:
         lc['band'] = vv
         del lc['filter']
 
+        print('there man', lc['flux', 'fluxerr'])
         result, fitted_model = self.fitIt(lc)
         # print(result)
         # print(fitted_model)
@@ -335,6 +377,81 @@ class VisuLC:
             sncosmo.plot_lc(lc, xfigsize=9)
 
         plt.show(block=False)
+
+    def coadd_lc(self, grp,
+                 col_means_weighted=[('flux', 'fluxerr')],
+                 col_means=['airmass', 'pwv', 'ozone',
+                            'aerosol', 'mean_wave', 'zp', 'time', 'snr_m5', 'snr'],
+                 col_round=['airmass', 'pwv', 'ozone',
+                            'aerosol'],
+                 round_vals=[1, 1, 1, 1],
+                 col_unique=['zpsys']):
+        """
+        Method to coadd light-curve points per night/filter
+
+        Parameters
+        ----------
+        grp : pandas df
+            Data to process.
+        col_means_weighted : list(str), optional
+            list of cols for weighted mean estimation.
+            The default is [('flux','fluxerr')].
+        col_means : list(str), optional
+            list of cols for mean estimation.
+            The default is ['airmass','pwv','ozone','aerosol',
+                            'mean_wave','zp','time'].
+        col_round : list(str), optional
+            list of cols to round.
+            The default is ['airmass','pwv','ozone',
+                            'aerosol','zp','mean_wave'].
+        round_vals : list(int), optional
+            list of rounding values corresponding to col_round.
+            The default is [2,1,1,1,2,2].
+        col_unique : list(str), optional
+            list of cols with unique value. The default is ['zpsys'].
+
+        Returns
+        -------
+        astropy table
+        output value
+
+        """
+
+        """
+        print('in coadd', len(grp))
+        print(grp[['flux', 'fluxerr']])
+        """
+
+        grp['weight_flux'] = 1./grp['fluxerr']**2
+
+        dictout = {}
+        for vv in col_means_weighted:
+            pp = vv[0]
+            pp_weight = 'weight_{}'.format(pp)
+            weight_sum = np.sum(grp[pp_weight])
+            mean_weighted = np.sum(grp[pp]*grp[pp_weight])/weight_sum
+            dictout[pp] = [mean_weighted]
+            dictout[vv[1]] = [1./np.sqrt(weight_sum)]
+
+        for vv in col_means:
+            val = grp[vv].mean()
+            if vv in col_round:
+                idx = col_round.index(vv)
+                val = np.round(val, round_vals[idx])
+
+            dictout[vv] = [val]
+
+        for vv in col_unique:
+            dictout[vv] = grp[vv].unique().tolist()
+
+        res_df = pd.DataFrame.from_dict(dictout)
+        res_df['snr'] = res_df['flux']/res_df['fluxerr']
+
+        """
+        print('finally')
+        print(res_df[['flux', 'fluxerr']])
+        """
+        return res_df
 
     def fitIt(self, lc):
         """
