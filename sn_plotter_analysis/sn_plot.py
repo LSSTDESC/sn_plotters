@@ -167,7 +167,7 @@ def get_vals(grp, yvar):
     ll = grp[yvar].to_list()
     mean = grp[yvar].mean()
     std = grp[yvar].std()
-    
+
     rr = [(mean, std)]
     cols = ['{}_mean'.format(yvar), '{}_std'.format(yvar)]
     res = pd.DataFrame(rr, columns=cols)
@@ -287,6 +287,24 @@ def plot_nsn_tot(nsn_a, config,
                       cumul=cumul, figtit=','.join(fields), os_ref=os_ref)
 
 
+def plot_ddf_area(data, config,
+                  cols=['year', 'dbName', 'field'],
+                  fields=['COSMOS', 'CDFS',
+                          'XMM-LSS',
+                          'ELAISS1', 'EDFS_a', 'EDFS_b']):
+    idx = data['field'].isin(fields)
+    data = pd.DataFrame(data[idx])
+    # plot nsn vs year - with stat error
+
+    datab = count_all(
+        data, cols, var=['nsn', 'survey_area'], err_var=['err_nsn'])
+
+    plot_nsn_tot(datab, config, yvar='survey_area',
+                 ylab='survey area [deg2]',
+                 yvar_err='',
+                 cumul=False, fields=fields)
+
+
 def plot_ddf_year(data, config,
                   cols=['year', 'dbName'],
                   fields=['COSMOS', 'CDFS',
@@ -388,7 +406,7 @@ def plot_ddf_year(data, config,
     """
 
 
-def get_weather_impact(data, os_ref, xvar='year', yvar='nsn',fields=['COSMOS']):
+def get_weather_impact(data, os_ref, xvar='year', yvar='nsn', fields=['COSMOS']):
     """
     Function to estimate the impact of the weather on nsn,err_nsn
 
@@ -410,18 +428,18 @@ def get_weather_impact(data, os_ref, xvar='year', yvar='nsn',fields=['COSMOS']):
     None.
 
     """
-    
+
     idx = data['field'].isin(fields)
-    data=data[idx]
-    
+    data = data[idx]
+
     cols = ['year', 'dbName']
-    
+
     datab = count_all(data, cols, var=['nsn'], err_var=['err_nsn'])
 
     tt = get_sum(datab, os_ref, xvar, yvar)
-    
+
     tt['rat'] = tt['nsn_mean']/tt['nsn']
     tt['rat1'] = tt['nsn_std']/tt['nsn_mean']
     tt['rat2'] = tt['err_nsn']/tt['nsn']
-    print('Fields',fields)
-    print(tt[['nsn_mean', 'nsn', 'nsn_std', 'err_nsn', 'rat','rat1', 'rat2']])
+    print('Fields', fields)
+    print(tt[['nsn_mean', 'nsn', 'nsn_std', 'err_nsn', 'rat', 'rat1', 'rat2']])
