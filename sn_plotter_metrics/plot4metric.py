@@ -739,7 +739,8 @@ def plotMollview(nside, fig, data, varName, leg, op, xmin, xmax):
 
 def plotMollview_seasons(nside, data, dbName,
                          yvar='nsn', yleg='N$_{SN}^{z \leq z_{complete}}$',
-                         op=np.sum, seasons=[3], timescale='year'):
+                         op=np.sum, seasons=[3], timescale='year',
+                         outDir='None'):
     """
     Plot Mollview for all seasons
 
@@ -762,12 +763,15 @@ def plotMollview_seasons(nside, data, dbName,
         list of seasons to display. The default is [3].
     timescale: str, optional.
         Timescale (year/season) for the plot.
+    outDir: str, optional.
+       output dir for figures. The default is 'None'.
 
     Returns
     -------
     None.
 
     """
+
 
     for season in seasons:
         fig, ax = plt.subplots(figsize=(12, 9))
@@ -780,6 +784,10 @@ def plotMollview_seasons(nside, data, dbName,
         tit += '\n {}'.format(yleg)
         plotMollview(nside, fig, sels, yvar, tit, op, xmin, xmax)
 
+        if outDir != 'None':
+            fiName = '{}_{}_{}_{}.png'.format(dbName,yvar,timescale,str(season).zfill(3))
+            fName = '{}/{}'.format(outDir,fiName)
+            plt.savefig(fName)
 
 def plot_xy(data, xvar='cadence', xleg='cadence [day]',
             yvar='zcomp', yleg='$z_{complete}$',
