@@ -169,6 +169,19 @@ class SNflux:
 
         """
         
+        #complete lc
+        
+        lc = self.complete_lc(lc_data)
+        
+        # register bands
+        ## necessity to drop duplicates!!!!!!!
+        ccols = ['band_cosmo','filter','airmass','pwv','aerosol','ozone']
+        self.register_bands(lc)
+        
+        
+    def complete_lc(self,lc_data):
+        
+        
         
         print('oooooo',lc_data.columns)
         tmin = self.daymax-20*(1+self.z)
@@ -216,6 +229,9 @@ class SNflux:
         lc_tot = vstack([lc,Table.from_pandas(df_add)])
         
         print(lc_tot)
+        
+        return lc_tot
+        
     def register_bands(self,data):
         from sn_tools.sn_utils import register_bands_sncosmo
         
