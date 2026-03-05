@@ -7,11 +7,13 @@ Created on Thu Mar  5 13:19:36 2026
 """
 import sncosmo
 from sn_telmodel.sn_throughputs import get_telescope
+import numpy as np
+from astropy.table import Table,vstack
 
 class SNflux:
     def __init__(self,x1,color,x0,daymax,z,
                  model='salt3',
-                 version=2.0,
+                 version='2.0',
                  absmag=-19.0906,
                  magsys='vega',band='bessellB',
                  tel_dir = 'throughputs',
@@ -121,7 +123,7 @@ class SNflux:
         sn.set(z=self.z)
         sn.set(t0=self.daymax)
         sn.set(x1=self.x1)
-        sn.set(color=self.color)
+        sn.set(c=self.color)
         sn.set(x0=self.x0)
         
         return sn
@@ -168,6 +170,69 @@ class SNflux:
         """
         
         
-        print('oooooo',lc_data)
+        print('oooooo',lc_data.columns)
+        tmin = self.daymax-20*(1+self.z)
+        tmax = self.daymax+60*(1+self.z)
+        
+        ccols = ['time','band_cosmo','filter','airmass','pwv','aerosol','ozone']
+        lc = lc_data[ccols]
+        
+        filters = np.unique(lc['filter'])
+        
+        airmassb = np.round(self.airmass,2)
+        pwvb = np.round(self.pwv,2)
+        aerosolb = np.round(self.aerosol,2)
+        ozoneb = np.round(self.ozone,2)
+        
+        b_filt = {}
+        for fi in filters:
+            bcols = self.telescope.site_name+'::'
+            bcols += fi+'_'
+            bcols += '{}'.format(airmassb)+'_' 
+            bcols +='{}'.format(pwvb)+'_'      
+            bcols += '{}'.format(ozoneb)+'_' 
+            bcols +='{}'.format(aerosolb)
+            b_filt[fi] = bcols
+            
+        r = []
+         
+        tis = np.arange(tmin,tmax,0.5)
+        
+        import pandas as pd
+        df_add = pd.DataFrame()
+        for key,vals in b_filt.items():
+            
+            df = pd.DataFrame(tis, columns=['time'])
+            df['band_cosmo'] = vals
+            df['filter'] = fi
+            df['airmass'] = airmassb
+            df['pwv'] = pwvb
+            df['ozone'] = ozoneb
+            df['aerosol'] = aerosolb
+            df_add = pd.concat((df_add,df))
+          
+        print(df_add)
+        
+        lc_tot = vstack([lc,Table.from_pandas(df_add)])
+        
+        print(lc_tot)
+    def register_bands(self,data):
+        from sn_tools.sn_utils import register_bands_sncosmo
+        
+        print('band registry')
+        for i, row in data.iterrows():
+            bandname = row['band_cosmo']
+            band = row['filter']
+            airmass = row['airmass']
+            pwv = row['pwv']
+            ozone = row['ozone']
+            aerosol = row['aerosol']
+            register_bands_sncosmo(sncosmo, self.telescope,
+                                  bandname, band,
+                                  airmass, pwv, ozone, aerosol)
+        
+        
+        
+        
         
         

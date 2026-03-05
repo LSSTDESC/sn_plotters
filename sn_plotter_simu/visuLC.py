@@ -13,8 +13,7 @@ import pandas as pd
 
 
 class VisuLC:
-    def __init__(self, metaDir, metaFile, prodID='None',
-                 SNFile='None', SNDir='None',
+    def __init__(self, metaDir, metaFile, snFile='None',prodID='None',
                  airmassType='const', tag_tel='1.9',
                  airmass=1.2,
                  aerosol=0.0,
@@ -27,14 +26,14 @@ class VisuLC:
 
         Parameters
         ----------
-        metaFileInput : str
+        metaFile : str
             metadata file.
-        metaDirInput : str
+        metaDir : str
             location dir of meta data file.
-        SNFileInput : str, optional
-             SN file. The default is None.
-        SNDirInput : str, optional
-             SN input dir. The default is None.
+        snFile: str, optional
+            SN location dir. The default is None.
+        prodID: str, optional
+            production ID. The default is None.
         airmassType: str, optional.
              airmass type for LC fit. The default is const.
         tag_tel: str, opt
@@ -95,6 +94,12 @@ class VisuLC:
         self.metaTot = metaTot
         """
 
+        #grab the SN
+        self.sn_data = pd.DataFrame()
+        if snFile != 'None':
+            self.sn_data = pd.read_hdf(snFile)
+            
+
         self.metaTot['z'] = np.round(self.metaTot['z'], 4)
         self.metaTot['SNID', 'z'].pprint_all()
 
@@ -119,13 +124,6 @@ class VisuLC:
                          aerosol=aerosol,
                          pwv=pwv,
                          ozone=ozone)
-
-        # getting SN (if any)
-        self.SN = Table()
-        if SNFile != 'None':
-            from sn_tools.sn_io import loopStack
-            path = '{}/{}'.format(SNDir, SNFile)
-            self.SN = loopStack([path], 'astropyTable')
 
         self.remove_sat = remove_sat
         # print(self.SN.columns, len(self.SN))
@@ -203,7 +201,7 @@ class VisuLC:
                                    bandname, band,
                                    airmass, pwv, ozone, aerosol)
 
-    def register_bands(self, telescope, airmass=1.2,
+    def register_bands_deprecated(self, telescope, airmass=1.2,
                        aerosol=0.0,
                        pwv=4.0,
                        ozone=400):
@@ -268,6 +266,23 @@ class VisuLC:
         idx = self.metaTot['SNID'] == lcpath
 
         metadata = self.metaTot[idx]
+        
+        
+        #get fitted values (if any)
+        
+        sn_flux = None
+        if len(self.sn_data) > 0:
+            idx = self.sn_data['SNID'] == lcpath
+            sn_fit = self.sn_data[idx]
+            print(sn_fit.columns)
+            x1 = sn_fit['x1_fit'].values[0]
+            color = sn_fit['color_fit'].values[0]
+            x0 = sn_fit['x0_fit'].values[0]
+            z = sn_fit['z_fit'].values[0]
+            daymax = sn_fit['t0_fit'].values[0]
+            from sn_plotter_simu.sn_flux import SNflux
+            sn_flux = SNflux(x1,color,x0,daymax,z)
+        
         # print(metadata)
         # get lc
         lcDir = metadata['lc_dir'].value[0]
@@ -276,6 +291,11 @@ class VisuLC:
         lcs = Read_LightCurve(file_name=lcName, inputDir=lcDir)
 
         lc = lcs.get_table(lcpath)
+
+        # get fitted flux here
+        sn_fluxes = sn_flux.get_flux(lc)
+
+        print(test)
 
         # coadd LC points (band/night) if necessary
 
