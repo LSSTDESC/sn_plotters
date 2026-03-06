@@ -10,9 +10,11 @@ from sn_telmodel.sn_throughputs import get_telescope
 import numpy as np
 #from astropy.table import Table,vstack
 import pandas as pd
+from sn_tools.sn_io import check_get_file
+from sn_tools.sn_cosmo_model import cosmo_wrapper
 
 class SNflux:
-    def __init__(self,x1,color,x0,daymax,z,
+    def __init__(self,x1,color,daymax,z,ebvofMW,
                  model='salt3',
                  version='2.0',
                  absmag=-19.0906,
@@ -22,9 +24,17 @@ class SNflux:
                  atmosDir = 'atmos',
                  tag_tel = '1.9',
                  airmass=1.2,
-                 aerosol=0.0,
-                 pwv=4.0,
-                 ozone=400,):
+                 aerosol=0.05,
+                 pwv=5.0,
+                 ozone=300,
+                 x0_file='x0_norm_-19.0906_salt3.npy',
+                 x0_dir='reference_files',
+                 web_path='https://me.lsst.eu/gris/DESC_SN_pipeline',
+                 cosmo_params=dict(zip(['de_params','de_class','de_model',
+                                        'de_eos','H0','Om0','Ode0','class_loc'],
+                                       [dict(zip(['w0','wa'],[-1,0.])),
+                                        'w0waCDM','CPL','w0+wa*z/(1+z)',
+                                        70.,0.3,0.7,'astropy.cosmology']))):
         """
         class to estimate SN Ia  flux vs time
 
@@ -77,7 +87,7 @@ class SNflux:
         # SN parameters
         self.x1 = x1
         self.color = color
-        self.x0 = x0
+        self.ebvofMW= ebvofMW
         self.daymax = daymax
         self.z = z
         self.model = model
@@ -99,10 +109,21 @@ class SNflux:
         self.aerosol = aerosol
         self.ozone = ozone
         
+        #grab x0 norm file and grab values
+        check_get_file(web_path,x0_dir, x0_file)
+        self.x0_grid = np.load('{}/{}'.format(x0_dir,x0_file))
+        
+        #instanciate cosmology
+        self.cosmology=cosmo_wrapper(cosmo_params)
+        
+        
         #instances of SN and telescope
         
         self.sn = self.get_sn()
         self.telescope = self.get_telescope()
+        
+        
+       
         
     def get_sn(self):
         """
@@ -130,10 +151,38 @@ class SNflux:
         sn.set(t0=self.daymax)
         sn.set(x1=self.x1)
         sn.set(c=self.color)
-        sn.set(x0=self.x0)
+        x0 = self.get_x0()
+        sn.set(x0=x0)
+        sn.set(mwebv=self.ebvofMW)
         
         return sn
     
+    def get_x0(self,alpha=0.13,beta=3.1):
+       """
+
+       Method to estimate x0 from (alpha, beta,sigmaint)
+
+       Returns
+       -------
+       X0 : TYPE
+           DESCRIPTION.
+
+       """
+
+       from scipy.interpolate import griddata
+
+       x0_grid = griddata((self.x0_grid['x1'], self.x0_grid['color']),
+                          self.x0_grid['x0_norm'], 
+                          (self.x1, self.color),
+                          method='nearest')
+       
+       lumidist= self.cosmology.luminosity_distance(self.z).value*1.e3  # in kpc
+       x0 = x0_grid / lumidist ** 2
+
+       x0 *= np.power(10., 0.4*(alpha *self.x1 - beta *self.color))
+       
+       return x0
+   
     def get_telescope(self):
         """
         Method for a telescope instance
@@ -225,6 +274,7 @@ class SNflux:
         """
         
         print('oooooo',lc_data.columns)
+        print(lc_data[['pwv','aerosol','ozone']])
         tmin = self.daymax-20*(1+self.z)
         tmax = self.daymax+60*(1+self.z)
         
@@ -260,12 +310,12 @@ class SNflux:
             
             df = pd.DataFrame(tis, columns=['time'])
             df['band_cosmo'] = vals
-            df['filter'] = fi
+            df['filter'] = key
             df['airmass'] = airmassb
             df['pwv'] = pwvb
             df['ozone'] = ozoneb
             df['aerosol'] = aerosolb
-            idx = lc_data['filter'] == fi
+            idx = lc_data['filter'] == key
             df['zpsys'] = np.unique(lc_data[idx]['zpsys'])[0]
             df['zp'] = np.mean(lc_data[idx]['zp'])
             print('bof',fi,np.mean(lc_data[idx]['airmass']))
@@ -273,8 +323,8 @@ class SNflux:
           
         print(df_add)
         
-        #lc_tot = pd.concat((lc.to_pandas(),df_add))
-        lc_tot =pd.DataFrame(df_add)
+        lc_tot = pd.concat((lc.to_pandas(),df_add))
+        #lc_tot =pd.DataFrame(df_add)
         
         print(lc_tot)
         

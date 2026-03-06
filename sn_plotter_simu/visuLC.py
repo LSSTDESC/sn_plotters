@@ -280,8 +280,9 @@ class VisuLC:
             x0 = sn_fit['x0_fit'].values[0]
             z = sn_fit['z_fit'].values[0]
             daymax = sn_fit['t0_fit'].values[0]
+            ebvofMW = sn_fit['ebvofMW'].values[0]
             from sn_plotter_simu.sn_flux import SNflux
-            sn_flux = SNflux(x1,color,x0,daymax,z)
+            sn_flux = SNflux(x1,color,daymax,z,ebvofMW)
         
         # print(metadata)
         # get lc
