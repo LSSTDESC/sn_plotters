@@ -8,7 +8,8 @@ Created on Thu Mar  5 13:19:36 2026
 import sncosmo
 from sn_telmodel.sn_throughputs import get_telescope
 import numpy as np
-from astropy.table import Table,vstack
+#from astropy.table import Table,vstack
+import pandas as pd
 
 class SNflux:
     def __init__(self,x1,color,x0,daymax,z,
@@ -115,6 +116,11 @@ class SNflux:
         """
         
         source = sncosmo.get_source(self.model, self.version)
+        
+        if self.model == 'salt3':
+           source._wave[0] = 1500.  # used to be 1700
+           source._wave[-1] = 24990.
+        
         dustmap = sncosmo.OD94Dust()
         sn = sncosmo.Model(source=source,
                            effects=[dustmap, dustmap],
@@ -176,18 +182,55 @@ class SNflux:
         # register bands
         ## necessity to drop duplicates!!!!!!!
         ccols = ['band_cosmo','filter','airmass','pwv','aerosol','ozone']
-        self.register_bands(lc)
+        lc_nodup = lc[ccols].drop_duplicates()
         
+        print(len(lc),len(lc_nodup))
+        self.register_bands(lc_nodup)
+        
+        #grab the fluxes
+        bands = lc['filter'].unique()
+        
+        lc_df = pd.DataFrame()
+        for b in bands:
+            idx = lc['filter'] == b
+            lcb = lc[idx]
+            flux = self.sn.bandflux(lcb['band_cosmo'], lcb['time'], 
+                                    zpsys=lcb['zpsys'],zp=lcb['zp'])
+        
+            print('flux',b,flux.tolist())
+            df_ = pd.DataFrame(flux.tolist(),columns=['flux'])
+            df_['filter'] = 'LSST:'+b
+            df_['time'] = lcb['time'].to_list()
+            
+            lc_df = pd.concat((lc_df,df_))
+        
+        self.plot_flux(lc_df,lc_data)
+        print(lc_df)
+        print(test)
         
     def complete_lc(self,lc_data):
-        
-        
+        """
+        Method to complete lc_data with obs
+
+        Parameters
+        ----------
+        lc_data : astropy table
+            Data to process.
+
+        Returns
+        -------
+        lc_tot : pandas df
+            output lc.
+
+        """
         
         print('oooooo',lc_data.columns)
         tmin = self.daymax-20*(1+self.z)
         tmax = self.daymax+60*(1+self.z)
         
-        ccols = ['time','band_cosmo','filter','airmass','pwv','aerosol','ozone']
+        ccols = ['time','band_cosmo','filter',
+                 'airmass','pwv','aerosol','ozone',
+                 'zpsys','zp']
         lc = lc_data[ccols]
         
         filters = np.unique(lc['filter'])
@@ -222,17 +265,35 @@ class SNflux:
             df['pwv'] = pwvb
             df['ozone'] = ozoneb
             df['aerosol'] = aerosolb
+            idx = lc_data['filter'] == fi
+            df['zpsys'] = np.unique(lc_data[idx]['zpsys'])[0]
+            df['zp'] = np.mean(lc_data[idx]['zp'])
+            print('bof',fi,np.mean(lc_data[idx]['airmass']))
             df_add = pd.concat((df_add,df))
           
         print(df_add)
         
-        lc_tot = vstack([lc,Table.from_pandas(df_add)])
+        #lc_tot = pd.concat((lc.to_pandas(),df_add))
+        lc_tot =pd.DataFrame(df_add)
         
         print(lc_tot)
         
         return lc_tot
         
     def register_bands(self,data):
+        """
+        Method to register bands in sncosmo
+
+        Parameters
+        ----------
+        data : pandas df
+            Data to register.
+
+        Returns
+        -------
+        None.
+
+        """
         from sn_tools.sn_utils import register_bands_sncosmo
         
         print('band registry')
@@ -247,6 +308,27 @@ class SNflux:
                                   bandname, band,
                                   airmass, pwv, ozone, aerosol)
         
+    def plot_flux(self, lc_flux,lc_data):
+
+
+        bands = np.unique(lc_data['filter'])
+    
+        import matplotlib.pyplot as plt
+        
+        for b in bands:
+            idx = lc_flux['filter'] == 'LSST:'+b
+            idx &= lc_flux['flux'] > 0.
+            sel = lc_flux[idx]
+            sel = sel.sort_values(by=['time'])
+            idx = lc_data['filter'] == b
+            sel_data = lc_data[idx]
+            fig, ax = plt.subplots()
+            
+            ax.plot(sel['time'],sel['flux'])
+            ax.errorbar(sel_data['time'],sel_data['flux'],
+                        yerr=sel_data['fluxerr'],
+                        marker='o',color='r',linestyle='None')
+        plt.show()
         
         
         
