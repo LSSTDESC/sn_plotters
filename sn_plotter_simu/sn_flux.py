@@ -8,10 +8,11 @@ Created on Thu Mar  5 13:19:36 2026
 import sncosmo
 from sn_telmodel.sn_throughputs import get_telescope
 import numpy as np
-#from astropy.table import Table,vstack
+from astropy.table import Table
 import pandas as pd
 from sn_tools.sn_io import check_get_file
 from sn_tools.sn_cosmo_model import cosmo_wrapper
+from sn_telmodel.sn_transtools import zp_from_config
 
 class SNflux:
     def __init__(self,x1,color,daymax,z,ebvofMW,
@@ -122,8 +123,33 @@ class SNflux:
         self.sn = self.get_sn()
         self.telescope = self.get_telescope()
         
+        #getting the zeropoints
+        config = {}
+        config['sigma'] = {}
+        for vv in ['airmass','pwv','ozone','aerosol']:
+            config[vv] = eval('{}'.format(vv))
+            config['sigma']['{}'.format(vv)] = 0
+        config['ntrial'] = {}
+        config['ntrial']['zp']=1   
+        config['atmosDir'] = atmosDir
+        config['name'] = 'LSST'
+        config['telescope'] = {}
+        config['telescope']['dir'] = tel_dir
+        config['telescope']['tag'] = tag_tel
+        config['throughputDir'] = throughputsDir
         
+        zp_airmass = zp_from_config(config)
+        
+        zp = {}
+        for b in 'ugrizy':
+            val = zp_airmass['zp'][b](airmass).tolist()
+            zp[b] =float(np.round(val,3))
+        
+        self.zp = zp
        
+        self.tmin = daymax-20*(1+z)
+        self.tmax = daymax+60*(1+z)
+        self.tstep = 0.5
         
     def get_sn(self):
         """
@@ -141,6 +167,12 @@ class SNflux:
         if self.model == 'salt3':
            source._wave[0] = 1500.  # used to be 1700
            source._wave[-1] = 24990.
+           wave_min = 1500
+           wave_max = 24990
+           
+           
+        self.wave = np.arange(wave_min, wave_max, 1.)
+        self.wave *= (1.+self.z)
         
         dustmap = sncosmo.OD94Dust()
         sn = sncosmo.Model(source=source,
@@ -209,14 +241,14 @@ class SNflux:
         return telescope
         
         
-    def get_flux(self,lc_data):
+    def get_flux(self,lc_data=None):
         """
         Method to get sn_fluxes from LC (time+filters)
 
         Parameters
         ----------
-        lc_data : TYPE
-            DESCRIPTION.
+        lc_data : astropy table
+            flux vs time (from obs).
 
         Returns
         -------
@@ -233,7 +265,6 @@ class SNflux:
         ccols = ['band_cosmo','filter','airmass','pwv','aerosol','ozone']
         lc_nodup = lc[ccols].drop_duplicates()
         
-        print(len(lc),len(lc_nodup))
         self.register_bands(lc_nodup)
         
         #grab the fluxes
@@ -246,7 +277,6 @@ class SNflux:
             flux = self.sn.bandflux(lcb['band_cosmo'], lcb['time'], 
                                     zpsys=lcb['zpsys'],zp=lcb['zp'])
         
-            print('flux',b,flux.tolist())
             df_ = pd.DataFrame(flux.tolist(),columns=['flux'])
             df_['filter'] = 'LSST:'+b
             df_['time'] = lcb['time'].to_list()
@@ -254,7 +284,7 @@ class SNflux:
             lc_df = pd.concat((lc_df,df_))
         
         self.plot_flux(lc_df,lc_data)
-        print(lc_df)
+        
         print(test)
         
     def complete_lc(self,lc_data):
@@ -272,18 +302,43 @@ class SNflux:
             output lc.
 
         """
+
+        lc = Table()        
+        if lc_data is not None:
+            print(lc_data[['pwv','aerosol','ozone']])
+       
+            ccols = ['time','band_cosmo','filter',
+                     'airmass','pwv','aerosol','ozone',
+                     'zpsys','zp']
         
-        print('oooooo',lc_data.columns)
-        print(lc_data[['pwv','aerosol','ozone']])
-        tmin = self.daymax-20*(1+self.z)
-        tmax = self.daymax+60*(1+self.z)
+            lc = lc_data[ccols]
+        
+        lc_full = self.get_full_lc()
+        
+        if lc_data is not None:
+            lc_tot = pd.concat((lc.to_pandas(),lc_full))
+        else:
+            lc_tot =pd.DataFrame(lc_full)
+        
+        
+        return lc_tot
+        
+    def get_full_lc(self):
+        """
+        Method to estimate the full LC
+
+        Returns
+        -------
+        df_lc : pandas df
+            Full LC.
+
+        """
         
         ccols = ['time','band_cosmo','filter',
                  'airmass','pwv','aerosol','ozone',
                  'zpsys','zp']
-        lc = lc_data[ccols]
         
-        filters = np.unique(lc['filter'])
+        filters = 'grizy'
         
         airmassb = np.round(self.airmass,2)
         pwvb = np.round(self.pwv,2)
@@ -302,10 +357,9 @@ class SNflux:
             
         r = []
          
-        tis = np.arange(tmin,tmax,0.5)
+        tis = np.arange(self.tmin,self.tmax,self.tstep)
         
-        import pandas as pd
-        df_add = pd.DataFrame()
+        df_lc = pd.DataFrame()
         for key,vals in b_filt.items():
             
             df = pd.DataFrame(tis, columns=['time'])
@@ -315,20 +369,12 @@ class SNflux:
             df['pwv'] = pwvb
             df['ozone'] = ozoneb
             df['aerosol'] = aerosolb
-            idx = lc_data['filter'] == key
-            df['zpsys'] = np.unique(lc_data[idx]['zpsys'])[0]
-            df['zp'] = np.mean(lc_data[idx]['zp'])
-            print('bof',fi,np.mean(lc_data[idx]['airmass']))
-            df_add = pd.concat((df_add,df))
+            df['zpsys'] = 'ab'
+            df['zp'] = self.zp[key]
+            df_lc = pd.concat((df_lc,df))
           
-        print(df_add)
+        return df_lc
         
-        lc_tot = pd.concat((lc.to_pandas(),df_add))
-        #lc_tot =pd.DataFrame(df_add)
-        
-        print(lc_tot)
-        
-        return lc_tot
         
     def register_bands(self,data):
         """
@@ -346,7 +392,6 @@ class SNflux:
         """
         from sn_tools.sn_utils import register_bands_sncosmo
         
-        print('band registry')
         for i, row in data.iterrows():
             bandname = row['band_cosmo']
             band = row['filter']
@@ -358,29 +403,67 @@ class SNflux:
                                   bandname, band,
                                   airmass, pwv, ozone, aerosol)
         
-    def plot_flux(self, lc_flux,lc_data):
+    def plot_flux(self, lc_flux,lc_data=None):
+        """
+        Method to plot fluxes
 
+        Parameters
+        ----------
+        lc_flux : pandas df
+            The full light curve.
+        lc_data : astropy table, optional
+            DESCRIPTION. The default is None.
 
-        bands = np.unique(lc_data['filter'])
+        Returns
+        -------
+        None.
+
+        """
+        
+        if lc_data is not None:
+            bands = np.unique(lc_data['filter'])
+        else:
+            bands = lc_flux['filter'].unique()
     
         import matplotlib.pyplot as plt
         
         for b in bands:
+            fig, ax = plt.subplots()
             idx = lc_flux['filter'] == 'LSST:'+b
             idx &= lc_flux['flux'] > 0.
             sel = lc_flux[idx]
             sel = sel.sort_values(by=['time'])
-            idx = lc_data['filter'] == b
-            sel_data = lc_data[idx]
-            fig, ax = plt.subplots()
-            
             ax.plot(sel['time'],sel['flux'])
-            ax.errorbar(sel_data['time'],sel_data['flux'],
-                        yerr=sel_data['fluxerr'],
-                        marker='o',color='r',linestyle='None')
+            if lc_data is not None:
+                idx = lc_data['filter'] == b
+                sel_data = lc_data[idx]
+                ax.errorbar(sel_data['time'],sel_data['flux'],
+                            yerr=sel_data['fluxerr'],
+                            marker='o',color='r',linestyle='None')
         plt.show()
         
-        
+    def sn_sed_mjd(self, mjd):
+         """
+         Method to generate SED flux
+    
+         Parameters
+         ----------
+         mjd : float
+             MJD for the flux generation.
+    
+         Returns
+         -------
+         sed : astropy table
+             generated fluxes.
+    
+         """
+    
+         fluxes = 10.*self.sn.flux(mjd, self.wave)
+         sed = Table([fluxes], names=['flux'])
+         sed['wavelength'] = self.wave
+         sed['fluxerr'] = 0.0
+    
+         return sed        
         
         
         
