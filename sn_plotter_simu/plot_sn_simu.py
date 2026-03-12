@@ -10,13 +10,13 @@ import numpy as np
 from astropy.table import Table
 from . import plt,filtercolors
 
-def plot_flux_spectra(sn_flux,sn_sed,outDir='None'):
+def plot_flux_spectra(sn_flux,sn_sed,outDir='None',bands='izy',phase_to_draw=[]):
     """
     Function to plot spectra (top) and flux from SN Ia.
 
     Parameters
     ----------
-    sn_flux : astropy table
+    sn_flux_o : astropy table
         SN flux.
     sn_sed : list of astropytables
         SN spectra.
@@ -28,74 +28,111 @@ def plot_flux_spectra(sn_flux,sn_sed,outDir='None'):
     None.
 
     """
+    if not phase_to_draw:
+        phases = np.unique(sn_sed['phase']).tolist()
+    else:
+        phases = get_phase(sn_sed,phase_to_draw)
     
-    bands = 'izy'
+    #sed_max = sn_sed['flux'].max()
     
-    """
-    idx = sn_flux['filter'].isin(bands)
-    sel_flux = sn_flux[idx]
-    """
-    
-    mjd_min = sn_flux['phase'].min()
-    mjd_max = sn_flux['phase'].max()
-    """
-    flux_min={}
-    flux_max={}
-    
-    for b in bands:
-        idx = sn_flux['filter'] == 'LSST:'+b
-        sel = sn_flux[idx]
-        flux_min[b] = sel['flux'].min()
-        flux_max[b] = sel['flux'].max()
-    """
-    flux_min = sn_flux['flux'].min()
-    flux_max = sn_flux['flux'].max()
-    
-    phases = np.unique(sn_sed['phase']).tolist()
-    
-    sed_max = sn_sed['flux'].max()
-    
-    for ip,phase in enumerate(phases):
-        figtit = '(x1,color,z)=({},{},{}) \n'.format(sn_flux.meta['x1'],
-                                                  sn_flux.meta['color'],
-                                                  sn_flux.meta['z'])
-        idx = sn_sed['phase'] == phase
-        sel_sed = Table(sn_sed[idx])
-        #fig = plt.figure(figsize=(12,8))
+    if phase_to_draw:
         fig, ax = plt.subplots(nrows=2,figsize=(12,8))
+    
+    figtitm = '(x1,color,z)=({},{},{}) \n'.format(sn_flux.meta['x1'],
+                                              sn_flux.meta['color'],
+                                              sn_flux.meta['z'])
+    for ip,phase in enumerate(phases):
+        
+        figtit = figtitm
+        #fig = plt.figure(figsize=(12,8))
+        if not phase_to_draw:
+            fig, ax = plt.subplots(nrows=2,figsize=(12,8))
         #ax1 = fig.add_subplot(2,1,1)
-        ax1= ax[0]
-        mjd = np.unique(sel_sed['mjd'])[0]
-        mjd_str = 'MJD:{}'.format(mjd)
-        figtit += '{}'.format(mjd_str)
-        fig.suptitle(figtit,fontweight='bold')
-        ax1.plot(sel_sed['wavelength']/10.,sel_sed['flux'],
-                 color='k',marker='.',markersize=3)
-        ax1.grid(visible=True)
-        ax1.set_xlim([450.,1300.])
-        ax1.set_xlabel('wavelength [nm]')
-        ax1.set_ylabel('SED [erg/s/cm$^2$/A]')
+        mjd = plot_sed(sn_sed,phase,figtit,fig=fig,ax=ax[0])
         #ax1.set_xlim([0.,sed_max])
-        ax2 = ax[1]
-        for i,b in enumerate(bands):
-            idx = sn_flux['filter'] == 'LSST:'+b
-            idx &= sn_flux['time'] <= mjd
-            sel_flux = sn_flux[idx]
-            #ax = fig.add_subplot(2,3,i+4)
-            #ax = fig.add_subplot(2,1,2)
-            ax2.plot(sel_flux['phase'],sel_flux['flux'],
-                     color=filtercolors[b],label=b)
-            ax2.set_xlim([mjd_min,mjd_max])
-            #ax2.set_ylim([flux_min[b],flux_max[b]])
-            ax2.set_ylim([flux_min,1.1*flux_max])
-            ax2.grid(visible=True)
-            ax2.legend()
-        ax2.set_xlabel('phase')
-        ax2.set_ylabel('flux [pe/s]')
-        if outDir == 'None':
-            plt.show()
+        mjda=9.*10**9
+        label = True
+        if not phase_to_draw:
+            mjda = mjd
         else:
+            if ip > 0:
+                continue
+        
+        plot_flux(sn_flux,bands,mjda,fig=fig,ax=ax[1],labelIt=label)
+        
+        
+        if outDir != 'None': 
             fName = '{}/flux_spectra_{}.png'.format(outDir,str(ip).zfill(3))
             plt.savefig(fName)
             plt.close(fig)
 
+    if phase_to_draw:
+        plt.show()
+
+def plot_sed(sn_sed,phase,figtit,fig=None,ax=None):
+    
+    idx = sn_sed['phase'] == phase
+    sel_sed = Table(sn_sed[idx])
+    mjd = np.unique(sel_sed['mjd'])[0]
+    mjd_str = 'MJD:{}'.format(mjd)
+    figtit += '{}'.format(mjd_str)
+    fig.suptitle(figtit,fontweight='bold')
+    ax.plot(sel_sed['wavelength']/10.,sel_sed['flux'],
+             color='k',marker='.',markersize=3,label='phase={}'.format(phase))
+    ax.grid(visible=True)
+    ax.set_xlim([450.,1300.])
+    ax.set_xlabel('wavelength [nm]')
+    ax.set_ylabel('SED [erg/s/cm$^2$/A]')
+    ax.legend()
+    
+    return mjd
+    
+def plot_flux(sn_flux,bands,mjd=9.10**9,
+              varx='phase',legx='phase',
+              fig=None,ax=None,labelIt=True):
+    
+    
+    if fig is None:
+        fig, ax = plt.subplots(figsize=(12,8))
+        
+    idx = np.in1d(sn_flux['filter_notel'],list(bands))
+    sn_flux = sn_flux[idx]
+    
+    mjd_min = sn_flux[varx].min()
+    mjd_max = sn_flux[varx].max()
+    
+    flux_min = sn_flux['flux'].min()
+    flux_max = sn_flux['flux'].max()
+    
+    
+    for i,b in enumerate(bands):
+        idx = sn_flux['filter'] == 'LSST:'+b
+        idx &= sn_flux['time'] <= mjd
+        sel_flux = sn_flux[idx]
+        #ax = fig.add_subplot(2,3,i+4)
+        #ax = fig.add_subplot(2,1,2)
+        thelabel = b
+        if not labelIt:
+            thelabel=None
+        ax.plot(sel_flux['phase'],sel_flux['flux'],
+                 color=filtercolors[b],label=thelabel)
+        ax.set_xlim([mjd_min,mjd_max])
+        #ax2.set_ylim([flux_min[b],flux_max[b]])
+        ax.set_ylim([flux_min,1.05*flux_max])
+        ax.grid(visible=True)
+        ax.legend()
+    ax.set_xlabel(legx)
+    ax.set_ylabel('flux [pe/s]')
+ 
+def get_phase(df,phase_list):
+    
+    r = []
+    for ph in phase_list:
+        df['diff'] = np.abs(df['phase']-ph)
+        idx = np.argmin(df['diff'])
+        print('ohohoh',ph,df[idx]['phase'])
+        r.append(df[idx]['phase'])
+        
+    return r
+    
+    
