@@ -53,7 +53,10 @@ def plot_flux_spectra(sn_flux,sn_sed,outDir='None',bands='izy',phase_to_draw=[])
         if not phase_to_draw:
             fig, ax = plt.subplots(nrows=2,figsize=(12,8))
         #ax1 = fig.add_subplot(2,1,1)
-        mjd = plot_sed(sn_sed,phase,figtit,fig=fig,ax=ax[0],lstyle=lstyles[ip])
+        lstyle = 'solid'
+        if phase_to_draw:
+            lstyle=lstyles[ip]
+        mjd = plot_sed(sn_sed,phase,figtit,fig=fig,ax=ax[0],lstyle=lstyle)
         #ax1.set_xlim([0.,sed_max])
         mjda=9.*10**9
         label = True
