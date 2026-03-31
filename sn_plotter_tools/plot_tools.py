@@ -307,7 +307,7 @@ def plot_airmass(df,varx='sigma_pwv',xlabel='$\sigma_{PWV}$ [mm]',
         for b in bands:
             yvar = '{}_{}'.format(vary_prefix,b)
             lab = '{} band'.format(b)
-            if airm > 1.5:
+            if airm > airmass[0]:
                 lab=None
             plot_indiv(sel,xvar=varx,yvar=yvar,label=lab,
                        color=filtercolors[b],
@@ -341,11 +341,13 @@ def plot_airmass(df,varx='sigma_pwv',xlabel='$\sigma_{PWV}$ [mm]',
     ax.annotate('', xy=(x_trans+0.,1.05), 
                 xycoords='axes fraction', xytext=(x_trans+0.05, 1.05),
                 arrowprops=dict(arrowstyle="-", color='k'))
-    ax.text(x_trans+0.055,1.04,'airmass=1.2',fontsize=12,transform=ax.transAxes)
+    ax.text(x_trans+0.055,1.04,'airmass={}'.format(airmass[0]),
+            fontsize=12,transform=ax.transAxes)
     ax.annotate('', xy=(x_trans+0.2,1.05), xycoords='axes fraction',
                 xytext=(x_trans+0.25, 1.05),
                arrowprops=dict(arrowstyle="-", color='k',linestyle='dotted'))
-    ax.text(x_trans+0.255,1.04,'airmass=2.5',fontsize=12,transform=ax.transAxes)
+    ax.text(x_trans+0.255,1.04,'airmass={}'.format(airmass[1]),
+            fontsize=12,transform=ax.transAxes)
     
 def plot_indiv(df,
                xvar='z', xlabel='z', 
