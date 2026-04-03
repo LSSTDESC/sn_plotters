@@ -11,6 +11,7 @@ from scipy.interpolate import RegularGridInterpolator
 from sn_analysis.sn_tools import get_spline
 from . import plt,filtercolors
 import pandas as pd
+from sn_analysis.sn_tools import fit_lin
 
 def plot_xy(df, 
             xvar='z',xleg='$z$',
@@ -254,7 +255,8 @@ def plot_airmass(df,varx='sigma_pwv',xlabel='$\sigma_{PWV}$ [mm]',
                  airmass=[1.2,2.5],
                  y_iso=[1,2,5],
                  txt_iso=['1 mmag','2 mmag','5 mmag'],
-                 ymax=6,deltay_txt=0.03,xtext=0.015,smoothIt=False):
+                 ymax=6,deltay_txt=0.03,xtext=0.015,
+                 smoothIt=False,fitIt=False):
     """
     Function to make a 2D plot for defined airmass values
 
@@ -284,12 +286,17 @@ def plot_airmass(df,varx='sigma_pwv',xlabel='$\sigma_{PWV}$ [mm]',
         x value for the text. The default is 0.015.
     smoothIt : bool, optional
         To smooth the data (using spline). The default is False.
+    fitIt : bool, optional
+        To fit the data (linear). The default is False.    
 
     Returns
     -------
     None.
 
     """
+    atmos_params = ['sigma_airmass','sigma_aerosol','sigma_pwv','sigma_ozone']
+    dx = [0.005,0.001,0.01,5]
+    deltax_fit = dict(zip(atmos_params,dx))
     
     
     df = df.round({'mean_airmass':2})
@@ -312,8 +319,11 @@ def plot_airmass(df,varx='sigma_pwv',xlabel='$\sigma_{PWV}$ [mm]',
             plot_indiv(sel,xvar=varx,yvar=yvar,label=lab,
                        color=filtercolors[b],
                        marker=mm[b],lstyle=ls[airm],
-                       fig=fig,ax=ax,smoothIt=smoothIt)
-    
+                       fig=fig,ax=ax,smoothIt=smoothIt,
+                       fitIt=fitIt,deltax_fit=deltax_fit[varx])
+               
+            
+            
     
     
     idx = df['mean_airmass'].isin(airmass)
@@ -353,7 +363,8 @@ def plot_indiv(df,
                xvar='z', xlabel='z', 
                yvar='N', ylabel='NSN',label='',
                lstyle='solid',color='k',marker='o',
-               figtitle='',fig=None, ax=None,smoothIt=False):
+               figtitle='',fig=None, ax=None,
+               smoothIt=False,fitIt=False,deltax_fit=0.01):
     """
     Function to make indiv plot
 
@@ -385,7 +396,8 @@ def plot_indiv(df,
         Axis for the plot. The default is None.
     smoothIt : bool, optional
         To smooth the plot using spline. The default is False.
-
+    fitIt : bool, optional
+        To fit the plot using linear function. The default is False.
     Returns
     -------
     None.
@@ -396,14 +408,25 @@ def plot_indiv(df,
         fig, ax = plt.subplots(figsize=(12,8))
     
     
-    if not smoothIt:
+    if not smoothIt and not fitIt:
         ax.plot(df[xvar],df[yvar],
                 marker=marker,linestyle=lstyle,
                 color=color,markersize=8,mfc='None',label=label)
-    else:
+    if smoothIt:
         df = df.sort_values(by=[xvar])
-        print('alors',df)
         xnew, spl_smooth = get_spline(df,xvar,yvar,nx=10)
         ax.plot(xnew, spl_smooth,color=color,
                 marker=marker,linestyle=lstyle,
                 markersize=10,mfc='None',label=label) 
+        
+    if fitIt:
+        res = fit_lin(df,xvar,yvar)
+        print(res)
+        print(lstyle,)
+        xmin=df[xvar].min()
+        xmax=df[xvar].max()
+        xv = np.arange(xmin,xmax+deltax_fit,deltax_fit)
+        yv = res[0]*xv+res[1]
+        ax.plot(xv,yv,color=color,
+                marker=marker,linestyle=lstyle,
+                markersize=10,mfc='None',label=label,lw=2)
