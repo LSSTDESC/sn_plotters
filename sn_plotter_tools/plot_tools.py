@@ -336,7 +336,12 @@ def plot_airmass(df,varx='sigma_pwv',xlabel='$\sigma_{PWV}$ [mm]',
         ax.plot([xmin,xmax],[yvals]*2,linestyle='dashed',color='k')
         #ax.text(xtext,yvals+deltay_txt,txt_iso[io],fontsize=12)
         #ax.lines(x=xtext, ymin=, ymax=250, color = 'black', linestyles="dashed")
+        """
         ax.text(x=xtext, y=yvals, s=txt_iso[io], 
+                ha='center', va='center', color='k',
+                backgroundcolor='white',fontsize=12)
+        """
+        ax.text(x=1.05*xmax, y=yvals, s=txt_iso[io], 
                 ha='center', va='center', color='k',
                 backgroundcolor='white',fontsize=12)
         
