@@ -193,20 +193,36 @@ def plot_atmos_data_airmass(theDir,
             '$\sigma_{aerosol}$',
             '$\sigma_{airmass}$',
             '$\sigma_{ozone}$ [DU]']
+    legxxrel = ['$\\frac{\sigma_{PWV}}{<PWV>}$ [%]',
+            '$\\frac{\sigma_{aerosol}}{<aerosol>}$ [%]',
+            '$\\frac{\sigma_{airmass}}{<airmass>}$ [%]',
+            '$\\frac{\sigma_{ozone}}{<ozone>}$ [%]']
     
     airmass=[1.2,2.0]
     xt = [0.15,0.011,0.01,25]
     xxtext=dict(zip(all_atm,xt))
     legx = dict(zip(all_atm,legxx))
+    legxrel = dict(zip(all_atm,legxxrel))
+    
     for vv in atmos_params:
         theFile = 'zp_atmos_{}.hdf5'.format(vv)
         fName = '{}/{}'.format(theDir,theFile)
 
         df = pd.read_hdf(fName)
-        
+
+        if vv == 'aerosol':
+            idx = df['sigma_aerosol'] <= 0.0125
+            df = df[idx]
+            
+        if vv == 'airmass':
+           idx = df['sigma_airmass'] <= 0.04
+           df = df[idx]   
+
+
         for b in 'grizy':
             df['std_zp_{}'.format(b)] *= 1000 # in mmag
-           
+         
+        
         
         plot_airmass(df,varx='sigma_{}'.format(vv),xlabel=legx[vv],
                          vary_prefix='std_zp',airmass=airmass, 
@@ -222,6 +238,25 @@ def plot_atmos_data_airmass(theDir,
                          txt_iso=['0.05 nm','0.1 nm','0.15 nm'],
                          ymax=0.2,deltay_txt=0.005,
                          xtext=xxtext[vv],smoothIt=False,fitIt=True)
+        
+        rel_err = 'rel_err_{}'.format(vv)
+        df[rel_err] = 100.*df['sigma_{}'.format(vv)]/df['mean_{}'.format(vv)]
+        
+        print(df.columns,legxrel[vv])
+        plot_airmass(df,varx=rel_err,xlabel=legxrel[vv],
+                         vary_prefix='std_zp',airmass=airmass, 
+                         y_iso=[1,2,3,5],
+                         txt_iso=['1 mmag','2 mmag','3 mmag','5 mmag'],
+                         xtext=xxtext[vv],smoothIt=False,fitIt=True)
+        plot_airmass(df,varx=rel_err,xlabel=legxrel[vv],
+                         vary_prefix='std_mean_wave',
+                         ylabel='$\sigma_{meanwave}$ [mm]',
+                         airmass=airmass,
+                         y_iso=[0.05,0.1,0.15],
+                         txt_iso=['0.05 nm','0.1 nm','0.15 nm'],
+                         ymax=0.2,deltay_txt=0.005,
+                         xtext=xxtext[vv],smoothIt=False,fitIt=True)
+        
         
 def plot_perf(data,x_main='sigma',
               obs_param='zp',unit='mmag',ylabel='zp',

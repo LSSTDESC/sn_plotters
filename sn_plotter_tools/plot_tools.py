@@ -295,8 +295,14 @@ def plot_airmass(df,varx='sigma_pwv',xlabel='$\sigma_{PWV}$ [mm]',
 
     """
     atmos_params = ['sigma_airmass','sigma_aerosol','sigma_pwv','sigma_ozone']
+    atmos_paramsb = ['rel_err_airmass','rel_err_aerosol',
+                     'rel_err_pwv','rel_err_ozone']
     dx = [0.005,0.001,0.01,5]
-    deltax_fit = dict(zip(atmos_params,dx))
+    dxb = [0.2,0.5,0.5,1]
+    if varx in atmos_params:
+        deltax_fit = dict(zip(atmos_params,dx))
+    else:
+        deltax_fit = dict(zip(atmos_paramsb,dxb))
     
     
     df = df.round({'mean_airmass':2})
@@ -321,10 +327,6 @@ def plot_airmass(df,varx='sigma_pwv',xlabel='$\sigma_{PWV}$ [mm]',
                        marker=mm[b],lstyle=ls[airm],
                        fig=fig,ax=ax,smoothIt=smoothIt,
                        fitIt=fitIt,deltax_fit=deltax_fit[varx])
-               
-            
-            
-    
     
     idx = df['mean_airmass'].isin(airmass)
     sel = df[idx]
@@ -426,8 +428,6 @@ def plot_indiv(df,
         
     if fitIt:
         res = fit_lin(df,xvar,yvar)
-        print(res)
-        print(lstyle,)
         xmin=df[xvar].min()
         xmax=df[xvar].max()
         xv = np.arange(xmin,xmax+deltax_fit,deltax_fit)
