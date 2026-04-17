@@ -366,6 +366,10 @@ def plot_airmass(df,varx='sigma_pwv',xlabel='$\sigma_{PWV}$ [mm]',
     ax.text(x_trans+0.255,1.04,'airmass={}'.format(airmass[1]),
             fontsize=12,transform=ax.transAxes)
     
+    #save plot here
+    fName='fig_{}_{}.png'.format(vary_prefix,varx)
+    plt.savefig(fName)
+    
 def plot_indiv(df,
                xvar='z', xlabel='z', 
                yvar='N', ylabel='NSN',label='',
