@@ -418,3 +418,197 @@ def plot_perf_obs_param(df_zp,sigmas,unit_atmos,
     plot_perf(res_zp,x_main='frac',obs_param=obs_param,unit='%',ylabel=ylabel,
               atmos_params=['airmass','ozone','aerosol','pwv'],ylines=[],
               extra_leg=extra_leg)
+    
+def plot_results_config(df,config_df,obs_param='zp',unit='mmag',plotDir='',
+                 tagline=[1,2,5,10]):
+    """
+    Function to plot the results
+
+    Parameters
+    ----------
+    df : pandas df
+        Data to plot.
+    obs_param : str, optional
+        obs parameter to plot (zp/mean_wave). The default is 'zp'.
+    unit : str, optional
+        unit corresponding to obs_param (mmag/nm). The default is 'mmag'.
+    plotDir : str, optional
+        Output dir for the plots. The default is ''.
+    tagline : list(float), optional
+        Lines to add to the plot. The default is [1,2,5,10].
+
+    Returns
+    -------
+    None.
+
+    """
+
+    from sn_analysis.sn_atmos_tools import add_index_band,add_legend,get_str
+    #add index
+    df = add_index_band(df)
+    
+    fig, ax = plt.subplots(figsize=(12,8))
+    fig.subplots_adjust(top=0.85,right=0.9)
+    configs = df['config'].unique()
+    airmass = df['airmass'].unique().tolist()
+    airmass = list(map(float, airmass))
+    
+    yvar= 'sigma_{}_tot'.format(obs_param)
+    
+    lstyles = dict(zip(airmass,['solid','dotted']))
+    markers = ['o','s','P','h','v']
+    
+    mmarks = dict(zip(configs,markers[:len(configs)]))
+    
+    for airm in airmass:
+        idx = df['airmass'] == airm
+        sel = df[idx]
+        for config in configs:
+            idxb = sel['config'] == config
+            selb = sel[idxb]
+            idxb = config_df['config']==config
+            sel_config = config_df[idxb]
+            label = get_str(sel_config,atmos_params=['airmass','ozone',
+                                                     'aerosol','pwv'])
+            label = '$\sigma_{atmos}$='+label
+            if airm > 1.5:
+                label = None
+            ax.plot(selb['band'],selb[yvar],
+                    marker=mmarks[config],mfc='None',
+                    linestyle=lstyles[airm],label=label)
+            
+    ax.grid(visible=True)
+    
+    ax.legend(loc='upper left',
+              bbox_to_anchor=(0.05, 1.2), ncol=2, frameon=False, fontsize=15)
+    ax.set_xlabel(r'band')
+    ylabel = '$\sigma_{'+obs_param+'}$'+ '[{}]'.format(unit)
+    ax.set_ylabel(r'{}'.format(ylabel))
+    xmin,xmax = ax.get_xlim()
+    for tt in tagline:
+        ax.plot([xmin,xmax],[tt]*2,linestyle='dashed',color='k')
+        ax.text(1.02*xmax,tt,'{}'.format(tt)+' mmag',fontsize=12)
+    ax.set_xlim([xmin,xmax])
+    
+    # add airmass legend
+    add_legend(ax, airmass)
+    
+    if plotDir != '':
+        outName = '{}/summary_zp.png'.format(plotDir)
+        plt.savefig(outName)
+    
+def plot_sigma_obs_param(res, obs_param='zp',unit_obs_param='mmag',
+                         vary='sigma_atmos_param',err_rel=False,
+                         atmos_params = ['airmass','ozone','aerosol','pwv'],
+                         limy =[[0.,0.05],[0.,100.],[0.,0.0055],[0.,0.5]],
+                         auxtel_data=[3.e-3,20,5.e-3,0.2],plotDir=''):
+    """
+    Plot sigma_atmos vs band for a set of sigma_zp_atmos values
+
+    Parameters
+    ----------
+    res : pandas df
+        Data to plot.
+    obs_param : str, optional
+        obs parameter (zp/mean_wave). The default is 'zp'.
+    unit_obs_param : str, optional
+        unit for the obs param. The default is 'mmag'.
+    vary : str, optional
+        y-axis variable. The default is 'sigma_atmos_param'.
+    err_rel : bool, optional
+        To plot relative errors or not. The default is False.
+    atmos_params : list(str), optional
+        List of atmos params. The default is ['airmass','ozone','aerosol','pwv'].
+    limy : list(list(float)), optional
+        y-axis limits for the plot. The default is [[0.,0.05],[0.,100.],[0.,0.0055],[0.,0.5]].
+    auxtel_data : list(float), optional
+        Auxtel typical values. The default is [3.e-3,20,5.e-3,0.2].
+    plotDir : str, optional
+        Output dir for the plots. The default is ''.
+
+    Returns
+    -------
+    None.
+
+    """
+    from sn_analysis.sn_atmos_tools import add_index_band,add_legend
+    
+    res = add_index_band(res)
+    if err_rel:
+        res['sigma_atmos_param']/=res['atmos_param_value']/100.
+        #limy = [0.,30.]*4
+    
+    auxtel_mes = dict(zip(atmos_params,auxtel_data))
+    bands_atm = dict(zip(atmos_params,
+                 ['grizy','gri','grizy','izy']))
+    lstyle = dict(zip([1.2,2.0],['solid','dotted']))
+    
+    limy = dict(zip(atmos_params,limy))
+    unit = dict(zip(atmos_params,['','[DU]','','[mm]']))
+
+    sigmas = res['sigma_obs_param'].unique()
+    
+    markers = ['o','s','P','h']
+    colors = ['m','r','b','g']
+    
+    mm = dict(zip(sigmas,markers))
+    ccolors = dict(zip(sigmas,colors))
+    
+    for atm in atmos_params:
+        idx = res['atmos_param'] == atm
+        sela = res[idx]
+        fig, ax = plt.subplots(figsize=(12,8))
+        fig.subplots_adjust(right=0.85)
+        airmass = sela['airmass'].unique()
+        
+        for airm in airmass:
+            idx = sela['airmass'] == airm
+            idx &= sela['band'].isin(list(bands_atm[atm]))
+            selb = sela[idx]
+            selb = selb.sort_values(by=['index','sigma_obs_param'])
+            sigmas = selb['sigma_obs_param'].unique()
+            
+            for sig in sigmas:
+                thelab = None
+                if  airm == 1.2:
+                    thelab = '$\sigma_{'+obs_param+'}$='+'{}'.format(sig)+' '+unit_obs_param
+                
+                idx = selb['sigma_obs_param'] == sig
+                selc = selb[idx]
+                ax.plot(selc['band'],selc[vary],
+                        color=ccolors[sig],linestyle=lstyle[airm],
+                        marker=mm[sig],mfc='None',label=thelab)
+            
+        ax.grid(visible=True)
+        ax.set_ylim(limy[atm])
+    
+        if not err_rel:
+            sig_atm = '$\sigma_{'+atm+'}$ '+format(unit[atm])
+        else:
+            sig_atm = '$\\frac{\sigma_{'+atm+'}}{<'+atm+'>}$ [%]'
+            
+        ax.set_ylabel(sig_atm)
+        ax.set_xlabel('band')
+        ax.legend(loc='upper left',
+              bbox_to_anchor=(-0.1, 1.15), ncol=4, frameon=False, fontsize=15)
+       
+        # add airmass legend
+        add_legend(ax, airmass)
+        
+        # add auxtel typical measurements
+        
+        xmin,xmax = ax.get_xlim()
+        vmes = auxtel_mes[atm]
+        ax.plot([xmin,xmax],[vmes]*2,linestyle='dashed',color='k')
+        ax.set_xlim([xmin,xmax])
+        vunit = unit[atm].split('[')[-1].split(']')[0]
+        if not err_rel:
+            ttext = '$\sigma_{'+atm+'}$='+'{}'.format(vmes)+ ' {}'.format(vunit)
+        else:
+            import numpy as np
+            ttext = '$\\frac{\sigma_{'+atm+'}}{<'+atm+'>}$='+'{}'.format(np.round(vmes,1))+ ' %'
+        ax.text(1.02*xmax,vmes,ttext,fontsize=12)
+    
+        if plotDir != '':
+            outName = '{}/sigma_{}_{}.png'.format(plotDir,atm,int(err_rel))
+            plt.savefig(outName)
