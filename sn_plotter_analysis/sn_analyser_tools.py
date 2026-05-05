@@ -244,7 +244,7 @@ def process_WFD_multi(hpixes, params, j, output_q=None):
     sel = data[idx]
 
     wfd_seas = sel.groupby(['healpixID', timescale, 'field']).apply(
-        lambda x: get_stat(x, norm_factor)).reset_index()
+        lambda x: get_stat(x, norm_factor),include_groups=False).reset_index()
 
     del sel
     del data
@@ -580,7 +580,7 @@ def count_all(data, columns, var=['nsn'], err_var=['err_nsn']):
     """
 
     tt = data.groupby(columns).apply(lambda x: count(
-        x, var=var, err_var=err_var)).reset_index()
+        x, var=var, err_var=err_var),include_groups=False).reset_index()
 
     return tt
 
