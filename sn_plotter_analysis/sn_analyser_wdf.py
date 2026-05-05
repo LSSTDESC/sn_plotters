@@ -235,7 +235,7 @@ def process_WFD(conf_df, dataType, dbDir_WFD, runType,
         del wfda
 
 
-def process_WFD_singledb(dbName, dataType, dbDir_WFD, runType,
+def process_WFD_singledb_old(dbName, dataType, dbDir_WFD, runType,
                          timescale_file, timeslots, norm_factor, fName, nside=64):
     """
     Function to process WFD data
@@ -277,6 +277,53 @@ def process_WFD_singledb(dbName, dataType, dbDir_WFD, runType,
     res = get_nsn_wfd(wfda, norm_factor, nside)
     res.to_hdf(fName, key='nsn_WFD')
     del wfda
+    
+def process_WFD_singledb(dbName, dataType, dbDir_WFD, runType,
+                         timescale_file, timeslots, norm_factor, fName, nside=64):
+    """
+    Function to process WFD data
+
+    Parameters
+    ----------
+    conf_df : pandas df
+        config file.
+    dataType : str
+        Data type.
+    dbDir_WFD : str
+        Data dir.
+    runType : str
+        Run type.
+    timescale_file : str
+        Time scale (year/season)
+    timeslots : list(int)
+        Time slots
+
+    Returns
+    -------
+    wfd : pandas df
+        Output data.
+
+    """
+
+    # fig, ax = plt.subplots(figsize=(14, 8))
+    from_to_load = 'from sn_plotter_analysis.sn_analyser_tools'
+    mod_to_load = '{} import load_{}'.format(from_to_load, dataType)
+    exec(mod_to_load, globals())
+
+    res_tot = pd.DataFrame()
+    for timeslot in timeslots:
+        tt = 'load_{}(\'{}\',\'{}\',\'{}\',\'{}\',{},norm_factor={})'.format(
+            dataType, dbDir_WFD, dbName, runType,
+            timescale_file, [timeslot], norm_factor)
+        wfda = eval(tt)
+        wfda['dbName'] = dbName
+
+        # analyze: grab the number of sn+err_nsn
+        res = get_nsn_wfd(wfda, norm_factor, nside)
+        res_tot = pd.concat((res_tot,res))
+        del wfda
+        del res
+    res_tot.to_hdf(fName, key='nsn_WFD')
 
 
 def get_nsn_wfd(data, norm_factor, nside=64):
@@ -397,10 +444,10 @@ def plot_summary_wfd(wfda, conf_df, timescale='season',
 
         color = 'dimgrey'
         color = 'darkorange'
-        nsn = 0.8e6
+        nsn = 1.e6
         ax.plot([xmin, xmax], [nsn, nsn],
                 color=color, lw=2, linestyle='solid')
-        ax.text(5, 0.77e6, '800k SNe Ia', color=color, fontsize=12)
+        ax.text(5, 1.02e6, '1 million SNe Ia', color=color, fontsize=12)
         nsn = 200000
         ax.plot([xmin, xmax], [nsn, nsn],
                 color=color, lw=2, linestyle='solid')
