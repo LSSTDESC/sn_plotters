@@ -460,6 +460,11 @@ def plot_results_config(df,config_df,obs_param='zp',unit='mmag',plotDir='',
     
     mmarks = dict(zip(configs,markers[:len(configs)]))
     
+    configs = df['config'].unique()
+    ccolors = ['k','r','b','g']
+    
+    colors = dict(zip(configs,ccolors))
+    
     for airm in airmass:
         idx = df['airmass'] == airm
         sel = df[idx]
@@ -475,7 +480,7 @@ def plot_results_config(df,config_df,obs_param='zp',unit='mmag',plotDir='',
                 label = None
             ax.plot(selb['band'],selb[yvar],
                     marker=mmarks[config],mfc='None',
-                    linestyle=lstyles[airm],label=label)
+                    linestyle=lstyles[airm],label=label,color=colors[config])
             
     ax.grid(visible=True)
     
