@@ -65,7 +65,7 @@ def plot_nsn_year_all(nsn, config,
             ref_os = get_cumul(ref_os, xvar, yvar, yvar_err)
 
     config = config.sort_values(by=['dbName_plot'])
-    dbNames = config['dbName'].unique()
+    dbNames = config['dbName_plot'].unique()
 
     for dbName in dbNames:
         if os_ref == dbName:
@@ -90,7 +90,7 @@ def plot_nsn_year_all(nsn, config,
                 yerr = np.sqrt(np.cumsum(yerr**2))
         """
         # get config for plot
-        idxb = config['dbName'] == dbName
+        idxb = config['dbName_plot'] == dbName
         selconf = config[idxb]
         ls = selconf['ls'].values[0]
         color = selconf['color'].values[0]
