@@ -311,6 +311,7 @@ def process_WFD_singledb(dbName, dataType, dbDir_WFD, runType,
     exec(mod_to_load, globals())
 
     res_tot = pd.DataFrame()
+    
     for timeslot in timeslots:
         tt = 'load_{}(\'{}\',\'{}\',\'{}\',\'{}\',{},norm_factor={})'.format(
             dataType, dbDir_WFD, dbName, runType,
@@ -444,10 +445,11 @@ def plot_summary_wfd(wfda, conf_df, timescale='season',
 
         color = 'dimgrey'
         color = 'darkorange'
-        nsn = 1.e6
+        nsn = 0.8e6
         ax.plot([xmin, xmax], [nsn, nsn],
                 color=color, lw=2, linestyle='solid')
-        ax.text(5, 1.02e6, '1 million SNe Ia', color=color, fontsize=12)
+        #ax.text(5, 1.02e6, '1 million SNe Ia', color=color, fontsize=12)
+        ax.text(5, 0.81e6, '800k SNe Ia', color=color, fontsize=12)
         nsn = 200000
         ax.plot([xmin, xmax], [nsn, nsn],
                 color=color, lw=2, linestyle='solid')
