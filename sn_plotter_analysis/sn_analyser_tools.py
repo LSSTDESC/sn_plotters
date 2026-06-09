@@ -518,11 +518,15 @@ class Estimate_NSN:
         # get expected number of SN from rate
         zmin = np.min(grp['z'])
         zmax = np.max(grp['z'])
-        zz, rate, err_rate, nsn, err_nsn, age_univ = self.sn_rate(
-            zmin=zmin, zmax=zmax,
-            duration=season_length,
-            survey_area=survey_area,
-            account_for_edges=True, dz=0.001)
+        delta_z = zmax-zmin
+        if delta_z >= 0.01:
+            zz, rate, err_rate, nsn, err_nsn, age_univ = self.sn_rate(
+                zmin=zmin, zmax=zmax,
+                duration=season_length,
+                survey_area=survey_area,
+                account_for_edges=True, dz=0.001)
+        else:
+            nsn = pd.DataFrame()
 
         if len(nsn) == 0:
             res = pd.DataFrame()
