@@ -70,7 +70,7 @@ def plot_nsn_year_all(nsn, config,
     for dbName in dbNames:
         if os_ref == dbName:
             continue
-        idx = nsn['dbName'] == dbName
+        idx = nsn['dbName_plot'] == dbName
         sel = nsn[idx]
 
         if cumul:
@@ -288,7 +288,7 @@ def plot_nsn_tot(nsn_a, config,
 
 
 def plot_ddf_area(data, config,
-                  cols=['year', 'dbName', 'field'],
+                  cols=['year', 'dbName', 'field','dbName_plot'],
                   fields=['COSMOS', 'CDFS',
                           'XMM-LSS',
                           'ELAISS1', 'EDFS_a', 'EDFS_b']):
@@ -306,7 +306,7 @@ def plot_ddf_area(data, config,
 
 
 def plot_ddf_year(data, config,
-                  cols=['year', 'dbName'],
+                  cols=['year', 'dbName','dbName_plot'],
                   fields=['COSMOS', 'CDFS',
                           'XMM-LSS',
                           'ELAISS1', 'EDFS_a', 'EDFS_b'], os_ref='None'):
