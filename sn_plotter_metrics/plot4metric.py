@@ -740,7 +740,7 @@ def plotMollview(nside, fig, data, varName, leg, op, xmin, xmax):
 def plotMollview_seasons(nside, data, dbName,
                          yvar='nsn', yleg='N$_{SN}^{z \leq z_{complete}}$',
                          op=np.sum, seasons=[3], timescale='year',
-                         outDir='None'):
+                         outDir='None',themin=0.0001):
     """
     Plot Mollview for all seasons
 
@@ -778,10 +778,13 @@ def plotMollview_seasons(nside, data, dbName,
         ax.axis('off')
         idb = data[timescale] == season
         sels = data[idb]
-        xmin = np.max([0.001, np.min(sels[yvar])])
+        xmin = np.max([themin, np.min(sels[yvar])])
         xmax = np.max(sels[yvar])
         tit = dbName + ' - {} {}'.format(timescale, season)
+        if isinstance(season,str):
+            tit = dbName + ' - {}'.format(season)
         tit += '\n {}'.format(yleg)
+        
         plotMollview(nside, fig, sels, yvar, tit, op, xmin, xmax)
 
         if outDir != 'None':
