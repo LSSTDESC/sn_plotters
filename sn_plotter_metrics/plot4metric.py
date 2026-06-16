@@ -705,9 +705,10 @@ def plotMollview(nside, fig, data, varName, leg, op, xmin, xmax):
     npix = hp.nside2npix(nside)
 
     hpxmap = np.zeros(npix, dtype=float)
-    hpxmap = np.full(hpxmap.shape, 0.)
+    vmin = xmin-0.000001
+    hpxmap = np.full(hpxmap.shape, vmin)
     hpxmap[data['healpixID'].astype(
-        int).to_list()] += data[varName].values
+        int).to_list()] = data[varName].values
 
     norm = plt.cm.colors.Normalize(xmin, xmax)
     cmap = plt.cm.jet
