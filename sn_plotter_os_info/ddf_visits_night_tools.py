@@ -72,7 +72,7 @@ def plot_obs_time_night(data):
     obs_time = data.groupby(['night']).apply(
         lambda x: pd.DataFrame(
             {'obs_time [h]': [x['nvisits'].sum()*30./3600.],
-             'nddf': [len(x['target_name'].unique())]
+             'nddf': [len(x['field'].unique())]
              })).reset_index()
 
     ax[0].plot(obs_time['night'], obs_time['nddf'], 'k.', ms=5)
@@ -121,7 +121,7 @@ def plot_stat_visits_vs_exp(data, ope, opevalue, selval=0.,
     """
 
     idx = ope(data['diff_nvisits'], selval)
-    idx &= data['target_name'] == field
+    idx &= data['field'] == field
     sel = data[idx]
 
     dd = {}
@@ -135,7 +135,7 @@ def plot_stat_visits_vs_exp(data, ope, opevalue, selval=0.,
     fig.subplots_adjust(hspace=0)
     dbName = sel['dbName'].unique()[0]
     year = sel['year'].unique()[0]
-    field = sel['target_name'].unique()[0]
+    field = sel['field'].unique()[0]
     figtit = '{} - {} \n year {}'.format(dbName, field, year)
 
     figtit += '- $\\frac{N_{visits}^{obs}}{N_{visits}^{exp}}$'+opevalue+'1'
@@ -221,7 +221,7 @@ def ana_plot_stat(data):
 
     """
 
-    res_stat = data.groupby(['target_name', 'season', 'DD_type', 'dbName']).apply(
+    res_stat = data.groupby(['field', 'season', 'DD_type', 'dbName']).apply(
         lambda x: stat_simu_exp(x)).reset_index()
 
     print(res_stat)
@@ -278,7 +278,7 @@ def plot_stat(data, prefix='DD:'):
 
     """
     print(data.columns)
-    fields = data['target_name'].unique()
+    fields = data['field'].unique()
 
     categ = ['perfect', 'missing', 'excess']
     value = ['=', '<', '>']
@@ -298,7 +298,7 @@ def plot_stat(data, prefix='DD:'):
         fig.suptitle(figtit)
         fig.subplots_adjust(right=0.85)
         for field in fields:
-            idx = data['target_name'] == field
+            idx = data['field'] == field
             sel = data[idx]
             dd_type = sel['DD_type'].unique()[0]
             ax.plot(sel['season'], sel['nvisits_{}'.format(vval)],
@@ -376,7 +376,7 @@ def ana_seq(df, timescale='year'):
 
     """
 
-    ccols_m = ['target_name', timescale, 'dbName']
+    ccols_m = ['field', timescale, 'dbName']
     ccols = ccols_m+['seq_tot']
 
     dfb = df.groupby(ccols)[ccols].apply(
@@ -586,7 +586,7 @@ def get_ratios(grp, df_orig, band='y'):
     year = grp.name[2]
 
     idx = df_orig['dbName'] == dbName
-    idx &= df_orig['target_name'] == target_name
+    idx &= df_orig['field'] == target_name
     idx &= df_orig['year'] == year
     idx &= df_orig[band] > 0
 
@@ -671,7 +671,7 @@ def get_stat_indiv(grp, df_orig, band='y'):
     year = grp.name[2]
 
     idx = df_orig['dbName'] == dbName
-    idx &= df_orig['target_name'] == target_name
+    idx &= df_orig['field'] == target_name
     idx &= df_orig['year'] == year
     idx &= df_orig[band] > 0
 
