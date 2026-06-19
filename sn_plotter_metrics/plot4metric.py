@@ -467,7 +467,7 @@ def plot_field(df, xvars=['season', 'season'],
     None.
 
     """
-    fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(14, 9))
+    fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(16, 9))
     fig.suptitle(title)
     fig.subplots_adjust(hspace=0.02, right=0.75)
 
