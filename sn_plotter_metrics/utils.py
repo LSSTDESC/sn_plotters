@@ -450,9 +450,11 @@ def get_dist(datam, pixRA_mean=-1, pixDec_mean=-1):
 
     """
     data = pd.DataFrame(datam)
+
     if pixRA_mean == -1:
         pixRA_mean = np.mean(data['pixRA'])
         pixDec_mean = np.mean(data['pixDec'])
+        
     data['dist'] = np.sqrt(((data['pixRA']-pixRA_mean)*np.cos(np.deg2rad(data['pixDec'])))**2
                            + (data['pixDec']-pixDec_mean)**2)
     data['pixRA_mean'] = pixRA_mean
