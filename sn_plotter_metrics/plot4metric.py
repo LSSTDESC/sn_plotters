@@ -634,10 +634,12 @@ def plot_pixels(data, yvar='nsn',
     from sn_plotter_metrics.utils import get_dist
     df_dist = get_dist(data)
     df_dist = df_dist.sort_values(by=[distval])
+    
     if not rebin:
         plot_centers = df_dist[distval]
         plot_values = df_dist[yvar]
-
+        dd = df_dist
+        
     if rebin:
         # rebin to have a "better" plot
         import pandas as pd
@@ -876,6 +878,7 @@ def multiplot_dist(sel, yvar='cadence',
     cols = dict(zip(seasons, colors))
     lstys = dict(zip(seasons, lstyles))
     marks = dict(zip(seasons, mstyles))
+    
     for field in fields:
         idx = sel['field'] == field
         selb = sel[idx]
