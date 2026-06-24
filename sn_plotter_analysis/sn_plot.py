@@ -50,12 +50,12 @@ def plot_nsn_year_all(nsn, config,
 
     """
 
-    fig, ax = plt.subplots(figsize=(16, 8))
+    fig, ax = plt.subplots(figsize=(17, 8))
     fig.subplots_adjust(right=0.78)
 
     if os_ref != 'None':
         figtit += '\n ref:{}'.format(os_ref)
-    fig.suptitle(figtit)
+    fig.suptitle(figtit,font='bold')
 
     ref_os = pd.DataFrame()
     if os_ref != 'None':
