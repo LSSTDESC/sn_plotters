@@ -792,7 +792,7 @@ def plotMollview_seasons(nside, data, dbName,
 
         if outDir != 'None':
             fiName = '{}_{}_{}_{}.png'.format(dbName,yvar,timescale,str(season).zfill(3))
-            fName = '{}/{}'.format(outDir,fiName)
+            fName = '{}/{}'.format(outDir,fiName).replace(" ","_")
             plt.savefig(fName)
 
 def plot_xy(data, xvar='cadence', xleg='cadence [day]',
