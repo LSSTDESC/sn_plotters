@@ -55,7 +55,8 @@ def plot_nsn_year_all(nsn, config,
 
     if os_ref != 'None':
         figtit += '\n ref:{}'.format(os_ref)
-    fig.suptitle(figtit,font='bold')
+    
+    fig.suptitle(figtit)
 
     ref_os = pd.DataFrame()
     if os_ref != 'None':
@@ -201,7 +202,7 @@ def get_cumul(dfa, xvar, yvar, yvar_err):
     dfa = dfa.sort_values(by=[xvar])
 
     vva = dfa[xvar].to_list()
-
+        
     dft = pd.DataFrame(vva, columns=[xvar])
     dft[yvar] = np.cumsum(dfa[yvar]).tolist()
     err = np.array(dfa[yvar_err].to_list())
