@@ -10,7 +10,7 @@ import glob
 import numpy.lib.recfunctions as rf
 from sn_tools.sn_utils import register_bands_sncosmo
 import pandas as pd
-
+import os
 
 class VisuLC:
     def __init__(self, metaDir, metaFile, snFile='None',prodID='None',
@@ -266,24 +266,37 @@ class VisuLC:
         idx = self.metaTot['SNID'] == lcpath
 
         metadata = self.metaTot[idx]
+        lcDir = metadata['lc_dir'].value[0]
+        lcName = metadata['lc_fileName'].value[0]
         
+        lc_plus_sn = lc_sn(lcDir,lcName,self.sn_data)
         
-        #get fitted values (if any)
+        lc_plus_sn.get_infos(lcpath)
         
-        sn_flux = None
+        lc_plus_sn.plot_all()
+        
+        print(test)
+        
+        #
+        
+        ccols = ['x1','color','daymax','z','x0','ebvofMW']
+        ccols_fit = ['x1_fit','color_fit','t0_fit','z_fit','x0_fit','ebvofMW']
+        corresp = dict(zip(ccols_fit,ccols))
+
+        pp = {}
+        pp_fit={}
         if len(self.sn_data) > 0:
             idx = self.sn_data['SNID'] == lcpath
             sn_fit = self.sn_data[idx]
             print(sn_fit.columns)
-            x1 = sn_fit['x1_fit'].values[0]
-            color = sn_fit['color_fit'].values[0]
-            x0 = sn_fit['x0_fit'].values[0]
-            z = sn_fit['z_fit'].values[0]
-            daymax = sn_fit['t0_fit'].values[0]
-            ebvofMW = sn_fit['ebvofMW'].values[0]
-            print('ebv',ebvofMW)
-            from sn_plotter_simu.sn_flux import SNflux
-            sn_flux = SNflux(x1,color,daymax,z,ebvofMW)
+            ppa = sn_fit[ccols_fit]
+            pp_fit = ppa.to_dict(orient='list')
+            ppa = ppa.rename(columns=corresp)
+            ppf = ppa.to_dict(orient='list')
+            sn_flux_fit = self.grab_fluxes(**ppf)
+            pp = sn_fit[ccols].to_dict(orient='list')
+            sn_flux_orig = self.grab_fluxes(**pp)
+            
         
         # print(metadata)
         # get lc
@@ -295,10 +308,35 @@ class VisuLC:
         lc = lcs.get_table(lcpath)
 
         # get fitted flux here
-        sn_fluxes = sn_flux.get_flux(lc)
+        sn_fluxes_fit = sn_flux_fit.get_flux(lc)
+        sn_fluxes_orig= sn_flux_orig.get_flux(lc)
 
+        lc["phase"] = (lc['time']-pp_fit['t0_fit'][0])/(1.+pp_fit['z_fit'][0])
+        filters = np.unique(lc['filter'])
+        timescale = 'phase'
+    
+        for filt in filters:
+            idx = lc['filter']==filt
+            sel_lc = lc[idx]
+            idxb = sn_fluxes_fit['filter'] == filt
+            sel_flux_fit = sn_fluxes_fit[idxb]
+            idxc = sn_fluxes_orig['filter'] == filt
+            sel_flux_orig = sn_fluxes_orig[idxb]
+            
+            fig, ax = plt.subplots()
+            
+            ax.errorbar(sel_lc[timescale],sel_lc['flux'],yerr=sel_lc['fluxerr'])
+            
+            ax.plot(sel_flux_fit[timescale],sel_flux_fit['flux'])
+            
+            ax.plot(sel_flux_orig[timescale],sel_flux_orig['flux'])
+            
+            plt.show()
+            
+            
+        
+        
         print(test)
-
         # coadd LC points (band/night) if necessary
 
         if self.remove_sat:
@@ -330,7 +368,7 @@ class VisuLC:
 
         print('after')
         print(lc['flux', 'fluxerr', 'zp', 'snr_m5', 'snr'])
-
+        
         # print('stretch and color', lc.meta['x1'], lc.meta['color'])
         idx = lc['fluxerr'] > 0.
         idx &= lc['flux'] >= 0.
@@ -353,6 +391,7 @@ class VisuLC:
         # printInfo = len(self.SN) > 0
         # self.plot_SN(lcpath, lc, printInfo)
 
+        """
         sigma_z = 1.e-5
         z = lc.meta['z']
         zmeas = z+gauss(0, sigma_z*(1+z))
@@ -388,7 +427,7 @@ class VisuLC:
 
         lc = Table.from_pandas(lc)
         print('kkk', lc['z'])
-        """
+        
         if fitted_model is not None:
             sncosmo.plot_lc(lc,
                             model=fitted_model,
@@ -399,6 +438,32 @@ class VisuLC:
             sncosmo.plot_lc(lc, xfigsize=9)
 
         plt.show(block=False)
+
+    def grab_fluxes(self,**pp):
+        """
+        Function to grab fluxes from SN Ia parameters
+
+        Parameters
+        ----------
+        pp: dict
+            SN parameter dict
+
+        Returns
+        -------
+        sn_flux : pandas df
+            instance of the SNflux class.
+
+        """
+        
+        from sn_analysis.sn_flux import SNflux
+        
+        sn_flux = SNflux(pp['x1'][0],pp['color'][0],
+                         pp['daymax'][0],pp['z'][0],pp['ebvofMW'][0])
+        
+        
+        return sn_flux
+        
+
 
     def coadd_lc(self, grp,
                  col_means_weighted=[('flux', 'fluxerr')],
@@ -864,3 +929,192 @@ def get_filter_alloc(data, bands='ugrizy'):
     res = '/'.join(r)
 
     return res
+
+class lc_sn:
+    def __init__(self,lcDir,lcName,sn_data):
+        
+        self.ccols = ['x1','color','daymax','z','x0','ebvofMW',
+                      'sigma_x1','sigma_color']
+        self.ccols_fit = ['x1_fit','color_fit','t0_fit','z_fit','x0_fit',
+                          'ebvofMW','sigma_x1','sigma_color']
+        
+        self.corresp = dict(zip(self.ccols_fit,self.ccols))
+        
+        # get lc file
+
+        self.lcs = Read_LightCurve(file_name=lcName, inputDir=lcDir)
+        
+        # sn_data
+        self.sn_data = sn_data
+        
+    def get_infos(self,lcpath):
+        
+        
+        lc_plot = {}
+        # grab the light curve
+        
+        lc = self.lcs.get_table(lcpath)
+        
+       
+        #grab SN fluxes
+        pp = {}
+        pp_fit={}
+        
+        print(self.sn_data.columns)
+        self.sn_data['sigma_color'] = np.sqrt(self.sn_data['Cov_colorcolor'])
+        
+        print(self.sn_data[['sigma_c','sigma_color']])
+    
+        if len(self.sn_data) > 0:
+            idx = self.sn_data['SNID'] == lcpath
+            sn_fit = self.sn_data[idx]
+            ppa = sn_fit[self.ccols_fit]
+            pp_fit = ppa.to_dict(orient='list')
+            ppa = ppa.rename(columns=self.corresp)
+            ppf = ppa.to_dict(orient='list')
+            sn_flux_fit = self.grab_fluxes(**ppf)
+            pp = sn_fit[self.ccols].to_dict(orient='list')
+            sn_flux_orig = self.grab_fluxes(**pp)
+            
+        # get fitted flux here
+        sn_fluxes_fit = sn_flux_fit.get_flux(lc)
+        sn_fluxes_orig= sn_flux_orig.get_flux(lc)
+          
+        lc_plot['flux_fit'] = sn_fluxes_fit
+        lc_plot['flux_orig'] = sn_fluxes_orig
+        
+        lc["phase"] = (lc['time']-pp['daymax'][0])/(1.+pp['z'][0])
+        lc_plot['lc'] = lc
+        
+        
+        self.lc_plot = lc_plot
+        self.pp_fit = pp_fit
+        self.pp = pp
+    
+    def grab_fluxes(self,**pp):
+        """
+        Function to grab fluxes from SN Ia parameters
+    
+        Parameters
+        ----------
+        pp: dict
+            SN parameter dict
+    
+        Returns
+        -------
+        sn_flux : pandas df
+            instance of the SNflux class.
+    
+        """
+        
+        from sn_analysis.sn_flux import SNflux
+        
+        sn_flux = SNflux(pp['x1'][0],pp['color'][0],
+                         pp['daymax'][0],pp['z'][0],pp['ebvofMW'][0])
+        
+        
+        return sn_flux
+    
+    
+    def plot_all(self,timescale='phase'):
+        
+        #grab the lc to get the filters
+        
+        lc = self.lc_plot['lc']
+        
+        idx = lc['fluxerr'] > 0.
+        idx &= lc['flux'] >= 0.
+        idx &= lc['snr'] >= 1.
+        
+        lc = lc[idx]
+        
+        bands = np.unique(lc['filter'])
+        
+        index = dict(zip('ugrizy',[1,2,3,4,5,6]))
+        r = []
+        for key, vals in index.items():
+            r.append((key,vals))
+            
+        print(r)
+        tti = Table(rows=r,names=['filter','index'])
+        
+        print(tti)
+        from astropy.table import join
+        
+        lc = join(lc,tti,keys=['filter'])
+        lc['index'] -= np.min(lc['index'])
+        print(lc)
+        
+        nfilt_init = len(bands)
+        
+        if nfilt_init%2==1:
+            nfilt = nfilt_init+1
+            
+        print('nffilt',nfilt)
+        ncols = 2
+        nrows = int(nfilt/ncols)
+        
+        ppos = dict(zip(range(0,6),[(0,0),(0,1),(1,0),(1,1),(2,0),(2,2)]))
+        
+        fig, ax = plt.subplots(nrows=nrows,ncols=ncols,figsize=(12,8))
+        
+        figtit = ''
+        
+        for vv in ['x1','color']:
+            x_orig = np.round(self.pp[vv][0],2)
+            x_fit = np.round(self.pp_fit['{}_fit'.format(vv)][0],2)
+            x_fit_err = np.round(self.pp_fit['sigma_{}'.format(vv)][0],2)
+            val = '{}={}/{}$\pm$ {}'.format(vv,x_orig,x_fit,x_fit_err)
+            figtit += '{}'.format(val)+ os.linesep
+            
+        fig.suptitle(figtit)
+        
+        
+        index = np.unique(lc['index']).tolist()
+        
+        sorted(index)
+        
+        filtercolors = dict(zip('ugrizy', ['b', 'c', 'g', 'y', 'r', 'm']))
+        
+        for ind in index:
+            
+            idx = lc['index'] == ind
+            
+            sel_lc = lc[idx]
+            b = np.unique(sel_lc['filter'])[0]
+            
+            ipos = ppos[ind][0]
+            jpos = ppos[ind][1]
+            
+            ax_ = ax[ipos,jpos]
+            ax_.errorbar(sel_lc[timescale],
+                                   sel_lc['flux'],
+                                   yerr=sel_lc['fluxerr'],linestyle='None',
+                                   color=filtercolors[b])
+           
+            
+            for key, vals in self.lc_plot.items():
+                if key != 'lc':
+                    idx = vals['filter'] == 'LSST:'+b
+                    sel_flux = vals[idx]
+                    print('aoo',b,len(sel_flux),vals['filter'])
+                    sel_flux = sel_flux.sort_values(by=[timescale])
+                    ax_.plot(sel_flux[timescale],
+                                   sel_flux['flux'],
+                                   color=filtercolors[b])
+            ax_.set_ylabel('flux [pe/s]')      
+            ax_.set_xlabel('phase [day]')       
+                
+            ax_.grid(visible=True)
+            
+        #remove empty axes (if any)
+        for axr in ax.flat[nfilt_init:]:
+            axr.remove()
+            
+        plt.show()
+        
+        
+        
+        
+        
+    
