@@ -61,7 +61,6 @@ class VisuLC:
         """
 
         self.metaTot = meta
-        print('passed here')
 
         """
         meta = Read_LightCurve(file_name=metaFileInput, inputDir=metaDirInput)
@@ -275,6 +274,7 @@ class VisuLC:
         
         lc_plus_sn.plot_all()
         
+        return
         print(test)
         
         #
@@ -465,7 +465,7 @@ class VisuLC:
         
 
 
-    def coadd_lc(self, grp,
+    def coadd_lc_deprecated(self, grp,
                  col_means_weighted=[('flux', 'fluxerr')],
                  col_means=['airmass', 'pwv', 'ozone',
                             'aerosol', 'mean_wave', 'zp', 'time', 'snr_m5', 'snr'],
@@ -540,7 +540,7 @@ class VisuLC:
         """
         return res_df
 
-    def fitIt(self, lc):
+    def fitIt_deprecated(self, lc):
         """
         Method to fit a light curve
 
@@ -576,7 +576,7 @@ class VisuLC:
 
         return result, fitted_model
 
-    def plot_SN(self, lcpath, lc, printInfo=False):
+    def plot_SN_deprecated(self, lcpath, lc, printInfo=False):
         """
         Method to plot SN info and LC tagged by lcpath
 
@@ -637,7 +637,7 @@ class VisuLC:
 
         plt.show(block=False)
 
-    def get_text(self, meta, ddict=dict(zip(['x1', 'color'], [1, 2]))):
+    def get_text_deprecated(self, meta, ddict=dict(zip(['x1', 'color'], [1, 2]))):
         """
         Method to write a text from metadata
 
@@ -663,7 +663,7 @@ class VisuLC:
 
         return ttext
 
-    def simple_text(self, var, meta, rounding):
+    def simple_text_deprecated(self, var, meta, rounding):
         """
         Method to write a simple text
 
@@ -932,6 +932,23 @@ def get_filter_alloc(data, bands='ugrizy'):
 
 class lc_sn:
     def __init__(self,lcDir,lcName,sn_data):
+        """
+        class to process and plot LC and fluxes from SN params (orig+fitted)
+
+        Parameters
+        ----------
+        lcDir : str
+            LC directory.
+        lcName : str
+            LC file name.
+        sn_data : pandas df
+            SN data (orig+fitted params).
+
+        Returns
+        -------
+        None.
+
+        """
         
         self.ccols = ['x1','color','daymax','z','x0','ebvofMW',
                       'sigma_x1','sigma_color']
@@ -948,6 +965,19 @@ class lc_sn:
         self.sn_data = sn_data
         
     def get_infos(self,lcpath):
+        """
+        method to get infos
+
+        Parameters
+        ----------
+        lcpath : str
+            lc path to access LC.
+
+        Returns
+        -------
+        None.
+
+        """
         
         
         lc_plot = {}
@@ -960,10 +990,10 @@ class lc_sn:
         pp = {}
         pp_fit={}
         
-        print(self.sn_data.columns)
+        #print(self.sn_data.columns)
         self.sn_data['sigma_color'] = np.sqrt(self.sn_data['Cov_colorcolor'])
         
-        print(self.sn_data[['sigma_c','sigma_color']])
+        #print(self.sn_data[['sigma_c','sigma_color']])
     
         if len(self.sn_data) > 0:
             idx = self.sn_data['SNID'] == lcpath
@@ -993,7 +1023,7 @@ class lc_sn:
     
     def grab_fluxes(self,**pp):
         """
-        Function to grab fluxes from SN Ia parameters
+        method to grab fluxes from SN Ia parameters
     
         Parameters
         ----------
@@ -1017,6 +1047,19 @@ class lc_sn:
     
     
     def plot_all(self,timescale='phase'):
+        """
+        method to plot LC+fluxes (original+fit)
+
+        Parameters
+        ----------
+        timescale : str, optional
+            Timescale for the plot. The default is 'phase'.
+
+        Returns
+        -------
+        None.
+
+        """
         
         #grab the lc to get the filters
         
@@ -1035,28 +1078,24 @@ class lc_sn:
         for key, vals in index.items():
             r.append((key,vals))
             
-        print(r)
         tti = Table(rows=r,names=['filter','index'])
         
-        print(tti)
         from astropy.table import join
         
         lc = join(lc,tti,keys=['filter'])
         lc['index'] -= np.min(lc['index'])
-        print(lc)
         
         nfilt_init = len(bands)
         
         if nfilt_init%2==1:
             nfilt = nfilt_init+1
             
-        print('nffilt',nfilt)
         ncols = 2
         nrows = int(nfilt/ncols)
         
         ppos = dict(zip(range(0,6),[(0,0),(0,1),(1,0),(1,1),(2,0),(2,2)]))
         
-        fig, ax = plt.subplots(nrows=nrows,ncols=ncols,figsize=(12,8))
+        fig, ax = plt.subplots(nrows=nrows,ncols=ncols,figsize=(11,12))
         
         figtit = ''
         
@@ -1067,6 +1106,7 @@ class lc_sn:
             val = '{}={}/{}$\pm$ {}'.format(vv,x_orig,x_fit,x_fit_err)
             figtit += '{}'.format(val)+ os.linesep
             
+        figtit += 'z={}'.format(np.round(self.pp_fit['z_fit'][0],2))+os.linesep
         fig.suptitle(figtit)
         
         
@@ -1090,14 +1130,14 @@ class lc_sn:
             ax_.errorbar(sel_lc[timescale],
                                    sel_lc['flux'],
                                    yerr=sel_lc['fluxerr'],linestyle='None',
-                                   color=filtercolors[b])
+                                   color=filtercolors[b],marker='o',
+                                   markersize=5)
            
             
             for key, vals in self.lc_plot.items():
                 if key != 'lc':
                     idx = vals['filter'] == 'LSST:'+b
                     sel_flux = vals[idx]
-                    print('aoo',b,len(sel_flux),vals['filter'])
                     sel_flux = sel_flux.sort_values(by=[timescale])
                     ax_.plot(sel_flux[timescale],
                                    sel_flux['flux'],
@@ -1107,11 +1147,15 @@ class lc_sn:
                 
             ax_.grid(visible=True)
             
+            if jpos == 1:
+                ax_.yaxis.set_label_position("right")
+                ax_.yaxis.tick_right()
+            
         #remove empty axes (if any)
         for axr in ax.flat[nfilt_init:]:
             axr.remove()
             
-        plt.show()
+        plt.show(block=False)
         
         
         
