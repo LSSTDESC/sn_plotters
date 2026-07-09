@@ -989,13 +989,11 @@ class lc_sn:
         #grab SN fluxes
         pp = {}
         pp_fit={}
-        
-        #print(self.sn_data.columns)
-        self.sn_data['sigma_color'] = np.sqrt(self.sn_data['Cov_colorcolor'])
-        
-        #print(self.sn_data[['sigma_c','sigma_color']])
+        sn_fluxes_fit = Table()
+        sn_fluxes_orig = Table()
     
         if len(self.sn_data) > 0:
+            self.sn_data['sigma_color'] = np.sqrt(self.sn_data['Cov_colorcolor'])
             idx = self.sn_data['SNID'] == lcpath
             sn_fit = self.sn_data[idx]
             ppa = sn_fit[self.ccols_fit]
@@ -1006,14 +1004,15 @@ class lc_sn:
             pp = sn_fit[self.ccols].to_dict(orient='list')
             sn_flux_orig = self.grab_fluxes(**pp)
             
-        # get fitted flux here
-        sn_fluxes_fit = sn_flux_fit.get_flux(lc)
-        sn_fluxes_orig= sn_flux_orig.get_flux(lc)
+            # get fitted flux here
+            sn_fluxes_fit = sn_flux_fit.get_flux(lc)
+            sn_fluxes_orig= sn_flux_orig.get_flux(lc)
           
         lc_plot['flux_fit'] = sn_fluxes_fit
         lc_plot['flux_orig'] = sn_fluxes_orig
         
-        lc["phase"] = (lc['time']-pp['daymax'][0])/(1.+pp['z'][0])
+        if pp:
+            lc["phase"] = (lc['time']-pp['daymax'][0])/(1.+pp['z'][0])
         lc_plot['lc'] = lc
         
         
@@ -1046,7 +1045,7 @@ class lc_sn:
         return sn_flux
     
     
-    def plot_all(self,timescale='phase'):
+    def plot_all(self,timescale='phase',fig=None,ax=None):
         """
         method to plot LC+fluxes (original+fit)
 
@@ -1095,18 +1094,21 @@ class lc_sn:
         
         ppos = dict(zip(range(0,6),[(0,0),(0,1),(1,0),(1,1),(2,0),(2,2)]))
         
-        fig, ax = plt.subplots(nrows=nrows,ncols=ncols,figsize=(11,12))
+        if fig is None:
+            fig, ax = plt.subplots(nrows=nrows,ncols=ncols,figsize=(11,12))
         
         figtit = ''
         
-        for vv in ['x1','color']:
-            x_orig = np.round(self.pp[vv][0],2)
-            x_fit = np.round(self.pp_fit['{}_fit'.format(vv)][0],2)
-            x_fit_err = np.round(self.pp_fit['sigma_{}'.format(vv)][0],2)
-            val = '{}={}/{}$\pm$ {}'.format(vv,x_orig,x_fit,x_fit_err)
-            figtit += '{}'.format(val)+ os.linesep
+        if self.pp:
+            for vv in ['x1','color']:
+                x_orig = np.round(self.pp[vv][0],2)
+                x_fit = np.round(self.pp_fit['{}_fit'.format(vv)][0],2)
+                x_fit_err = np.round(self.pp_fit['sigma_{}'.format(vv)][0],2)
+                val = '{}={}/{}$\pm$ {}'.format(vv,x_orig,x_fit,x_fit_err)
+                figtit += '{}'.format(val)+ os.linesep
             
-        figtit += 'z={}'.format(np.round(self.pp_fit['z_fit'][0],2))+os.linesep
+            figtit += 'z={}'.format(np.round(self.pp_fit['z_fit'][0],2))+os.linesep
+
         fig.suptitle(figtit)
         
         
@@ -1119,7 +1121,12 @@ class lc_sn:
         for ind in index:
             
             idx = lc['index'] == ind
+            """
+            idx &= lc['snr'] >= 2
             
+            lc['snr_new'] = lc['flux']/lc['fluxerr']
+            print('allo',lc[['filter','snr','snr_new']])
+            """
             sel_lc = lc[idx]
             b = np.unique(sel_lc['filter'])[0]
             
@@ -1135,7 +1142,7 @@ class lc_sn:
            
             
             for key, vals in self.lc_plot.items():
-                if key != 'lc':
+                if key != 'lc' and self.pp:
                     idx = vals['filter'] == 'LSST:'+b
                     sel_flux = vals[idx]
                     sel_flux = sel_flux.sort_values(by=[timescale])
