@@ -949,11 +949,17 @@ class lc_sn:
         None.
 
         """
+        """
         
+        self.ccols = ['x1','color','mb','daymax','z','x0','ebvofMW',
+                      'sigma_x1','sigma_color','sigma_mb']
+        self.ccols_fit = ['x1_fit','color_fit','mb_fit','t0_fit','z_fit','x0_fit',
+                          'ebvofMW','sigma_x1','sigma_color','sigma_mb']
+        """
         self.ccols = ['x1','color','daymax','z','x0','ebvofMW',
-                      'sigma_x1','sigma_color']
+                     'sigma_x1','sigma_color']
         self.ccols_fit = ['x1_fit','color_fit','t0_fit','z_fit','x0_fit',
-                          'ebvofMW','sigma_x1','sigma_color']
+                         'ebvofMW','sigma_x1','sigma_color']
         
         self.corresp = dict(zip(self.ccols_fit,self.ccols))
         
@@ -994,6 +1000,8 @@ class lc_sn:
     
         if len(self.sn_data) > 0:
             self.sn_data['sigma_color'] = np.sqrt(self.sn_data['Cov_colorcolor'])
+            #self.sn_data['sigma_mb'] = np.sqrt(self.sn_data['Cov_mbmb'])
+            print(self.sn_data.columns.to_list())
             idx = self.sn_data['SNID'] == lcpath
             sn_fit = self.sn_data[idx]
             ppa = sn_fit[self.ccols_fit]
@@ -1064,9 +1072,11 @@ class lc_sn:
         
         lc = self.lc_plot['lc']
         
+        """
         idx = lc['fluxerr'] > 0.
         idx &= lc['flux'] >= 0.
-        idx &= lc['snr'] >= 1.
+        """
+        idx = lc['snr'] >= 1.
         
         lc = lc[idx]
         
@@ -1100,6 +1110,7 @@ class lc_sn:
         figtit = ''
         
         if self.pp:
+            print(self.pp.keys())
             for vv in ['x1','color']:
                 x_orig = np.round(self.pp[vv][0],2)
                 x_fit = np.round(self.pp_fit['{}_fit'.format(vv)][0],2)
@@ -1139,7 +1150,7 @@ class lc_sn:
                                    yerr=sel_lc['fluxerr'],linestyle='None',
                                    color=filtercolors[b],marker='o',
                                    markersize=5)
-           
+            print(sel_lc[['filter','airmass','zp']])
             
             for key, vals in self.lc_plot.items():
                 if key != 'lc' and self.pp:
@@ -1153,6 +1164,7 @@ class lc_sn:
             ax_.set_xlabel('phase [day]')       
                 
             ax_.grid(visible=True)
+            
             
             if jpos == 1:
                 ax_.yaxis.set_label_position("right")
