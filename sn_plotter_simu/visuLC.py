@@ -991,7 +991,6 @@ class lc_sn:
         
         lc = self.lcs.get_table(lcpath)
         
-       
         #grab SN fluxes
         pp = {}
         pp_fit={}
@@ -1022,7 +1021,6 @@ class lc_sn:
         if pp:
             lc["phase"] = (lc['time']-pp['daymax'][0])/(1.+pp['z'][0])
         lc_plot['lc'] = lc
-        
         
         self.lc_plot = lc_plot
         self.pp_fit = pp_fit
