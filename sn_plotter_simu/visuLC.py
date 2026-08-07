@@ -959,7 +959,7 @@ class lc_sn:
         self.ccols = ['x1','color','daymax','z','x0','ebvofMW',
                      'sigma_x1','sigma_color']
         self.ccols_fit = ['x1_fit','color_fit','t0_fit','z_fit','x0_fit',
-                         'ebvofMW','sigma_x1','sigma_color']
+                         'ebvofMW','sigma_x1','sigma_color','chisq_red']
         
         self.corresp = dict(zip(self.ccols_fit,self.ccols))
         
@@ -1108,17 +1108,25 @@ class lc_sn:
         figtit = ''
         
         if self.pp:
-            print(self.pp.keys())
+            print(self.pp_fit.keys())
+            vinit = ''
             for vv in ['x1','color']:
                 x_orig = np.round(self.pp[vv][0],2)
                 x_fit = np.round(self.pp_fit['{}_fit'.format(vv)][0],2)
                 x_fit_err = np.round(self.pp_fit['sigma_{}'.format(vv)][0],2)
-                val = '{}={}/{}$\pm$ {}'.format(vv,x_orig,x_fit,x_fit_err)
-                figtit += '{}'.format(val)+ os.linesep
+                vinit += '{}={}/{}$\pm$ {}'.format(vv,x_orig,x_fit,x_fit_err)
+                if vv == 'x1':
+                    vinit += ' - '
+            figtit += '{}'.format(vinit)+ os.linesep
+            zfit = np.round(self.pp_fit['z_fit'][0],2)
+            dfit = np.round(self.pp_fit['t0_fit'][0],2)
+            chisq = np.round(self.pp_fit['chisq_red'][0],2)
+            t0_str = '$T_0$'
+            figtit += 'z={}/{}={}'.format(zfit,t0_str,dfit)+os.linesep
+            figtit += '$\chi^2/Ndof$='+'{}'.format(chisq)
             
-            figtit += 'z={}'.format(np.round(self.pp_fit['z_fit'][0],2))+os.linesep
-
-        fig.suptitle(figtit)
+            
+        fig.suptitle(figtit,fontsize=15)
         
         
         index = np.unique(lc['index']).tolist()
@@ -1155,9 +1163,12 @@ class lc_sn:
                     idx = vals['filter'] == 'LSST:'+b
                     sel_flux = vals[idx]
                     sel_flux = sel_flux.sort_values(by=[timescale])
+                    ls = 'solid'
+                    if key == 'flux_orig':
+                        ls = 'dotted'
                     ax_.plot(sel_flux[timescale],
                                    sel_flux['flux'],
-                                   color=filtercolors[b])
+                                   color=filtercolors[b],linestyle=ls)
             ax_.set_ylabel('flux [pe/s]')      
             ax_.set_xlabel('phase [day]')       
                 
