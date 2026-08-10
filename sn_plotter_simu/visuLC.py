@@ -1185,8 +1185,698 @@ class lc_sn:
             
         plt.show(block=False)
         
-        
-        
-        
-        
+def get_metadata(theDir):
+    """
+    Function to grab meta data
+
+    Parameters
+    ----------
+    theDir : str
+        Data dir.
+
+    Returns
+    -------
+    meta : dict
+        Metadata.
+
+    """
     
+    #grab simu files
+
+    file_path = '{}/Simu*'.format(theDir)
+
+    fis = glob.glob(file_path)
+
+    meta = Table()
+    for fi in fis:
+        fName = fi.split('/')[-1]
+        tt = get_meta('None',fName,theDir)
+        meta = vstack([meta,tt])
+    
+    return meta 
+  
+def get_info(meta,snid,sn_data):
+    """
+    Function to grab LC infos
+
+    Parameters
+    ----------
+    meta : dict
+        Meta data.
+    snid : int
+        SN ID.
+    sn_data : pandas df
+        SN data.
+
+    Returns
+    -------
+    lc_plus_sn : TYPE
+        DESCRIPTION.
+
+    """
+    
+    idx = meta['SNID'] == snid
+    
+    sel_meta = meta[idx]
+    
+    lcDir = sel_meta['lc_dir'].value[0]
+    lcName = sel_meta['lc_fileName'].value[0]
+    
+    #grab LC
+    lc_plus_sn = lc_sn(lcDir,lcName,sn_data)
+        
+    lc_plus_sn.get_infos(snid)
+    
+    return lc_plus_sn
+
+def compare_lc(lc_a,lc_b):
+    """
+    Function to compare LCs
+
+    Parameters
+    ----------
+    lc_a : astropy Table
+        light curve a.
+    lc_b : astropy Table
+        light curve b.
+
+    Returns
+    -------
+    df_c : pandas df
+        Output.
+
+    """
+   
+    cols = ['filter','time','flux','fluxerr','zp',
+            'airmass','sigma_f5','sigma_shot',
+            'flux_orig','night','snr']
+    
+    df_a = lc_a[cols].to_pandas()
+    df_b = lc_b[cols].to_pandas()
+    
+    df_a = df_a.round({'time':6})
+    df_b = df_b.round({'time':6})
+    
+    df_a = df_a.sort_values(by=['time'])
+    df_b = df_b.sort_values(by=['time'])
+    df_c = df_a.merge(df_b,left_on=['filter','time'],
+                      right_on=['filter','time'])
+    
+    df_c['fluxerr_ratio'] = df_c['fluxerr_x']/df_c['fluxerr_y']
+    df_c['flux_orig_ratio'] = df_c['flux_orig_x']/df_c['flux_orig_y']
+    df_c['m5_ratio'] = df_c['sigma_f5_x']/df_c['sigma_f5_y']
+    df_c['noise_ratio'] = df_c['sigma_shot_x']/df_c['sigma_shot_y']
+    df_c['delta_zp'] = df_c['zp_x']-df_c['zp_y']
+    #df_c['time_ratio'] = df_c['time_x']-df_c['time_y']
+    
+    return df_c   
+
+def get_sndata(fDir,fName,sellist):
+    """
+    Method to grab sn data + selection criteria
+
+    Parameters
+    ----------
+    fDir : str
+        Data dir.
+    fName : str
+        file name to process.
+    sellist : dict
+        selection criteria.
+
+    Returns
+    -------
+    df : pandas df
+        SN data.
+
+    """
+    
+    from sn_analysis.sn_tools import complete_df
+    from sn_analysis.sn_selection import select
+    
+    df =pd.read_hdf('{}/{}'.format(fDir,fName))
+    df['sigma_color'] = np.sqrt(df['Cov_colorcolor'])
+    
+    df = complete_df(df)
+    
+    df = select(df,list_sel=sellist)
+    
+    for vv in ['x1','color']:
+        vdiff = '{}_fit'.format(vv)
+        vsigma = 'sigma_{}'.format(vv)
+        df['pull_{}'.format(vv)] = (df[vv]-df[vdiff])/df[vsigma]
+        df['diff_{}'.format(vv)] = (df[vv]-df[vdiff])
+        
+    print(df.columns)
+    
+    return df
+class Comp_lc:
+    def __init__(self,dira,dirb):
+        """
+        class to make LC comparison
+
+        Parameters
+        ----------
+        dira : str
+            Data a location dir.
+        dirb : str
+            Data b location dir.
+
+        Returns
+        -------
+        None.
+
+        """
+         
+        self.dira = dira
+        self.dirb = dirb
+         
+        self.go()
+
+    def go(self):
+     """
+        Mein processing method
+
+        Returns
+        -------
+        None.
+
+        """
+        
+     meta_a = get_metadata(self.dira)
+     meta_b = get_metadata(self.dirb)
+     snids = meta_a['SNID'].tolist()
+     
+     params = {}
+     params['meta_a'] = meta_a
+     params['meta_b'] = meta_b
+
+     from sn_tools.sn_utils import multiproc
+     
+     res = multiproc(snids,params,self.process_comp_lc,nproc=8)
+     
+     print(res.columns)
+     snids = res['snid'].unique()
+     print(snids)
+     
+     while (1):
+         answer = input('SNID?')
+         snid = answer
+         if snid == 'exit':
+             break
+         idx = res['snid'] == snid
+         self.plot_diff_lc(res[idx])     
+        
+    def process_comp_lc(self,toproc, params, j=0, output_q=None):
+        """
+        Method to process data using multiprocessing
+
+        Parameters
+        ----------
+        toproc : list(int)
+            Data to process (SNIDs).
+        params : dict
+            parameters.
+        j : int, optional
+            internal tag for multiprocessing. The default is 0.
+        output_q : multiprocessing queue, optional
+            where the output data are stored. The default is None.
+
+        Returns
+        -------
+        pandas df
+            Result.
+
+        """
+    
+        meta_a = params['meta_a']   
+        meta_b = params['meta_b']
+    
+        df = pd.DataFrame()
+        
+        for snid in toproc:
+            
+            lc_plus_sn_a = get_info(meta_a,snid,pd.DataFrame())
+            lc_plus_sn_b = get_info(meta_b,snid,pd.DataFrame())
+            
+            lc_a = lc_plus_sn_a.lc_plot['lc']
+            lc_b = lc_plus_sn_b.lc_plot['lc']
+            
+            ro = compare_lc(lc_a,lc_b)
+    
+            ro['snid'] = snid
+            
+            df = pd.concat((df,ro))
+            
+        if output_q is not None:
+            return output_q.put({j: df})
+        else:
+            return df
+            
+    def plot_diff_lc(self,df):
+        """
+        Method to plot LC diffs
+
+        Parameters
+        ----------
+        df : pandas df
+            Data to plot.
+
+        Returns
+        -------
+        None.
+
+        """
+        
+        print(df.columns)
+        
+        thevar = 'fluxerr_ratio'
+        #thevar = 'flux_orig_ratio'
+        
+        idx = df['flux_orig_x'] > 0.
+        idx &= df['flux_orig_y'] > 0.
+        
+        df = df[idx]
+        
+        print(df[['fluxerr_x','fluxerr_y',thevar]])
+        print(df[thevar].mean(),df[thevar].std())
+        
+        for b in 'grizy':
+            idx = df['filter'] == b
+            print(b,df[idx][thevar].mean(),df[idx][thevar].std())
+            self.plot_diff_indiv(df[idx],thevar,figtit=b)
+            
+        plt.show(block=False)
+        print(df['filter'].unique())
+        dfa = df.groupby(['filter','airmass_x'])['delta_zp'].std()
+        
+        print(dfa)
+        
+    def plot_diff_indiv(self,grp,thevar,figtit=''):
+        """
+        Method to make indiv plots
+
+        Parameters
+        ----------
+        grp : pandas df
+            Data to plot.
+        thevar : str
+            the var to plot.
+        figtit : str, optional
+            figure title. The default is ''.
+
+        Returns
+        -------
+        None.
+
+        """
+        
+        fig, ax = plt.subplots()
+        if figtit != '':
+            fig.suptitle(figtit)
+        
+        ax.hist(grp[thevar],histtype='step',bins=20)        
+        
+class Comp_lc_sn:
+    def __init__(self,dira,snFile_a,dirb,snFile_b,sellist):
+        """
+        Class to compare LC and SN results
+
+        Parameters
+        ----------
+        dira : str
+            Data dir a.
+        snFile_a : str
+            SN file a.
+        dirb : str
+            Dir data b.
+        snFile_b : str
+            SN file b.
+        sellist : dict
+            selection criteria.
+
+        Returns
+        -------
+        None.
+
+        """
+        
+        self.dira = dira
+        self.snFile_a = snFile_a
+        self.dirb = dirb
+        self.snFile_b = snFile_b
+        self.sellist = sellist
+        
+        self.go()
+    
+    def go(self):
+        """
+        Main processing method
+
+        Returns
+        -------
+        None.
+
+        """
+        
+        # grab metadata
+        meta_a = get_metadata(self.dira)
+        meta_b = get_metadata(self.dirb)
+        
+        # grab sn data
+        sndata_a = get_sndata(self.dira,self.snFile_a,self.sellist)
+        sndata_b = get_sndata(self.dirb,self.snFile_b,self.sellist)
+        
+        # list of SNIDs
+        snids = meta_a['SNID'].tolist()
+        #snids = ['SN_0108958_01_00003_6']
+        
+        print(snids)
+        
+        
+        while (1):
+            answer = input('SNID?')
+            snid = answer
+            if snid == 'exit':
+                break
+            df_tot = self.grab_infos(meta_a, sndata_a,
+                                     meta_b,sndata_b,snid)
+        
+            self.comp_lc_sn(df_tot,
+                            meta_a,sndata_a,
+                            meta_b,sndata_b,
+                            self.sellist,snid)
+            
+            
+    def grab_infos(self,meta_a,sndata_a,meta_b,sndata_b,snid,
+                   ccols = ['time','filter','flux','fluxerr','zp','airmass'],
+                   mcols = ['SNID','x1','color','z','daymax']):
+        """
+        Method to grab all infos
+
+        Parameters
+        ----------
+        meta_a : dict
+            metadata a.
+        sndata_a : pandas df
+            SN data a.
+        meta_b : dict
+            metadata b.
+        sndata_b : pandas df
+            SN data b.
+        snid : int
+            SN ID.
+        ccols : list(str), optional
+            list of columns. 
+            The default is ['time','filter','flux','fluxerr','zp','airmass'].
+        mcols : list(str), optional
+            list of columns. 
+            The default is ['SNID','x1','color','z','daymax'].
+
+        Returns
+        -------
+        df_tot : pandas df
+            Output data.
+
+        """
+        
+        """
+        sndata_ap = pd.DataFrame()
+        sndata_bp = pd.DataFrame()
+        
+        lc_plus_sn_a = get_info(meta_a,snid,sndata_ap)
+        lc_plus_sn_b = get_info(meta_b,snid,sndata_bp)
+        
+        lc_a = lc_plus_sn_a.lc_plot['lc']
+        lc_b = lc_plus_sn_b.lc_plot['lc']
+        
+        dfa = lc_a[ccols].to_pandas()
+        dfb = lc_b[ccols].to_pandas()
+        
+        
+        dfc = dfa.merge(dfb, left_on=['time','filter','airmass'],
+                        right_on=['time','filter','airmass'])
+        """
+        
+        info_a = self.get_info_sn(sndata_a,snid)
+        info_b = self.get_info_sn(sndata_b,snid)
+        
+        df_tot = info_a.merge(info_b, left_on=mcols, right_on=mcols)
+        
+        #df_tot = pd.concat((df_tot,bb))
+        
+        return df_tot
+    
+    def get_info_sn(self,sndata,snid,ccols=['SNID','x1','color','z','daymax',
+                                       'x1_fit','color_fit',
+                                       'sigma_x1','sigma_color',
+                                       'diff_mu','sigma_mu',
+                                       'pull_x1','pull_color','chisq_red',
+                                       't0_fit','sigma_t0']):
+        """
+        Method to grab SN info corresponding to SNID
+
+        Parameters
+        ----------
+        sndata : pandas df
+            SN data.
+        snid : int
+            SN ID.
+        ccols : list(str), optional
+            List of columns. The default is ['SNID','x1','color','z','daymax',                                       'x1_fit','color_fit',                                       'sigma_x1','sigma_color',                                       'diff_mu','sigma_mu',                                       'pull_x1','pull_color','chisq_red',                                       't0_fit','sigma_t0'].
+
+        Returns
+        -------
+        pandas df
+            output data.
+
+        """
+        
+        idx = sndata['SNID'] == snid
+        
+        sel = sndata[idx]
+        
+        return pd.DataFrame(sel[ccols])
+    
+    def comp_lc_sn(self,df_tot,meta_a,sndata_a,meta_b,sndata_b,sellist,snid):
+        """
+        Method to compare LC and SN data
+
+        Parameters
+        ----------
+        df_tot : pandas df
+            Data to process.
+        meta_a : dict
+            meta data a.
+        sndata_a : pandas df
+            SN data a.
+        meta_b : dict
+            meta data b.
+        sndata_b : pandas df
+            SN data b.
+        sellist : dict
+            selection criteria.
+        snid : int
+            SN ID.
+
+        Returns
+        -------
+        None.
+
+        """
+    
+    
+        idc = df_tot['SNID'] == snid
+        sel = df_tot[idc]
+        
+        lc_plus_sn_a = get_info(meta_a,snid,sndata_a)
+        lc_plus_sn_b = get_info(meta_b,snid,sndata_b)
+        
+        
+        lc_plus_sn_a.plot_all("time")
+        lc_plus_sn_b.plot_all("time")
+        
+        lc_a = lc_plus_sn_a.lc_plot['lc']
+        lc_b = lc_plus_sn_b.lc_plot['lc']
+        """
+        fig, ax = plt.subplots()
+        plot_lc_feature(lc_a,varx='flux_orig',vary='sigma_f5',fig=fig,ax=ax,marker='o',color='k')
+        plot_lc_feature(lc_b,varx='flux_orig',vary='sigma_f5',fig=fig,ax=ax,marker='*',color='r')
+        #plot_lc_feature(lc_a,vary='sigma_shot',fig=fig,ax=ax,marker='*',color='r')
+        """
+        compare_lc(lc_a,lc_b)
+        print('SNID',snid)
+        plt.show(block=False)
+        
+        
+class Comp_sn:
+    def __init__(self,dira,snFile_a,dirb,snFile_b,sellist):
+        """
+        class to compare SN data
+
+        Parameters
+        ----------
+        dira : str
+            Data dir a.
+        snFile_a : str
+            SN file a.
+        dirb : str
+            Data dir b.
+        snFile_b : str
+            SN file b.
+        sellist : dict
+            Selection criteria.
+
+        Returns
+        -------
+        None.
+
+        """
+    
+        sn_a = get_sndata(dira, snFile_a, sellist)
+        sn_b = get_sndata(dirb, snFile_b, sellist)
+        
+        print(sn_a)
+        print(sn_b)
+        
+        sn_m = sn_a.merge(sn_b,left_on=['SNID'],right_on=['SNID'])
+        
+        print(sn_m)
+        
+        """
+        self.plot_pull_hist(sn_m)
+        
+        self.plot_pull_hist(sn_m,prefix='diff',cutval=0.2)
+        """
+        self.plot_pull_vs(sn_m,varx='SNID',prefix='diff',cutval=0.2)
+    
+        plt.show()
+        
+    def plot_pull_hist(self,sn_m,prefix='pull',cutval=5):
+        """
+        Method to make figures of pulls (hist)
+
+        Parameters
+        ----------
+        sn_m : pandas df
+            Data to plot.
+        prefix : str, optional
+            prefix var name. The default is 'pull'.
+        cutval : float, optional
+            selection value. The default is 5.
+
+        Returns
+        -------
+        None.
+
+        """
+        
+        for vv in ['x1','color']:
+            
+            fig, ax = plt.subplots()
+            vvp = '{}_{}'.format(prefix,vv)
+            self.plot_pull_indiv_hist(ax,sn_m,
+                                      varpull='{}_x'.format(vvp),
+                                      cutval=cutval)
+            self.plot_pull_indiv_hist(ax,sn_m,
+                                      varpull='{}_y'.format(vvp),
+                                      cutval=cutval)
+    
+    def plot_pull_indiv_hist(self,ax,sn_m,varpull='pull_x1_x',cutval=5):
+        """
+        Method to make single hist figure
+
+        Parameters
+        ----------
+        ax : matplotlib axis
+            axis for the plot.
+        sn_m : pandas df
+            Data to plot.
+        varpull : str, optional
+            variable to plot. The default is 'pull_x1_x'.
+        cutval : TYPE, optional
+            DESCRIPTION. The default is 5.
+
+        Returns
+        -------
+        None.
+
+        """
+        
+        
+        idx = np.abs(sn_m[varpull]) <= cutval
+        
+        sel = sn_m[idx]
+        
+        print(varpull,len(sel),sel[varpull].mean(),sel[varpull].std())
+        ax.hist(sel[varpull],histtype='step')
+        
+    def plot_pull_vs(self,sn_m,varx='SNID',prefix='pull',cutval=5):
+       """ 
+       Method to make y vs x figures
+       
+        Parameters
+        ----------
+        sn_m : pandas df
+            Data to plot.
+        varx : str, optional
+            x-axis var. The default is 'SNID'.
+        prefix : str, optional
+            y var prefix. The default is 'pull'.
+        cutval : float, optional
+            selection value. The default is 5.
+
+        Returns
+        -------
+        None.
+
+        """
+       
+       for vv in ['x1','color']:
+           
+           fig, ax = plt.subplots()
+           vvp = '{}_{}'.format(prefix,vv)
+           vvx = '{}_x'.format(vvp)
+           vvy = '{}_y'.format(vvp)
+           self.plot_pull_indiv_vs(ax,sn_m,varx=varx,varpull=vvx,cutval=cutval)
+           self.plot_pull_indiv_vs(ax,sn_m,varx=varx,varpull=vvy,cutval=cutval)
+           vdiff = 'diff_{}'.format(vvp)
+           sn_m[vdiff] = np.abs(sn_m[vvx]-sn_m[vvy])
+           
+           sn_m = sn_m.sort_values(by=vdiff)
+           
+           print(sn_m[['SNID',vdiff,
+                       '{}_x'.format(vv),
+                       '{}_fit_x'.format(vv),
+                       '{}_fit_y'.format(vv)]])
+           
+    def plot_pull_indiv_vs(self,ax,sn_m,
+                           varx='SNID',varpull='pull_x1_x',cutval=5):
+        """
+        Method to make indiv figure
+
+        Parameters
+        ----------
+        ax : matplotlib axis
+            axis of the figure.
+        sn_m : pandas df
+            Data to draw.
+        varx : str, optional
+            x-axis variable. The default is 'SNID'.
+        varpull : str, optional
+            y-axis variable. The default is 'pull_x1_x'.
+        cutval : float, optional
+            selection value. The default is 5.
+
+        Returns
+        -------
+        None.
+
+        """
+        
+        idx = np.abs(sn_m[varpull]) <= cutval
+        
+        sel = sn_m[idx]
+        
+        print(varpull,len(sel),sel[varpull].mean(),sel[varpull].std())
+        ax.plot(sel[varx],sel[varpull],linestyle='None')
