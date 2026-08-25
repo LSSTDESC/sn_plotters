@@ -1000,13 +1000,15 @@ class lc_sn:
         if len(self.sn_data) > 0:
             self.sn_data['sigma_color'] = np.sqrt(self.sn_data['Cov_colorcolor'])
             #self.sn_data['sigma_mb'] = np.sqrt(self.sn_data['Cov_mbmb'])
-            print(self.sn_data.columns.to_list())
+            #print(self.sn_data.columns.to_list())
             idx = self.sn_data['SNID'] == lcpath
             sn_fit = self.sn_data[idx]
             ppa = sn_fit[self.ccols_fit]
             pp_fit = ppa.to_dict(orient='list')
             ppa = ppa.rename(columns=self.corresp)
             ppf = ppa.to_dict(orient='list')
+            print('there man',ppf,lcpath)
+            print(self.sn_data['SNID'],len(self.sn_data))
             sn_flux_fit = self.grab_fluxes(**ppf)
             pp = sn_fit[self.ccols].to_dict(orient='list')
             sn_flux_orig = self.grab_fluxes(**pp)
@@ -1249,7 +1251,7 @@ def get_info(meta,snid,sn_data):
     
     return lc_plus_sn
 
-def compare_lc(lc_a,lc_b):
+def compare_lc(lc_a,lc_b,snid):
     """
     Function to compare LCs
 
@@ -1259,6 +1261,8 @@ def compare_lc(lc_a,lc_b):
         light curve a.
     lc_b : astropy Table
         light curve b.
+    snid: str
+        SN Id
 
     Returns
     -------
@@ -1279,6 +1283,17 @@ def compare_lc(lc_a,lc_b):
     
     df_a = df_a.sort_values(by=['time'])
     df_b = df_b.sort_values(by=['time'])
+    
+    #print('before merging',len(df_a),len(df_b))
+    delta_nlc = len(df_a)-len(df_b)
+    
+    if delta_nlc != 0:
+        print('NLC points diff',delta_nlc,snid)
+        time_a = df_a['time'].to_list()
+        time_b = df_b['time'].to_list()
+        time_comm = list(set(time_a)&set(time_b))
+        
+    
     df_c = df_a.merge(df_b,left_on=['filter','time'],
                       right_on=['filter','time'])
     
@@ -1330,8 +1345,9 @@ def get_sndata(fDir,fName,sellist):
     print(df.columns)
     
     return df
+
 class Comp_lc:
-    def __init__(self,dira,dirb):
+    def __init__(self,dira,dirb,todo='plot_lc_super'):
         """
         class to make LC comparison
 
@@ -1351,8 +1367,13 @@ class Comp_lc:
         self.dira = dira
         self.dirb = dirb
          
-        self.go()
+        if todo =='show_diff':
+            self.go()
+        if todo == 'plot_lc_super':
+            self.plot_super()
+        
 
+        
     def go(self):
      """
         Mein processing method
@@ -1367,6 +1388,10 @@ class Comp_lc:
      meta_b = get_metadata(self.dirb)
      snids = meta_a['SNID'].tolist()
      
+     
+     meta_a['lc_dir']=self.dira
+     meta_b['lc_dir']=self.dirb
+     
      params = {}
      params['meta_a'] = meta_a
      params['meta_b'] = meta_b
@@ -1376,7 +1401,7 @@ class Comp_lc:
      res = multiproc(snids,params,self.process_comp_lc,nproc=8)
      
      print(res.columns)
-     snids = res['snid'].unique()
+     snids = res['snid'].unique().tolist()
      print(snids)
      
      while (1):
@@ -1422,7 +1447,7 @@ class Comp_lc:
             lc_a = lc_plus_sn_a.lc_plot['lc']
             lc_b = lc_plus_sn_b.lc_plot['lc']
             
-            ro = compare_lc(lc_a,lc_b)
+            ro = compare_lc(lc_a,lc_b,snid)
     
             ro['snid'] = snid
             
@@ -1432,7 +1457,113 @@ class Comp_lc:
             return output_q.put({j: df})
         else:
             return df
+        
+    def plot_super(self):
+     """
+        to superimpose LCs
+
+        Returns
+        -------
+        None.
+
+        """
+        
+     meta_a = get_metadata(self.dira)
+     meta_b = get_metadata(self.dirb)
+     snids = meta_a['SNID'].tolist()
+     
+     meta_a['lc_dir']=self.dira
+     meta_b['lc_dir']=self.dirb
+     
+     
+     while (1):
+         answer = input('SNID?')
+         snid = answer
+         if snid == 'exit':
+             break
+         self.plot_lc_super(snid,meta_a,meta_b)  
+
+           
+    def plot_lc_super(self,snid,meta_a,meta_b):
+        """
+        Method to superimpose LCs
+
+        Parameters
+        ----------
+        snid : str
+            SN Id.
+        meta_a : dict
+            meta data - lc a.
+        meta_b : dict
+            meta data - lc b.
+
+        Returns
+        -------
+        None.
+
+        """
+        
+        lc_plus_sn_a = get_info(meta_a,snid,pd.DataFrame())
+        lc_plus_sn_b = get_info(meta_b,snid,pd.DataFrame())
             
+        lc_a = lc_plus_sn_a.lc_plot['lc']
+        lc_b = lc_plus_sn_b.lc_plot['lc']
+        
+        print(len(lc_a),len(lc_b))
+        
+        bands = np.unique(lc_a['filter'])
+        
+        tim_a = np.unique(lc_a['time']).tolist()
+        tim_b = np.unique(lc_b['time']).tolist()
+        
+        tim_a_not_b = list(set(tim_a) - set(tim_b))
+        tim_b_not_a = list(set(tim_b) - set(tim_a))
+        
+        print('aoooooo',tim_a_not_b)
+        for b in bands:
+            fig, ax = plt.subplots(figsize=(12,8))
+            
+            self.plot_lc_b(lc_a.to_pandas(),b,fig=fig,ax=ax,ms='*',time=tim_a_not_b)
+            self.plot_lc_b(lc_b.to_pandas(),b,fig=fig,ax=ax,ms='o',time=tim_b_not_a)
+            
+            print(type(lc_a))
+            
+        
+        plt.show(block=False)
+        
+    def plot_lc_b(self,lc, b,fig=None,ax=None,timescale='time',ms='o',time=[]):
+        
+        if fig is None:
+            fig, ax = plt.subplots(figsize=(12,8))
+       
+        filtercolors = dict(zip('ugrizy', ['b', 'c', 'g', 'y', 'r', 'm']))
+        idx = lc['filter'] == b
+        sel_lc = lc[idx]
+        
+        print('nlc',b,len(sel_lc))
+        """
+        ax.errorbar(sel_lc[timescale],
+              sel_lc['flux'],
+              yerr=sel_lc['fluxerr'],linestyle='None',
+              color=filtercolors[b],marker=ms,
+              markersize=10,mfc='None')  
+        """
+        if time:
+            idxb = sel_lc['time'].isin(time)
+            selb = sel_lc[idxb]
+            print('time',b,len(selb),selb[['flux','fluxerr']])
+            ax.plot(selb[timescale],
+              selb['flux'],
+              linestyle='None',
+              color='k',marker=ms,
+              markersize=10)
+        
+        
+        
+        
+        
+        
+        
     def plot_diff_lc(self,df):
         """
         Method to plot LC diffs
@@ -1458,7 +1589,7 @@ class Comp_lc:
         
         df = df[idx]
         
-        print(df[['fluxerr_x','fluxerr_y',thevar]])
+        print(df[['time','fluxerr_x','fluxerr_y',thevar]])
         print(df[thevar].mean(),df[thevar].std())
         
         for b in 'grizy':
@@ -1467,11 +1598,12 @@ class Comp_lc:
             self.plot_diff_indiv(df[idx],thevar,figtit=b)
             
         plt.show(block=False)
+        """
         print(df['filter'].unique())
         dfa = df.groupby(['filter','airmass_x'])['delta_zp'].std()
         
         print(dfa)
-        
+        """
     def plot_diff_indiv(self,grp,thevar,figtit=''):
         """
         Method to make indiv plots
@@ -1543,6 +1675,10 @@ class Comp_lc_sn:
         meta_a = get_metadata(self.dira)
         meta_b = get_metadata(self.dirb)
         
+        #correct for lc_dir
+        meta_a['lc_dir']=self.dira
+        meta_b['lc_dir']=self.dirb
+        
         # grab sn data
         sndata_a = get_sndata(self.dira,self.snFile_a,self.sellist)
         sndata_b = get_sndata(self.dirb,self.snFile_b,self.sellist)
@@ -1551,21 +1687,29 @@ class Comp_lc_sn:
         snids = meta_a['SNID'].tolist()
         #snids = ['SN_0108958_01_00003_6']
         
-        print(snids)
+        #list of SNIDs passing the selection criteria - set a
+        snids_a = sndata_a['SNID'].tolist()
+        #list of SNIDs passing the selection criteria - set a
+        snids_b = sndata_b['SNID'].tolist()
+        
+        snids = list(set(snids_a) & set(snids_b))
         
         
         while (1):
-            answer = input('SNID?')
+            answer = input('SNID or list?')
             snid = answer
             if snid == 'exit':
                 break
-            df_tot = self.grab_infos(meta_a, sndata_a,
-                                     meta_b,sndata_b,snid)
+            if answer == 'list':
+                print(snids)
+            else:
+                df_tot = self.grab_infos(meta_a, sndata_a,
+                                         meta_b,sndata_b,snid)
         
-            self.comp_lc_sn(df_tot,
-                            meta_a,sndata_a,
-                            meta_b,sndata_b,
-                            self.sellist,snid)
+                self.comp_lc_sn(df_tot,
+                                meta_a,sndata_a,
+                                meta_b,sndata_b,
+                                self.sellist,snid)
             
             
     def grab_infos(self,meta_a,sndata_a,meta_b,sndata_b,snid,
@@ -1704,8 +1848,8 @@ class Comp_lc_sn:
         plot_lc_feature(lc_b,varx='flux_orig',vary='sigma_f5',fig=fig,ax=ax,marker='*',color='r')
         #plot_lc_feature(lc_a,vary='sigma_shot',fig=fig,ax=ax,marker='*',color='r')
         """
-        compare_lc(lc_a,lc_b)
-        print('SNID',snid)
+        compare_lc(lc_a,lc_b,snid)
+        
         plt.show(block=False)
         
         
