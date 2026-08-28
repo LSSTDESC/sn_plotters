@@ -1384,6 +1384,7 @@ class Comp_lc:
 
         """
         
+     print('processing',self.dira,self.dirb)
      meta_a = get_metadata(self.dira)
      meta_b = get_metadata(self.dirb)
      snids = meta_a['SNID'].tolist()
@@ -1475,7 +1476,9 @@ class Comp_lc:
      meta_a['lc_dir']=self.dira
      meta_b['lc_dir']=self.dirb
      
+     print('processing',self.dira,self.dirb)
      
+     print(snids)
      while (1):
          answer = input('SNID?')
          snid = answer
@@ -1551,7 +1554,7 @@ class Comp_lc:
         if time:
             idxb = sel_lc['time'].isin(time)
             selb = sel_lc[idxb]
-            print('time',b,len(selb),selb[['flux','fluxerr']])
+            print('time',b,len(selb),selb[['phase','flux','fluxerr']])
             ax.plot(selb[timescale],
               selb['flux'],
               linestyle='None',
@@ -1887,12 +1890,14 @@ class Comp_sn:
         
         print(sn_m)
         
-        """
+        
         self.plot_pull_hist(sn_m)
         
-        self.plot_pull_hist(sn_m,prefix='diff',cutval=0.2)
         """
+        self.plot_pull_hist(sn_m,prefix='diff',cutval=0.2)
+        
         self.plot_pull_vs(sn_m,varx='SNID',prefix='diff',cutval=0.2)
+        """
     
         plt.show()
         
