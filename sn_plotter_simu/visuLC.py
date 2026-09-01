@@ -1288,7 +1288,7 @@ def compare_lc(lc_a,lc_b,snid):
     delta_nlc = len(df_a)-len(df_b)
     
     if delta_nlc != 0:
-        print('NLC points diff',delta_nlc,snid)
+        #print('NLC points diff',delta_nlc,snid)
         time_a = df_a['time'].to_list()
         time_b = df_b['time'].to_list()
         time_comm = list(set(time_a)&set(time_b))
@@ -1302,6 +1302,7 @@ def compare_lc(lc_a,lc_b,snid):
     df_c['m5_ratio'] = df_c['sigma_f5_x']/df_c['sigma_f5_y']
     df_c['noise_ratio'] = df_c['sigma_shot_x']/df_c['sigma_shot_y']
     df_c['delta_zp'] = df_c['zp_x']-df_c['zp_y']
+    df_c['z'] = lc_a.meta['z']
     #df_c['time_ratio'] = df_c['time_x']-df_c['time_y']
     
     return df_c   
@@ -1367,14 +1368,14 @@ class Comp_lc:
         self.dira = dira
         self.dirb = dirb
          
-        if todo =='show_diff':
-            self.go()
-        if todo == 'plot_lc_super':
+        if todo !='plot_lc_super':
+            self.go(todo)
+        else:
             self.plot_super()
         
 
         
-    def go(self):
+    def go(self,todo='show_diff_indiv'):
      """
         Mein processing method
 
@@ -1402,16 +1403,26 @@ class Comp_lc:
      res = multiproc(snids,params,self.process_comp_lc,nproc=8)
      
      print(res.columns)
-     snids = res['snid'].unique().tolist()
-     print(snids)
+  
      
-     while (1):
-         answer = input('SNID?')
-         snid = answer
-         if snid == 'exit':
-             break
-         idx = res['snid'] == snid
-         self.plot_diff_lc(res[idx])     
+     if todo == 'show_diff_indiv':
+         snids = res['snid'].unique().tolist()
+         print(snids)
+         while (1):
+             answer = input('SNID?')
+             snid = answer
+             if snid == 'exit':
+                 break
+             idx = res['snid'] == snid
+             self.plot_diff_lc(res[idx])     
+
+     if todo == 'show_all_diff':
+         self.plot_all_diff(res)
+         
+     if todo == 'fit_all_diff':
+         rr = res.groupby(['filter','z']).apply(lambda x: self.fit_all_diff(x)).reset_index()
+         
+         print(rr)
         
     def process_comp_lc(self,toproc, params, j=0, output_q=None):
         """
@@ -1526,8 +1537,13 @@ class Comp_lc:
         for b in bands:
             fig, ax = plt.subplots(figsize=(12,8))
             
+            """
             self.plot_lc_b(lc_a.to_pandas(),b,fig=fig,ax=ax,ms='*',time=tim_a_not_b)
             self.plot_lc_b(lc_b.to_pandas(),b,fig=fig,ax=ax,ms='o',time=tim_b_not_a)
+            """
+            self.plot_lc_b(lc_a.to_pandas(),b,fig=fig,ax=ax,ms='*')
+            self.plot_lc_b(lc_b.to_pandas(),b,fig=fig,ax=ax,ms='o')
+            
             
             print(type(lc_a))
             
@@ -1535,6 +1551,31 @@ class Comp_lc:
         plt.show(block=False)
         
     def plot_lc_b(self,lc, b,fig=None,ax=None,timescale='time',ms='o',time=[]):
+        """
+        Function to plot LC per band
+
+        Parameters
+        ----------
+        lc : pandas df
+            Data to plot.
+        b : str
+            filter.
+        fig : matplotlib figure, optional
+            Figure for the plot. The default is None.
+        ax : matplotlib axis, optional
+            axis for the plot. The default is None.
+        timescale : str, optional
+            time scale for the plot. The default is 'time'.
+        ms : str, optional
+            marker style. The default is 'o'.
+        time : list(float), optional
+            list of times. The default is [].
+
+        Returns
+        -------
+        None.
+
+        """
         
         if fig is None:
             fig, ax = plt.subplots(figsize=(12,8))
@@ -1544,13 +1585,13 @@ class Comp_lc:
         sel_lc = lc[idx]
         
         print('nlc',b,len(sel_lc))
-        """
+        
         ax.errorbar(sel_lc[timescale],
               sel_lc['flux'],
               yerr=sel_lc['fluxerr'],linestyle='None',
               color=filtercolors[b],marker=ms,
               markersize=10,mfc='None')  
-        """
+        
         if time:
             idxb = sel_lc['time'].isin(time)
             selb = sel_lc[idxb]
@@ -1560,11 +1601,6 @@ class Comp_lc:
               linestyle='None',
               color='k',marker=ms,
               markersize=10)
-        
-        
-        
-        
-        
         
         
     def plot_diff_lc(self,df):
@@ -1587,12 +1623,20 @@ class Comp_lc:
         thevar = 'fluxerr_ratio'
         #thevar = 'flux_orig_ratio'
         
+        """
         idx = df['flux_orig_x'] > 0.
         idx &= df['flux_orig_y'] > 0.
         
         df = df[idx]
-        
-        print(df[['time','fluxerr_x','fluxerr_y',thevar]])
+        """
+        ccols = ['time','flux_orig_x','flux_orig_y',
+                  'sigma_f5_x','sigma_f5_y',
+                  'sigma_shot_x','sigma_shot_y','zp_x','zp_y']
+        """
+        print(df[['time','zp_x','zp_y',
+                  'flux_x','flux_y','fluxerr_x','fluxerr_y',thevar]])
+        """
+        print(df[ccols+[thevar]])
         print(df[thevar].mean(),df[thevar].std())
         
         for b in 'grizy':
@@ -1630,7 +1674,73 @@ class Comp_lc:
         if figtit != '':
             fig.suptitle(figtit)
         
-        ax.hist(grp[thevar],histtype='step',bins=20)        
+        ax.hist(grp[thevar],histtype='step',bins=20)
+        
+        
+    def plot_all_diff(self,df):
+        """
+        Method to plot diff fluxerr vs b
+
+        Parameters
+        ----------
+        df : pandas df
+            Data to process.
+
+        Returns
+        -------
+        None.
+
+        """
+        
+        bands = df['filter'].unique()
+        
+        print(bands)
+        
+        for b in bands:
+            fig, ax = plt.subplots(figsize=(10,8))
+            fig.suptitle(b)
+            idx = df['filter'] == b
+            
+            sel = df[idx]
+            
+            ax.hist(sel['fluxerr_ratio'],histtype='step',bins=20)
+        
+            print(b,sel['fluxerr_ratio'].mean(),sel['fluxerr_ratio'].std())
+            from sn_analysis.sn_tools import histo_fit,fit_pull
+            
+            histo_fit(sel,'fluxerr_ratio')
+            
+            coeff = fit_pull(sel,'fluxerr_ratio')
+            
+            print(coeff)
+            
+            
+            
+        plt.show()
+        
+    def fit_all_diff(self,grp):
+        """
+        Function to fit fluxerr_ratios
+
+        Parameters
+        ----------
+        grp : pandas df
+            Data to process.
+
+        Returns
+        -------
+        res : pandas df
+            Result.
+
+        """
+        
+        from sn_analysis.sn_tools import fit_pull
+        
+        coeff = fit_pull(grp,'fluxerr_ratio')
+            
+        res = pd.DataFrame([coeff],columns=['A','mu','sigma'])
+        
+        return res
         
 class Comp_lc_sn:
     def __init__(self,dira,snFile_a,dirb,snFile_b,sellist):
@@ -1958,7 +2068,7 @@ class Comp_sn:
         sel = sn_m[idx]
         
         print(varpull,len(sel),sel[varpull].mean(),sel[varpull].std())
-        ax.hist(sel[varpull],histtype='step')
+        ax.hist(sel[varpull],histtype='step',bins=20)
         
     def plot_pull_vs(self,sn_m,varx='SNID',prefix='pull',cutval=5):
        """ 
@@ -2029,3 +2139,10 @@ class Comp_sn:
         
         print(varpull,len(sel),sel[varpull].mean(),sel[varpull].std())
         ax.plot(sel[varx],sel[varpull],linestyle='None')
+
+
+    
+
+        
+        
+        
