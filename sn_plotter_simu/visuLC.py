@@ -1303,6 +1303,7 @@ def compare_lc(lc_a,lc_b,snid):
     df_c['noise_ratio'] = df_c['sigma_shot_x']/df_c['sigma_shot_y']
     df_c['delta_zp'] = df_c['zp_x']-df_c['zp_y']
     df_c['z'] = lc_a.meta['z']
+    df_c['season'] = lc_a.meta['season']
     #df_c['time_ratio'] = df_c['time_x']-df_c['time_y']
     
     return df_c   
@@ -1420,7 +1421,7 @@ class Comp_lc:
          self.plot_all_diff(res)
          
      if todo == 'fit_all_diff':
-         rr = res.groupby(['filter','z']).apply(lambda x: self.fit_all_diff(x)).reset_index()
+         rr = res.groupby(['filter','z','season']).apply(lambda x: self.fit_all_diff(x)).reset_index()
          
          print(rr)
         
