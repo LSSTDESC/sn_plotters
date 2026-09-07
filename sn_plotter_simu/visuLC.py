@@ -1403,7 +1403,7 @@ class Comp_lc:
      
      res = multiproc(snids,params,self.process_comp_lc,nproc=8)
      
-     print(res.columns)
+     #print(res.columns)
   
      
      if todo == 'show_diff_indiv':
@@ -1422,8 +1422,7 @@ class Comp_lc:
          
      if todo == 'fit_all_diff':
          rr = res.groupby(['filter','z','season']).apply(lambda x: self.fit_all_diff(x)).reset_index()
-         
-         print(rr)
+         self.res_fit = rr
         
     def process_comp_lc(self,toproc, params, j=0, output_q=None):
         """
