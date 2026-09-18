@@ -7,7 +7,7 @@ Created on Tue Mar  3 14:19:57 2026
 """
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.interpolate import RegularGridInterpolator
+from scipy.interpolate import RegularGridInterpolator,interp1d
 from sn_analysis.sn_tools import get_spline
 from . import plt,filtercolors
 import pandas as pd
@@ -127,10 +127,18 @@ def get_grid(tab,varx,vary,varz):
     
 def plot_grid(tab, varx='airmass',xlabel='airmass',
               vary='sigma_pwv',ylabel='$\sigma_{PWV}$ [mm]',
-              varz='std_zp_y',figtitle='$\sigma_{ZP}^{y}$',
+              unit_y='mm',
+              varz='std_zp_y',unit_z='mmag',
+              figtitle='$\sigma_{ZP}^{y}$',
               iso=[1.,2.,5.],
               txt_iso=['1 mmag','2 mmag','5 mmag'],
-              x_iso=[1.5]*3,smoothIt=True):
+              x_iso_tag=[1.5]*3,
+              x_text=1.6,
+              k_ytext=1.30,
+              lstyles = ['solid','dashed','dotted'],
+              smoothIt=True,
+              add_plot_y=[],add_plot_str=[],add_plot_color='',
+              airmass_ref=[1.2,2.3]):
     """
     Function to make meshgrid plots
 
@@ -154,17 +162,28 @@ def plot_grid(tab, varx='airmass',xlabel='airmass',
         List of isocurve variables. The default is [1.,2.,5.].
     txt_iso : str, optional
         List of text for iso curves. The default is ['1 mmag','2 mmag','5 mmag'].
-    x_iso : list(float), optional
+    x_iso_tag : list(float), optional
         x-positions for txt_iso. The default is [1.5]*3.
+    x_text : float, optional
+        x-axis value for text legend. The default is 1.6.
+     k_ytext : float, optional
+        factor for text position. The default is 1.30.
+    lstyles : list(str), optional
+        List of line styles. The default is ['solid','dashed','dotted'].
     smoothIt : bool, optional
         To smooth the iso curves. The default is True.
-
+    add_plot_y : list(float), optional
+        y-axis values for lines to be inserted in the plot. The default is [].
+    add_plot_str : list(str), optional
+        legend corresponding to add_plot_y. The default is [].
+    add_plot_color : str, optional
+        color for add_plot. The default is ''.
     Returns
     -------
     None.
 
     """
-
+    
     fig,ax = plt.subplots(figsize=(12,8))
     fig.suptitle(figtitle)
     
@@ -183,9 +202,13 @@ def plot_grid(tab, varx='airmass',xlabel='airmass',
                    #vmin=np.min(fluxpixels),vmax=np.max(fluxpixels),
                    cmap=plt.cm.jet,aspect='auto',origin='lower')
     
+    r = []
     #estimate specific values
     for io,vv in enumerate(iso):
-        solutions = np.argwhere((fluxpixels>=vv)&(fluxpixels<=1.1*vv))
+        if vv >=0:
+            solutions = np.argwhere((fluxpixels>=vv)&(fluxpixels<=1.1*vv))
+        else:
+            solutions = np.argwhere((fluxpixels<=vv)&(fluxpixels>=1.1*vv))
         ival = solutions[:,0].tolist()
         jval = solutions[:,1].tolist()
         x_iso = X[ival,jval]
@@ -206,18 +229,51 @@ def plot_grid(tab, varx='airmass',xlabel='airmass',
             idb = spl_smooth>= ymin
             idb &= spl_smooth <= ymax
             
+            xxnew = xnew[idb]
+            sspl_smooth = spl_smooth[idb]
             
-            ax.plot(xnew[idb], spl_smooth[idb],color='k',marker='.',markersize=0.05)
+            ax.plot(xxnew, sspl_smooth,color='k',marker='.',
+                    linestyle=lstyles[io],
+                    markersize=0.05)
         
             ytext = df_iso[vary].max()+0.00005
-            idd = np.argmin(np.abs(df_iso[varx]-x_iso[io]))
-            ytext = df_iso.loc[idd,vary]*1.30
-            ax.text(1.6,ytext,txt_iso[io])
+            idd = np.argmin(np.abs(df_iso[varx]-x_iso_tag[io]))
+            vvb = df_iso.loc[idd,vary]
+            kk = k_ytext
+            if vvb < 0:
+                kk = 1./k_ytext
+            ytext = vvb*kk
+            
+            #ytext = sspl_smooth[idd]*k_ytext
+            ax.text(x_text,ytext,txt_iso[io],fontsize=15)
+            
+        #grab values at airmass=1.2 and airmass=2.4
+        myinterp = interp1d(df_iso[varx],df_iso[vary],
+                            bounds_error=False, fill_value=0.)
+        
+        for airm in airmass_ref:
+            b = varz.split('_')[-1]
+            print(vary,varz,airm,myinterp(airm),vv,varz.split('_')[-1])
+            r.append([b,vary.split('_')[-1],airm,vv,np.round(myinterp(airm),5)])
         
     fig.colorbar(im)
     ax.grid(visible=True)
     ax.set_xlabel(r'{}'.format(xlabel))
     ax.set_ylabel(r'{}'.format(ylabel))
+    
+    
+    if add_plot_y:
+        xmin,xmax = ax.get_xlim()
+        for ia,vv in enumerate(add_plot_y):
+            ax.plot([xmin,xmax],[vv]*2,linestyle='dotted',color=add_plot_color)
+            ax.text(xmin+0.05,vv+0.1,add_plot_str[ia],fontsize=15,color=add_plot_color)
+    
+    vvo = '_'.join(varz.split('_')[:2])
+    vvo = '{} [{}]'.format(vvo,unit_z)
+    bb = 'bias_value [{}]'.format(unit_y)
+    df = pd.DataFrame(r,columns=['band','atmos_param','airmass',vvo,bb])
+    
+    return df
     
 def limVals(lc, field):
     """ Get unique values of a field in  a table
