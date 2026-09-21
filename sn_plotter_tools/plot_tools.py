@@ -137,8 +137,7 @@ def plot_grid(tab, varx='airmass',xlabel='airmass',
               k_ytext=1.30,
               lstyles = ['solid','dashed','dotted'],
               smoothIt=True,
-              add_plot_y=[],add_plot_str=[],add_plot_color='',
-              airmass_ref=[1.2,2.3]):
+              add_plot_y=[],add_plot_str=[],add_plot_color=''):
     """
     Function to make meshgrid plots
 
@@ -205,56 +204,46 @@ def plot_grid(tab, varx='airmass',xlabel='airmass',
     r = []
     #estimate specific values
     for io,vv in enumerate(iso):
-        if vv >=0:
-            solutions = np.argwhere((fluxpixels>=vv)&(fluxpixels<=1.1*vv))
+        df_iso = get_values(fluxpixels, X, Y, varx, vary, vv)
+        
+        if len(df_iso) == 0:
+               continue
+           
+        if smoothIt:
+            xxnew,yynew = get_smooth(df_iso,varx,vary,ymin,ymax)
         else:
-            solutions = np.argwhere((fluxpixels<=vv)&(fluxpixels>=1.1*vv))
-        ival = solutions[:,0].tolist()
-        jval = solutions[:,1].tolist()
-        x_iso = X[ival,jval]
-        y_iso = Y[ival,jval]
-        df_iso = pd.DataFrame(x_iso,columns=[varx])
-        df_iso[vary] = y_iso
-        df_iso = df_iso.sort_values(by=[varx])
-        df_iso = df_iso.groupby(varx)[vary].mean().reset_index()
-      
+            xxnew,yynew =df_iso[varx],df_iso[vary]
+            
+        ax.plot(df_iso[varx],df_iso[vary],
+                color='k',marker='.',
+                linestyle=lstyles[io],
+                markersize=0.05)
+       
         
-        if not smoothIt:
-            ax.plot(df_iso[varx],df_iso[vary],
-                    color='k',marker='.',markersize=0.05)
-        else:
-            if len(df_iso) == 0:
-                continue
-            xnew, spl_smooth = get_spline(df_iso,varx,vary,nx=10)
-            idb = spl_smooth>= ymin
-            idb &= spl_smooth <= ymax
-            
-            xxnew = xnew[idb]
-            sspl_smooth = spl_smooth[idb]
-            
-            ax.plot(xxnew, sspl_smooth,color='k',marker='.',
-                    linestyle=lstyles[io],
-                    markersize=0.05)
+        ytext = df_iso[vary].max()+0.00005
+        idd = np.argmin(np.abs(df_iso[varx]-x_iso_tag[io]))
+        vvb = df_iso.loc[idd,vary]
+        kk = k_ytext
+        if vvb < 0:
+            kk = 1./k_ytext
+        ytext = vvb*kk
         
-            ytext = df_iso[vary].max()+0.00005
-            idd = np.argmin(np.abs(df_iso[varx]-x_iso_tag[io]))
-            vvb = df_iso.loc[idd,vary]
-            kk = k_ytext
-            if vvb < 0:
-                kk = 1./k_ytext
-            ytext = vvb*kk
-            
-            #ytext = sspl_smooth[idd]*k_ytext
-            ax.text(x_text,ytext,txt_iso[io],fontsize=15)
-            
-        #grab values at airmass=1.2 and airmass=2.4
-        myinterp = interp1d(df_iso[varx],df_iso[vary],
-                            bounds_error=False, fill_value=0.)
+        #ytext = sspl_smooth[idd]*k_ytext
+        kx = 0
+        ky = 0
         
-        for airm in airmass_ref:
-            b = varz.split('_')[-1]
-            print(vary,varz,airm,myinterp(airm),vv,varz.split('_')[-1])
-            r.append([b,vary.split('_')[-1],airm,vv,np.round(myinterp(airm),5)])
+        idd = np.argmin(np.abs(df_iso[vary]-ymin))
+        print('allo',x_text,ytext,ymax,ymin,df_iso.loc[idd,varx],df_iso.loc[idd,vary])
+        if ytext >= ymax:
+            kx = (2.1-x_text)
+            ky = ymax-1.5-ytext
+        if df_iso[vary].min() <= ymin:
+            kx = (2.1-x_text)
+            ky = ymin+1.5-ytext
+            
+        print('alli',x_text+kx,ytext+ky)
+        ax.text(x_text+kx,ytext+ky,txt_iso[io],fontsize=15)
+            
         
     fig.colorbar(im)
     ax.grid(visible=True)
@@ -268,13 +257,169 @@ def plot_grid(tab, varx='airmass',xlabel='airmass',
             ax.plot([xmin,xmax],[vv]*2,linestyle='dotted',color=add_plot_color)
             ax.text(xmin+0.05,vv+0.1,add_plot_str[ia],fontsize=15,color=add_plot_color)
     
+def get_smooth(df,varx,vary,ymin,ymax):
+    xnew, spl_smooth = get_spline(df,varx,vary,nx=10)
+    idb = spl_smooth>= ymin
+    idb &= spl_smooth <= ymax
+            
+    xxnew = xnew[idb]
+    yynew = spl_smooth[idb]    
+    
+    return xxnew,yynew
+    
+def get_data_from_grid(tab, varx='airmass',
+                       vary='sigma_pwv',unit_y='mm',
+                       varz='std_zp_y',unit_z='mmag',
+                       iso=[1.,2.,5.],
+                       airmass_ref=[1.2,2.0]):
+    """
+    Function to get data from grid
+
+    Parameters
+    ----------
+    tab : astropy table
+        Data to process
+    varx : str, optional
+        x-axis variable. The default is 'airmass'.
+    xlabel : str, optional
+        x-axis label. The default is 'airmass'.
+    vary : str, optional
+        y-axis variable. The default is 'sigma_pwv'.
+    varz : str, optional
+        z-axis variable. The default is 'std_zp_y'.
+    iso : list(float), optional
+        List of isocurve variables. The default is [1.,2.,5.].
+    airmass_ref : list(float), optional
+        airmass value to estimate data. The default is [1.2,2.3].
+    Returns
+    -------
+    None.
+
+    """   
+    
+    #grab the grid
+    X,Y,fluxpixels = get_grid(tab,varx,vary,varz)
+    
+    #get values
+    
+    params = {}
+    
+    params['fluxpixels']=fluxpixels
+    params['X']=X
+    params['Y']=Y
+    params['varx']=varx
+    params['vary']=vary
+    params['varz']=varz
+    params['airmass_ref']=airmass_ref
+    params['unit_y']=unit_y
+    params['unit_z']=unit_z
+    
+    from sn_tools.sn_utils import multiproc
+    df = multiproc(iso,params,get_iso_values,nproc=8)
+    
+    return df
+ 
+def get_iso_values(iso,params, j=0, output_q=None):
+    """
+    Function to grab interp values using multiprocessing
+
+    Parameters
+    ----------
+    iso : list(int)
+        List of values to consider.
+    params : dict
+        parameters.
+    j : int, optional
+        internal int for multiprocessing. The default is 0.
+    output_q : multiprocessing queue, optional
+        where to put the results. The default is None.
+
+    Returns
+    -------
+    TYPE
+        DESCRIPTION.
+
+    """
+    
+    fluxpixels=params['fluxpixels']
+    X = params['X']
+    Y = params['Y']
+    varx = params['varx']
+    vary = params['vary']
+    varz = params['varz']
+    airmass_ref = params['airmass_ref']
+    unit_y = params['unit_y']
+    unit_z = params['unit_z']
+    
+    r = []
+    #estimate specific values
+    for io,vv in enumerate(iso):
+     
+        df_iso =get_values(fluxpixels,X,Y,varx,vary,vv)
+               
+        if len(df_iso) == 0:
+            continue
+        #grab values at airmass=1.2 and airmass=2.4
+        myinterp = interp1d(df_iso[varx],df_iso[vary],
+                            bounds_error=False, fill_value=0.)
+        
+        for airm in airmass_ref:
+            b = varz.split('_')[-1]
+            #print(vary,varz,airm,myinterp(airm),vv,varz.split('_')[-1])
+            r.append([b,vary.split('_')[-1],airm,vv,np.round(myinterp(airm),5)])
+    
     vvo = '_'.join(varz.split('_')[:2])
     vvo = '{} [{}]'.format(vvo,unit_z)
     bb = 'bias_value [{}]'.format(unit_y)
-    df = pd.DataFrame(r,columns=['band','atmos_param','airmass',vvo,bb])
+    df = pd.DataFrame(r,columns=['band','atmos_param','airmass',vvo,bb])    
     
-    return df
+    if output_q is not None:
+        return output_q.put({j: df})
+    else:
+        return df
     
+
+def get_values(fluxpixels,X,Y,varx,vary,vv):
+    """
+    Function to estimate values from 3D map
+
+    Parameters
+    ----------
+    fluxpixels : array
+        Data to process.
+    X : 1D array
+        X-axis values.
+    Y : 1D array
+        Y-axis value.
+    varx : str
+        x-axis variable.
+    vary : str
+        y-axis variable.
+    vv : float
+        z-axis value.
+
+    Returns
+    -------
+    df_iso : pandas df
+        output data.
+
+    """
+    
+    if vv >=0:
+        solutions = np.argwhere((fluxpixels>=vv)&(fluxpixels<=1.1*vv))
+    else:
+        solutions = np.argwhere((fluxpixels<=vv)&(fluxpixels>=1.1*vv))
+    ival = solutions[:,0].tolist()
+    jval = solutions[:,1].tolist()
+    x_iso = X[ival,jval]
+    y_iso = Y[ival,jval]
+    df_iso = pd.DataFrame(x_iso,columns=[varx])
+    df_iso[vary] = y_iso
+    df_iso = df_iso.sort_values(by=[varx])
+    df_iso = df_iso.groupby(varx)[vary].mean().reset_index()    
+   
+    return df_iso
+
 def limVals(lc, field):
     """ Get unique values of a field in  a table
     Parameters
