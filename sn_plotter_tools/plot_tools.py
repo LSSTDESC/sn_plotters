@@ -232,16 +232,17 @@ def plot_grid(tab, varx='airmass',xlabel='airmass',
         kx = 0
         ky = 0
         
-        idd = np.argmin(np.abs(df_iso[vary]-ymin))
-        print('allo',x_text,ytext,ymax,ymin,df_iso.loc[idd,varx],df_iso.loc[idd,vary])
+        #idd = np.argmax(np.abs(df_iso[vary]-ymin))
+        #print('allo',x_text,ytext,ymax,ymin,df_iso.loc[idd,varx],df_iso.loc[idd,vary],vv)
         if ytext >= ymax:
             kx = (2.1-x_text)
             ky = ymax-1.5-ytext
+        """
         if df_iso[vary].min() <= ymin:
             kx = (2.1-x_text)
             ky = ymin+1.5-ytext
-            
-        print('alli',x_text+kx,ytext+ky)
+        """    
+        #print('alli',x_text+kx,ytext+ky)
         ax.text(x_text+kx,ytext+ky,txt_iso[io],fontsize=15)
             
         
