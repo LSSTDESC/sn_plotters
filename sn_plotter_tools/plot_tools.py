@@ -183,6 +183,8 @@ def plot_grid(tab, varx='airmass',xlabel='airmass',
 
     """
     
+    print('smmoth?',smoothIt)
+    
     fig,ax = plt.subplots(figsize=(12,8))
     fig.suptitle(figtitle)
     
@@ -195,6 +197,8 @@ def plot_grid(tab, varx='airmass',xlabel='airmass',
     ymin = np.min(Y)
     ymax = np.max(Y)
     
+    print('allo',tab[varx].min(),tab[varx].max(),
+          tab[vary].min(),tab[vary].max())
     #show grid
     im = ax.imshow(fluxpixels,
                    extent=[xmin,xmax,ymin,ymax],
@@ -210,11 +214,12 @@ def plot_grid(tab, varx='airmass',xlabel='airmass',
                continue
            
         if smoothIt:
-            xxnew,yynew = get_smooth(df_iso,varx,vary,ymin,ymax)
+            xxnew,yynew = get_smooth_savgol(df_iso,varx,vary,ymin,ymax)
         else:
             xxnew,yynew =df_iso[varx],df_iso[vary]
             
-        ax.plot(df_iso[varx],df_iso[vary],
+            
+        ax.plot(xxnew,yynew,
                 color='k',marker='.',
                 linestyle=lstyles[io],
                 markersize=0.05)
@@ -258,16 +263,75 @@ def plot_grid(tab, varx='airmass',xlabel='airmass',
             ax.plot([xmin,xmax],[vv]*2,linestyle='dotted',color=add_plot_color)
             ax.text(xmin+0.05,vv+0.1,add_plot_str[ia],fontsize=15,color=add_plot_color)
     
-def get_smooth(df,varx,vary,ymin,ymax):
-    xnew, spl_smooth = get_spline(df,varx,vary,nx=10)
-    idb = spl_smooth>= ymin
-    idb &= spl_smooth <= ymax
-            
-    xxnew = xnew[idb]
-    yynew = spl_smooth[idb]    
+def get_smooth_savgol(df,varx,vary,ymin,ymax):
+    """
+    Function to get smoothed curves
+
+    Parameters
+    ----------
+    df : oandas df
+        Data to process.
+    varx : str
+        x-axis variable.
+    vary : str
+        y-axis variable.
+    ymin : float
+        y-axis min value.
+    ymax : float
+        y-axis max value.
+
+    Returns
+    -------
+    xxnew : array
+        x-axis values.
+    yynew : array
+        y-axis values.
+
+    """
     
+    df = df.sort_values(by=[varx])
+    xxnew=df[varx]
+    from scipy.signal import savgol_filter
+    yynew = savgol_filter(df[vary], 800, 2)
+   
+    print(yynew)
     return xxnew,yynew
-    
+
+def get_smooth(df,varx,vary,ymin,ymax):
+   """
+   Function to get smoothed curves
+
+   Parameters
+   ----------
+   df : oandas df
+       Data to process.
+   varx : str
+       x-axis variable.
+   vary : str
+       y-axis variable.
+   ymin : float
+       y-axis min value.
+   ymax : float
+       y-axis max value.
+
+   Returns
+   -------
+   xxnew : array
+       x-axis values.
+   yynew : array
+       y-axis values.
+
+   """
+   
+   xnew, spl_smooth = get_spline(df,varx,vary,nx=10)
+   idb = spl_smooth>= ymin
+   idb &= spl_smooth <= ymax
+           
+   xxnew = xnew[idb]
+   yynew = spl_smooth[idb]
+   
+   return xxnew,yynew   
+
 def get_data_from_grid(tab, varx='airmass',
                        vary='sigma_pwv',unit_y='mm',
                        varz='std_zp_y',unit_z='mmag',
