@@ -183,8 +183,6 @@ def plot_grid(tab, varx='airmass',xlabel='airmass',
 
     """
     
-    print('smmoth?',smoothIt)
-    
     fig,ax = plt.subplots(figsize=(12,8))
     fig.suptitle(figtitle)
     
@@ -292,7 +290,7 @@ def get_smooth_savgol(df,varx,vary,ymin,ymax):
     df = df.sort_values(by=[varx])
     xxnew=df[varx]
     from scipy.signal import savgol_filter
-    yynew = savgol_filter(df[vary], 800, 2)
+    yynew = savgol_filter(df[vary], 800, 2,mode='interp')
    
     print(yynew)
     return xxnew,yynew
