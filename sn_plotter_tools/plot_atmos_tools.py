@@ -75,7 +75,9 @@ def plot_summary_obs_param(df,obs_param='zp',airmass=1.2,
                 label=label,linestyle=linestyle,
                 marker=marks[atm],mfc='None',markersize=12,color=color)
         
-def plot_summary(df_zp,obs_param='zp',valref=1,unit='mmag'):
+def plot_summary(df_zp,obs_param='zp',valref=1,unit='mmag',
+                 bands=['g','r','i','z','y','gr','ri','iz','zy'],
+                 plotDir='None'):
     """
     summary plot
 
@@ -89,6 +91,8 @@ def plot_summary(df_zp,obs_param='zp',valref=1,unit='mmag'):
         reference value. The default is 1.
     unit : str, optional
         plot unit. The default is 'mmag'.
+    plotDir: str, optional.
+      where to store the plots. The default is 'None'
 
     Returns
     -------
@@ -131,25 +135,37 @@ def plot_summary(df_zp,obs_param='zp',valref=1,unit='mmag'):
     xmin, xmax = ax.get_xlim()
     yv_auxtel=[0.2,20,3e-3,5e-3]
     coeff= [1.10]*2+[0.7]+[1.15]
+    coeff = [0.9]*4
     ttxt = ['$\sigma_{PWV}$','$\sigma_{ozone}$',
             '$\sigma_{airmass}$','$\sigma_{aerosol}$']
     units = ['mm','DU','','']
+    xtransb = 4.1
+    if obs_param == 'zp':
+        xtransb=8.1
     for io,yy in enumerate(yv_auxtel):
         r = []
-        for b in 'grizy':
+        for b in bands:
             r.append((b,yy))
             
         dfaux = pd.DataFrame(r,columns=['band','auxres'])
         
         ax.plot(dfaux['band'],dfaux['auxres'],color='r',linestyle='dashed')
+        
+        the_text = ttxt[io]+'='+'{}'.format(yy)+' {}'.format(units[io])
         """
-        ax.text(x_trans+0.055,ypos[io],ttxt[io]+'='+'{}'.format(yy),
-            fontsize=12,transform=ax.transAxes)
+        ax.text(1.05,coeff[io]*yy,the_text,
+            fontsize=12,transform=ax.transAxes,color='b')
         """
-        ax.text(3.2,coeff[io]*yy,ttxt[io]+'='+'{}'.format(yy)+' {}'.format(units[io]),
-            fontsize=12,color='r')    
+        
+        ax.text(xtransb,coeff[io]*yy,the_text,
+            fontsize=12,color='r')
+        
+    if plotDir != 'None':
+        fName = '{}/summary_{}.png'.format(plotDir,obs_param)
+        plt.savefig(fName)
+        
 
-def plot_all_summary(df_zp,df_wave):
+def plot_all_summary(df_zp,df_wave,plotDir='None'):
     """
     plot all summary
 
@@ -159,6 +175,8 @@ def plot_all_summary(df_zp,df_wave):
         zp data.
     df_wave : pandas df
         mean wave data.
+    plotDir: str, optional.
+      where to store the figures. The default is 'None'
 
     Returns
     -------
@@ -166,11 +184,13 @@ def plot_all_summary(df_zp,df_wave):
 
     """
     
-    plot_summary(df_zp)
-    plot_summary(df_wave,obs_param='mean_wave',valref=0.1,unit='nm')
+    plot_summary(df_zp,plotDir=plotDir)
+    plot_summary(df_wave,obs_param='mean_wave',valref=0.1,unit='nm',
+                 bands='grizy',plotDir=plotDir)
     
 def plot_atmos_data_airmass(theDir,
-                            atmos_params=['pwv','aerosol','airmass','ozone']):
+                            atmos_params=['pwv','aerosol','airmass','ozone'],
+                            plotDir='None'):
     """
     plot atmos data
 
@@ -203,6 +223,8 @@ def plot_atmos_data_airmass(theDir,
     xxtext=dict(zip(all_atm,xt))
     legx = dict(zip(all_atm,legxx))
     legxrel = dict(zip(all_atm,legxxrel))
+    bands = ['g','r','i','z','y']
+    bands_zp = ['gr','ri','iz','zy']
     
     for vv in atmos_params:
         theFile = 'zp_atmos_{}.hdf5'.format(vv)
@@ -219,7 +241,7 @@ def plot_atmos_data_airmass(theDir,
            df = df[idx]   
 
 
-        for b in 'grizy':
+        for b in bands+bands_zp:
             df['std_zp_{}'.format(b)] *= 1000 # in mmag
          
         
@@ -228,7 +250,8 @@ def plot_atmos_data_airmass(theDir,
                          vary_prefix='std_zp',airmass=airmass, 
                          y_iso=[1,2,3,5],
                          txt_iso=['1 mmag','2 mmag','3 mmag','5 mmag'],
-                         xtext=xxtext[vv],smoothIt=False,fitIt=True) 
+                         xtext=xxtext[vv],smoothIt=False,fitIt=True,
+                         bands=bands_zp,plotDir=plotDir) 
         
         plot_airmass(df,varx='sigma_{}'.format(vv),xlabel=legx[vv],
                          vary_prefix='std_mean_wave',
@@ -237,7 +260,8 @@ def plot_atmos_data_airmass(theDir,
                          y_iso=[0.05,0.1,0.15],
                          txt_iso=['0.05 nm','0.1 nm','0.15 nm'],
                          ymax=0.2,deltay_txt=0.005,
-                         xtext=xxtext[vv],smoothIt=False,fitIt=True)
+                         xtext=xxtext[vv],smoothIt=False,fitIt=True
+                         ,bands=bands,plotDir=plotDir)
         
         rel_err = 'rel_err_{}'.format(vv)
         df[rel_err] = 100.*df['sigma_{}'.format(vv)]/df['mean_{}'.format(vv)]
@@ -247,7 +271,8 @@ def plot_atmos_data_airmass(theDir,
                          vary_prefix='std_zp',airmass=airmass, 
                          y_iso=[1,2,3,5],
                          txt_iso=['1 mmag','2 mmag','3 mmag','5 mmag'],
-                         xtext=xxtext[vv],smoothIt=False,fitIt=True)
+                         xtext=xxtext[vv],smoothIt=False,fitIt=True,
+                         bands=bands_zp,plotDir=plotDir)
         plot_airmass(df,varx=rel_err,xlabel=legxrel[vv],
                          vary_prefix='std_mean_wave',
                          ylabel='$\sigma_{meanwave}$ [mm]',
@@ -255,14 +280,16 @@ def plot_atmos_data_airmass(theDir,
                          y_iso=[0.05,0.1,0.15],
                          txt_iso=['0.05 nm','0.1 nm','0.15 nm'],
                          ymax=0.2,deltay_txt=0.005,
-                         xtext=xxtext[vv],smoothIt=False,fitIt=True)
+                         xtext=xxtext[vv],smoothIt=False,fitIt=True,
+                         bands=bands,plotDir=plotDir)
         
         
 def plot_perf(data,x_main='sigma',
               obs_param='zp',unit='mmag',ylabel='zp',
               atmos_params=['airmass','ozone','aerosol','pwv','total'],
               airmass=[1.2,2.],ylines=[1,5,10],
-              yannot=['1 mmag','5 mmag','10 mmag'],extra_leg=''):
+              yannot=['1 mmag','5 mmag','10 mmag'],extra_leg='',
+              bands='grizy',plotDir='None'):
     """
     Function to draw a perf plot
 
@@ -289,6 +316,10 @@ def plot_perf(data,x_main='sigma',
         ylines annot. The default is ['1 mmag','5 mmag','10 mmag'].
     extra_leg: str, optional.
         extra legend to add to the plot. The default is ''.
+    bands: list(str), optional.
+       list of filters to consider. The default is 'grizy'
+    plotDir: str, optional.
+      where to store the figures.
 
     Returns
     -------
@@ -349,12 +380,17 @@ def plot_perf(data,x_main='sigma',
     
     if extra_leg != '':
        ax.text(-0.15,0.97,extra_leg,
-            fontsize=12,transform=ax.transAxes,color='b') 
+            fontsize=12,transform=ax.transAxes,color='g') 
+       
+    if plotDir != 'None':
+        fName = '{}/from_sigma_{}.png'.format(plotDir,obs_param)
+        plt.savefig(fName)
     
 def plot_perf_obs_param(df_zp,sigmas,unit_atmos,
                     obs_param='zp',unit='nm',ylabel='zp',
                     ylines=[1,5,10],
-                    yannot=['1 mmag','5 mmag','10 mmag']):
+                    yannot=['1 mmag','5 mmag','10 mmag'],
+                    bands='grizy',plotDir='None'):
     """
     Function to draw perf plots for an obs_param
 
@@ -376,6 +412,10 @@ def plot_perf_obs_param(df_zp,sigmas,unit_atmos,
         y-values of lines to draw. The default is [1,5,10].
     yannot : list(str), optional
         y-lines annot. The default is ['1 mmag','5 mmag','10 mmag'].
+    bands: list(str), optional.
+       List of filters to consider.
+    plotDir: str, optional.
+       where to store the figures. The default is 'None'
 
     Returns
     -------
@@ -383,8 +423,7 @@ def plot_perf_obs_param(df_zp,sigmas,unit_atmos,
 
     """
     
-    bands = 'grizy'
-    b_index = [0,1,2,3,4]
+    b_index = range(len(bands))
     dfb = pd.DataFrame(list(bands),columns=['band'])
     dfb['band_index'] = b_index
   
@@ -413,11 +452,12 @@ def plot_perf_obs_param(df_zp,sigmas,unit_atmos,
         res_zp['frac_check'] += res_zp[fracx]
   
     plot_perf(res_zp,obs_param=obs_param,unit =unit,
-            ylabel=ylabel,ylines=ylines,yannot=yannot,extra_leg=extra_leg)
+            ylabel=ylabel,ylines=ylines,yannot=yannot,
+            extra_leg=extra_leg,plotDir=plotDir)
     
     plot_perf(res_zp,x_main='frac',obs_param=obs_param,unit='%',ylabel=ylabel,
               atmos_params=['airmass','ozone','aerosol','pwv'],ylines=[],
-              extra_leg=extra_leg)
+              extra_leg=extra_leg,plotDir=plotDir)
     
 def plot_results_config(df,config_df,obs_param='zp',unit='mmag',plotDir='',
                  tagline=[1,2,5,10]):
