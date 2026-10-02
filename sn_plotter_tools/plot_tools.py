@@ -520,7 +520,8 @@ def plot_airmass(df,varx='sigma_pwv',xlabel='$\sigma_{PWV}$ [mm]',
                  y_iso=[1,2,5],
                  txt_iso=['1 mmag','2 mmag','5 mmag'],
                  ymax=6,deltay_txt=0.03,xtext=0.015,
-                 smoothIt=False,fitIt=False):
+                 smoothIt=False,fitIt=False,bands='grizy',
+                 plotDir='None'):
     """
     Function to make a 2D plot for defined airmass values
 
@@ -551,7 +552,11 @@ def plot_airmass(df,varx='sigma_pwv',xlabel='$\sigma_{PWV}$ [mm]',
     smoothIt : bool, optional
         To smooth the data (using spline). The default is False.
     fitIt : bool, optional
-        To fit the data (linear). The default is False.    
+        To fit the data (linear). The default is False. 
+    bands: list(str), optional.
+      filters to consider. The default is 'grizy'
+    plotDir: str, optional.
+      output dir for the plots. The default is 'None'
 
     Returns
     -------
@@ -572,7 +577,6 @@ def plot_airmass(df,varx='sigma_pwv',xlabel='$\sigma_{PWV}$ [mm]',
     df = df.round({'mean_airmass':2})
     fig, ax = plt.subplots(figsize=(12,8))
     
-    bands = 'grizy'
     markers = ['o','P','s','*','h']
     mm = dict(zip(bands,markers))
     lstyle = ['solid','dotted']
@@ -631,8 +635,10 @@ def plot_airmass(df,varx='sigma_pwv',xlabel='$\sigma_{PWV}$ [mm]',
             fontsize=12,transform=ax.transAxes)
     
     #save plot here
-    fName='fig_{}_{}.png'.format(vary_prefix,varx)
-    plt.savefig(fName)
+    if plotDir != 'None':
+        bb='_'.join(bands)
+        fName='{}/fig_{}_{}_{}.png'.format(plotDir,vary_prefix,varx,bb)
+        plt.savefig(fName)
     
 def plot_indiv(df,
                xvar='z', xlabel='z', 
