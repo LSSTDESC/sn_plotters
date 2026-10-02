@@ -1,8 +1,13 @@
 from .version import __version__
 import matplotlib.pyplot as plt
 
-filtercolors = dict(zip('ugrizy', ['b', 'c', 'g', 'y', 'r', 'm']))
-filtermarkers = dict(zip('ugrizy', ['*', '*', 'P', 'o', 'D', 's']))
+bands = ['u','g','r','i','z','y','gr','ri','iz','zy']
+colors_r = ['c', 'g', 'y', 'r', 'm']
+colors = ['b']+colors_r*2
+mm_r = ['*', 'P', 'o', 'D', 's']
+markers = ['*']+mm_r*2
+filtercolors = dict(zip(bands, colors))
+filtermarkers = dict(zip(bands, markers))
 """
 plt.rcParams['xtick.labelsize'] = 12
 plt.rcParams['ytick.labelsize'] = 12

@@ -383,7 +383,7 @@ def plot_perf(data,x_main='sigma',
             fontsize=12,transform=ax.transAxes,color='g') 
        
     if plotDir != 'None':
-        fName = '{}/from_sigma_{}.png'.format(plotDir,obs_param)
+        fName = '{}/from_sigma_{}_{}.png'.format(plotDir,obs_param,x_main)
         plt.savefig(fName)
     
 def plot_perf_obs_param(df_zp,sigmas,unit_atmos,
