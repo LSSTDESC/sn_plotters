@@ -467,7 +467,7 @@ def plot_field(df, xvars=['season', 'season'],
     None.
 
     """
-    fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(16, 9))
+    fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(17, 9))
     fig.suptitle(title)
     fig.subplots_adjust(hspace=0.02, right=0.75)
 
@@ -484,7 +484,8 @@ def plot_field(df, xvars=['season', 'season'],
         ax[0].grid()
         ax[1].grid()
 
-    ax[0].legend(bbox_to_anchor=(1., 0.5), ncol=1, frameon=False, fontsize=15)
+    ax[0].legend(bbox_to_anchor=(1.2, 0.99), 
+                 ncol=1, frameon=False, fontsize=15,loc='upper center')
 
     ax[0].grid()
     ax[1].grid()
