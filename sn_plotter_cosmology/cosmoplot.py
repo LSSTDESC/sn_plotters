@@ -417,7 +417,7 @@ def plot_allOS(resdf, config, dataCol='dbName_DD', configCol='dbName',
 
 def plot_allOS_survey(res_csv='smom_final.csv', dbNorm='baseline_v3.4_10yrs',
                       dataCol='dbName', varx='year', vary='MoM_mean',
-                      vary_std='MoM_std'):
+                      vary_std='MoM_std',legy='SMoM'):
     """
     Function to plot SMoM (relative or absolute) for the full survey
 
@@ -435,6 +435,8 @@ def plot_allOS_survey(res_csv='smom_final.csv', dbNorm='baseline_v3.4_10yrs',
         y-axis var. The default is 'MoM_mean'.
     vary_std : str, optional
         y-axis std var. The default is 'MoM_std'.
+    legy: str, optional.
+        y-axis legend. The default is 'SMoM'
 
     Returns
     -------
@@ -472,10 +474,12 @@ def plot_allOS_survey(res_csv='smom_final.csv', dbNorm='baseline_v3.4_10yrs',
     plt.setp(ax.get_xticklabels(), rotation=30,
              ha="right", rotation_mode="anchor", fontsize=12)
 
+    """
     if dbNorm != '':
         legy = '$\\frac{\\Delta SMoM}{SMoM}$ [%]'
     else:
         legy = 'SMoM'
+    """
     ax.grid(visible=True)
     ax.set_ylabel(r'{}'.format(legy), fontsize=25)
 
