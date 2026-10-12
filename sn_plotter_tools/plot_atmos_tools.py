@@ -577,15 +577,22 @@ def plot_sigma_obs_param(res, obs_param='zp',unit_obs_param='mmag',
 
     """
     from sn_analysis.sn_atmos_tools import add_index_band,add_legend
+    band_single =['g','r','i','z','y']
+    band_d = ['gr','ri','iz','zy']
     
-    res = add_index_band(res)
+    bbands = band_single+band_d
+    res = add_index_band(res,bands=bbands)
     if err_rel:
         res['sigma_atmos_param']/=res['atmos_param_value']/100.
         #limy = [0.,30.]*4
     
     auxtel_mes = dict(zip(atmos_params,auxtel_data))
-    bands_atm = dict(zip(atmos_params,
-                 ['grizy','gri','grizy','izy']))
+    bands_plot = ['grizy','gri','grizy','izy']
+    bands_plot=[['gr','ri','iz','zy'],
+                ['gr','ri'],['gr','ri','iz','zy'],['i','z','y','iz','zy']]
+    
+    bands_atm = dict(zip(atmos_params,bands_plot))
+    
     lstyle = dict(zip([1.2,2.0],['solid','dotted']))
     
     limy = dict(zip(atmos_params,limy))
