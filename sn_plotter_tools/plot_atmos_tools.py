@@ -484,9 +484,15 @@ def plot_results_config(df,config_df,obs_param='zp',unit='mmag',plotDir='',
     """
 
     from sn_analysis.sn_atmos_tools import add_index_band,add_legend,get_str
-    #add index
-    df = add_index_band(df)
+    band_single =['g','r','i','z','y']
+    band_d = ['gr','ri','iz','zy']
     
+    bbands = band_single+band_d
+    
+    #add index
+    df = add_index_band(df,bands=bbands)
+    
+    print('test',df['band'].unique())
     fig, ax = plt.subplots(figsize=(12,8))
     fig.subplots_adjust(top=0.85,right=0.9)
     configs = df['config'].unique()
@@ -496,15 +502,16 @@ def plot_results_config(df,config_df,obs_param='zp',unit='mmag',plotDir='',
     yvar= 'sigma_{}_tot'.format(obs_param)
     
     lstyles = dict(zip(airmass,['solid','dotted']))
+    """
     markers = ['o','s','P','h','v']
     
     mmarks = dict(zip(configs,markers[:len(configs)]))
     
     configs = df['config'].unique()
-    ccolors = ['k','r','b','g']
+    ccolors = ['k','r','b','g','m','grey']
     
     colors = dict(zip(configs,ccolors))
-    
+    """
     for airm in airmass:
         idx = df['airmass'] == airm
         sel = df[idx]
@@ -518,9 +525,11 @@ def plot_results_config(df,config_df,obs_param='zp',unit='mmag',plotDir='',
             label = '$\sigma_{atmos}$='+label
             if airm > 1.5:
                 label = None
+            ccolor = sel_config['color'].to_list()[0]
+            mmarker = sel_config['marker'].to_list()[0]
             ax.plot(selb['band'],selb[yvar],
-                    marker=mmarks[config],mfc='None',
-                    linestyle=lstyles[airm],label=label,color=colors[config])
+                    marker=mmarker,mfc='None',
+                    linestyle=lstyles[airm],label=label,color=ccolor)
             
     ax.grid(visible=True)
     
