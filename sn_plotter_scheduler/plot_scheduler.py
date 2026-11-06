@@ -14,7 +14,6 @@ from sn_tools.sn_obs import season
 from sn_tools.sn_io import checkDir
 import healpy as hp
 import matplotlib
-from sn_tools.sn_utils import multiproc
 import os
 import numpy.lib.recfunctions as rf
 
@@ -278,15 +277,32 @@ def plot_season_length(res_season):
     secax.set_xlabel('N$_{visits}$')
 
 class LSST_plus_AuxTel_visu:
-    def __init__(self,obs,dbName,nside=32,figDir='None',
+    def __init__(self,obs,auxtel_obs,dbName,auxtel_type,
+                 nside=32,figDir='None',
                  movieDir='None',ffmpeg_cmd='ffmpeg',year=1):
         """
         class to visualize LSST and AuxTel surveys
 
         Parameters
         ----------
-        obs : array
-            observations.
+        obs : numpy array
+            lsst+auxtel survey
+        auxtel_obs : numpy array
+            auxtel survey
+        dbName : str
+            OS name.
+        auxtel_type: str
+            Auxtel type of survey
+        nside : int, optional
+            nside healpix parameter. The default is 32.
+        figDir : str, optional
+            fig directory. The default is 'None'.
+        movieDir : str, optional
+            movie dir. The default is 'None'.
+        ffmpeg_cmd : str, optional
+            ffmpeg to use to produce the movie. The default is 'ffmpeg'.
+        year : int, optional
+            year of data to consider. The default is 1.
 
         Returns
         -------
@@ -294,10 +310,15 @@ class LSST_plus_AuxTel_visu:
 
         """
         
+        #grab data corresponding to this year
         idx = obs['year'] == year
         self.obs = obs[idx]
+        idx = auxtel_obs['year'] == year
+        self.auxtel_obs = auxtel_obs
+        
         self.year=year
         self.npixels = hp.nside2npix(nside)
+        
         ra_min ,ra_max = np.min(obs['RA']),np.max(obs['RA'])
         dec_min ,dec_max = np.min(obs['Dec']),np.max(obs['Dec'])
         
@@ -309,10 +330,12 @@ class LSST_plus_AuxTel_visu:
         # prepare output directory
         self.plotDir = 'None'
         if figDir != 'None':
-            self.plotDir = '{}/{}/year_{}'.format(figDir,dbName,year)
+            self.plotDir = '{}/{}/{}/year_{}'.format(figDir,dbName,
+                                                     auxtel_type,year)
             checkDir(self.plotDir)
         
         self.dbName = dbName
+        self.auxtel_type = auxtel_type
         
         self.movieDir = movieDir
         if self.movieDir != 'None':
@@ -320,6 +343,21 @@ class LSST_plus_AuxTel_visu:
             checkDir(self.movieDir)
             
     def __call__(self,nights=[2],nproc=8):
+        """
+        Main method
+
+        Parameters
+        ----------
+        nights : list(int), optional
+            List of nights to process. The default is [2].
+        nproc : int, optional
+            number of procs. The default is 8.
+
+        Returns
+        -------
+        None.
+
+        """
            
         params = {}
         
@@ -330,6 +368,26 @@ class LSST_plus_AuxTel_visu:
             self.process(nights,params)
            
     def process(self,nights, params, j=0, output_q=None):
+        """
+        Data processing using multiprocessing
+
+        Parameters
+        ----------
+        nights : list(int)
+            List of nights to process.
+        params : dict
+            parameters.
+        j : int, optional
+            Internal int for multiprocessing. The default is 0.
+        output_q : multiprocessing queue, optional
+            where to store the output data. The default is None.
+
+        Returns
+        -------
+        int
+            to end the process. equal to 1.
+
+        """
         
         for nnight in nights:
             print('processing night',nnight)
@@ -360,13 +418,22 @@ class LSST_plus_AuxTel_visu:
            
            
     def loop_obs_night(self,obs,obs_bef,night):
-        """
+        """        
         Method to loop on observations
- 
+        
+        Parameters
+        ----------
+        obs : numpy array
+            lsst obs corresponding to night.
+        obs_bef : numpy array
+            lsst obs of the previous nights.
+        night : int
+            night number.
+
         Returns
         -------
         None.
- 
+
         """
         
         colNames = ['MJD','dist_obs_calib',
@@ -399,12 +466,28 @@ class LSST_plus_AuxTel_visu:
                 rb = [3]
         
             obs_pl = rf.append_fields(obs_pl,'count',rb)
-            
-            self.plot_night(obs_bef,obs_pl,df_pl,night,i)
+            idx = self.auxtel_obs['mjd'] <= mjd
+            idx &= self.auxtel_obs['night'] == night
+            auxtel_sel = self.auxtel_obs[idx]
+            self.plot_night(obs_bef,obs_pl,auxtel_sel,df_pl,night,i)
     
         del df_pl
            
     def get_vals(self,obs):
+        """
+        Method to grab some values
+
+        Parameters
+        ----------
+        obs : numpy array
+            Data to process
+
+        Returns
+        -------
+        dd : dict
+            output data.
+
+        """
         
         cols = ['RA','Dec','mjd','slewTime',
                 'RA_deg','Dec_deg','delta_mjd','delta_r']
@@ -414,7 +497,30 @@ class LSST_plus_AuxTel_visu:
         return dd
            
        
-    def plot_night(self,obs_bef,obs,df_pl,night,inum):
+    def plot_night(self,obs_bef,obs,auxtel_obs,df_pl,night,inum):
+        """
+        Method to view a given night
+
+        Parameters
+        ----------
+        obs_bef : numpy array
+            obs (LSST+AuxTel) of the previous nights
+        obs : numpy array
+            obs (LSST+AuxTel) of the current night.
+        auxtel_obs : numpy array
+            auxtel obs
+        df_pl : pandas df
+            information
+        night : int
+            night number.
+        inum : int
+            fig number.
+
+        Returns
+        -------
+        None.
+
+        """
         
         fig = plt.figure(figsize=(15, 12))
         fig.subplots_adjust(top=0.99)
@@ -426,7 +532,7 @@ class LSST_plus_AuxTel_visu:
         ax_d = fig.add_axes([0.5, 0.4, 0.35, 0.25])
         ax_e = fig.add_axes([0.5, 0.15, 0.35, 0.25])
         
-        self.plot_ra_dec(ax_a,obs,obs_bef)
+        self.plot_ra_dec(ax_a,obs,obs_bef,auxtel_obs)
         self.plot_Mollview(ax_b,obs[['healpixID','count']],
                            obs_bef[['healpixID','count']],
                            fig,night)
@@ -481,8 +587,36 @@ class LSST_plus_AuxTel_visu:
         else:
             plt.show()
         
-    def plot_ra_dec(self,ax,obs,obs_bef,varx='RA',legx='RA [deg]',
+    def plot_ra_dec(self,ax,obs,obs_bef,auxtel_obs,
+                    varx='RA',legx='RA [deg]',
                     vary='Dec',legy='Dec [deg]'):
+        """
+        (Ra,Dec) plot
+
+        Parameters
+        ----------
+        ax : matplotlib axis
+            plot axis.
+        obs : numpy array
+            obs (LSST+AuxTel) of the night.
+        obs_bef : numpy array
+            obs (LSST+AuxTel) of the previous nights.
+        auxtel_obs : numpy array
+            obs (AuxTel)
+        varx : str, optional
+            x-axis var. The default is 'RA'.
+        legx : str, optional
+            x-axis legend. The default is 'RA [deg]'.
+        vary : str, optional
+            y-axis var. The default is 'Dec'.
+        legy : str, optional
+            y-axis legend. The default is 'Dec [deg]'.
+
+        Returns
+        -------
+        None.
+
+        """
         
         
         plt.sca(ax)
@@ -491,7 +625,8 @@ class LSST_plus_AuxTel_visu:
             ax.plot(obs_bef[varx],obs_bef[vary],
                 color='grey',marker='o',
                 markersize=msize,linestyle='None')
-            ax.plot(obs_bef['RA_deg'],obs_bef['Dec_deg'],
+        if len(auxtel_obs) > 0:
+            ax.plot(auxtel_obs['RA_deg'],auxtel_obs['Dec_deg'],
                 color='lightskyblue',marker='*',markersize=8,
                 linestyle='None')
        
@@ -519,19 +654,27 @@ class LSST_plus_AuxTel_visu:
     def plot_Mollview(self, axa,obs,obs_bef,fig, night,var='count'):
         """
         Method to display a Mollweid view
- 
+
         Parameters
-        --------------
-        pixels: pandas df
-          data to plots
-        axa: matplotlib axis
-          axis to use for the plot
-        fig: matplotlib figure
-          figure to use for plot
-        night: int
-          night number
+        ----------
+        axa : matplotlib axis
+            axis for the plot.
+        obs : numpy array
+            obs (LSST+AuxTel) - current night.
+        obs_bef : numpy array
+            obs (LSST+AuxTel) - previous nights.
+        fig : matplotlib figure
+            fig for the plot
+        night : int
+            night number
+        var : str, optional
+            norm variable. The default is 'count'.
+
+        Returns
+        -------
+        None.
+
         """
-        
         
         plt.sca(axa)
  
@@ -565,6 +708,35 @@ class LSST_plus_AuxTel_visu:
                       varx='MJD',legx='MJD',
                       vary='dist',legy='dist [deg]',color='k',
                       label=None,lstyle='solid'):
+        """
+        plot of informations
+
+        Parameters
+        ----------
+        ax : matplotlib axis
+            axis for the plot.
+        df_pl : numpy array
+            Data to plot
+        varx : str, optional
+            x-axis var. The default is 'MJD'.
+        legx : str, optional
+            x-axis label. The default is 'MJD'.
+        vary : str, optional
+            y-axis var. The default is 'dist'.
+        legy : str, optional
+            y-axis label. The default is 'dist [deg]'.
+        color : str, optional
+            plot color. The default is 'k'.
+        label : str, optional
+            plot label. The default is None.
+        lstyle : str, optional
+            linestyle. The default is 'solid'.
+
+        Returns
+        -------
+        None.
+
+        """
         
         ax.plot(df_pl[varx],df_pl[vary],color=color,
                 label=label,linestyle=lstyle)
@@ -578,15 +750,25 @@ class LSST_plus_AuxTel_visu:
         
         
     def makeMovie(self,night):
-         """
-         Method to make a movie from jpg files
-         """
-         nnight = night-365*(self.year-1)
-         dirFigs = '{}/night_{}'.format(self.plotDir,nnight)
-         movieDir = '{}/year_{}'.format(self.movieDir,self.year)
-         checkDir(movieDir)
-         # ffmpeg_cmd = '../../ffmpeg/ffmpeg-4.3.1-i686-static/ffmpeg'
-         
-         cmd = '{} -r 2 -f image2 -s 1920x1080 -i {}/fig_%03d.jpg -vcodec libx264 -crf 25  -pix_fmt yuv420p {}/{}_{}.mp4 -y'.format(
-             self.ffmpeg_cmd, dirFigs, movieDir, self.dbName,nnight)
-         os.system(cmd)
+        """
+        Method to generate a movie from a set of jpgs        
+        
+        Parameters
+        ----------
+        night : int
+            night number.
+
+        Returns
+        -------
+        None.
+
+        """
+        nnight = night-365*(self.year-1)
+        dirFigs = '{}/night_{}'.format(self.plotDir,nnight)
+        movieDir = '{}/year_{}'.format(self.movieDir,self.year)
+        checkDir(movieDir)
+        # ffmpeg_cmd = '../../ffmpeg/ffmpeg-4.3.1-i686-static/ffmpeg'
+        
+        cmd = '{} -r 2 -f image2 -s 1920x1080 -i {}/fig_%03d.jpg -vcodec libx264 -crf 25  -pix_fmt yuv420p {}/{}_{}.mp4 -y'.format(
+            self.ffmpeg_cmd, dirFigs, movieDir, self.dbName,nnight)
+        os.system(cmd)
