@@ -16,8 +16,10 @@ from sn_analysis.sn_tools import fit_lin
 def plot_xy(df, 
             xvar='z',xleg='$z$',
             yvar='w',yleg='$w_{DE}$',
+            yerr=None,
             fig=None,ax=None,
             label='',color='k',marker='o',
+            msize=10,
             linestyle='solid',figtit=''):
     """
     Generic plot function
@@ -34,6 +36,8 @@ def plot_xy(df,
         y-axis variable. The default is 'wz'.
     yleg : str, optional
         y-axis label. The default is '$w_{DE}$'.
+    yerr: str, optional.
+        y-axis variable err. The default is None.
     fig : matplotlib figure, optional
         figure for the plot. The default is None.
     ax : matplotlib axis, optional
@@ -44,6 +48,8 @@ def plot_xy(df,
         plot color. The default is 'k'.
     marker : str, optional
         plot marker. The default is 'o'.
+    msize: int, optional.
+        markersize. The default is 10.
     linestyle : str, optional
         plot linestyle. The default is 'solid'.
     figtit : str, optional
@@ -64,8 +70,12 @@ def plot_xy(df,
     if figtit != '':
         fig.suptitle(figtit)
     
-    ax.plot(df[xvar], df[yvar], label=label,
-               marker=marker, color=color, linestyle=linestyle)
+    if yerr != None:
+        yerr = df[yerr]
+    ax.errorbar(df[xvar], df[yvar],yerr=yerr, 
+                label=label,
+                marker=marker, markersize=msize,
+               color=color, linestyle=linestyle)
     
     if not fig_orig:
         ax.set_xlabel(r'{}'.format(xleg))
