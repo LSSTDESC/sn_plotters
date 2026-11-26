@@ -20,7 +20,7 @@ def plot_xy(df,
             fig=None,ax=None,
             label='',color='k',marker='o',
             msize=10,
-            linestyle='solid',figtit=''):
+            linestyle='solid',figtit='',markevery=1):
     """
     Generic plot function
 
@@ -54,6 +54,8 @@ def plot_xy(df,
         plot linestyle. The default is 'solid'.
     figtit : str, optional
         Figure title. The default is ''.
+    markevery: int, optional
+       markevery params for the plot. The default is 1.
 
     Returns
     -------
@@ -75,7 +77,8 @@ def plot_xy(df,
     ax.errorbar(df[xvar], df[yvar],yerr=yerr, 
                 label=label,
                 marker=marker, markersize=msize,
-               color=color, linestyle=linestyle)
+               color=color, linestyle=linestyle,
+               markevery=markevery)
     
     if not fig_orig:
         ax.set_xlabel(r'{}'.format(xleg))
